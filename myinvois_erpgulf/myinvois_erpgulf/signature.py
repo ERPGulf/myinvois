@@ -218,10 +218,13 @@ class UBLSignatureXML:
             if element_dv is not None:
                 element_dv.text = self.sign_data.cert_digest
             if element_st is not None:
-                element_st.text = self.sign_data.signing_time
+                element_st.text = "197801000074"
             if element_in is not None:
-                element_in.text = self.sign_data.x509_issuer_name
+                # element_in.text = self.sign_data.x509_issuer_name
+                element_in.text = "C = MY, O = LHDNM, OU = Terms of use at http://www.posdigicert.com.my, CN = Trial LHDNM Sub CA V1"
+
             if element_sn is not None:
+                # element_sn.text = str(self.sign_data.x509_serial_number)
                 element_sn.text = str(self.sign_data.x509_serial_number)
 
             print("Signature, certificate, and digest values inserted successfully.")
@@ -231,7 +234,7 @@ class UBLSignatureXML:
 
 
 if __name__ == "__main__":
-    xml_signer = UBLSignatureXML(xml_path="/opt/malaysia/frappe-bench/apps/myinvois_erpgulf/finalzatcaxml.xml", cert_path="/opt/malaysia/frappe-bench/apps/myinvois_erpgulf/myinvois_erpgulf/myinvois_erpgulf/EINVCERT.PFX", cert_password="Ci8)RmsE")
+    xml_signer = UBLSignatureXML(xml_path="/opt/malaysia/frappe-bench/apps/myinvois_erpgulf/finalzatcaxml.xml", cert_path="/opt/malaysia/frappe-bench/apps/myinvois_erpgulf/myinvois_erpgulf/myinvois_erpgulf/EINVCERT.PFX", cert_password="")
     xml_signer.load_cert()
     xml_signer.sign_document()
 

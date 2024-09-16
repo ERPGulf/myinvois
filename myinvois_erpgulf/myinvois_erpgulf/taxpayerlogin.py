@@ -15,8 +15,8 @@ def get_access_token(client_id, client_secret, url="https://preprod-api.myinvois
         return None
 
 # Example usage
-client_id = "d708f413-2d93-4309-88db-a0f70259a290"
-client_secret = "97069288-86de-4e73-b029-3c9547fec236"
+client_id = ""
+client_secret = ""
 
 token_response = get_access_token(client_id, client_secret)
 print(token_response)
