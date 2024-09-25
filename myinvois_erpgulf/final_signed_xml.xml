@@ -1,0 +1,207 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+  <ext:UBLExtensions>
+    <ext:UBLExtension>
+      <ext:ExtensionURI>urn:oasis:names:specification:ubl:dsig:enveloped:xades</ext:ExtensionURI>
+      <ext:ExtensionContent>
+        <sig:UBLDocumentSignatures xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2" xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2" xmlns:sig="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2">
+          <sac:SignatureInformation>
+            <cbc:ID>urn:oasis:names:specification:ubl:signature:1</cbc:ID>
+            <sbc:ReferencedSignatureID>urn:oasis:names:specification:ubl:signature:Invoice</sbc:ReferencedSignatureID>
+            <ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="signature">
+              <ds:SignedInfo>
+                <ds:CanonicalizationMethod Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+                <ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>
+                <ds:Reference Id="id-doc-signed-data" URI="">
+                  <ds:Transforms>
+                    <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+                      <ds:XPath>not(//ancestor-or-self::ext:UBLExtensions)</ds:XPath>
+                    </ds:Transform>
+                    <ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+                      <ds:XPath>not(//ancestor-or-self::cac:Signature)</ds:XPath>
+                    </ds:Transform>
+                    <ds:Transform Algorithm="http://www.w3.org/2006/12/xml-c14n11"/>
+                  </ds:Transforms>
+                  <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                  <ds:DigestValue>fmHu036oMcy1doxlQBZcRGdcEL48CLZUvRHRNRi0oU0=</ds:DigestValue>
+                </ds:Reference>
+                <ds:Reference URI="#id-xades-signed-props" Type="http://www.w3.org/2000/09/xmldsig#SignatureProperties" >
+                  <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                  <ds:DigestValue>jR7jWKLe+sHyzhBMjtICuSxzDzdLNJB1JtTfI1hFfRA=</ds:DigestValue>
+                </ds:Reference>
+              </ds:SignedInfo>
+              <ds:SignatureValue>dvMBrosxV+R3jBB8fS7IJE6SdqW0p8+Bl4hHyO9VU4CiL5py5IAAvfw3tArndLN2lhvsVe89ZmUa7N8liW+quiv/ku1HJbtgvir5LTrCMzIj8JqUgs/Eh6KqC80v4eeKOzfy30KWzAAZdnf9rkBQy5XiQbylD5AviRq0oSo3WX+6rjssKlCJ9jQ3yzxmH+ayqSE9nHkP9q0CVxh2qJa0d1k3kcCTsPOIwhdCvr75b4jLchIl7Fk2Zi3RkMxoQ0E+kZbW7XMySF23PL1fg/Pd9J8RSeHvNARE10YzEdYUPbw9PotHLu47AiFGmIyfdaZM9Ld+wEv+9F/RWPY1fRX94g==</ds:SignatureValue>
+              <ds:KeyInfo>
+                <ds:X509Data>
+                  <ds:X509Certificate>MIIFdjCCA16gAwIBAgIDBWvEMA0GCSqGSIb3DQEBCwUAMHUxCzAJBgNVBAYTAk1ZMQ4wDAYDVQQKEwVMSEROTTE2MDQGA1UECxMtVGVybXMgb2YgdXNlIGF0IGh0dHA6Ly93d3cucG9zZGlnaWNlcnQuY29tLm15MR4wHAYDVQQDExVUcmlhbCBMSEROTSBTdWIgQ0EgVjEwHhcNMjQwNjI4MjMxNTAxWhcNMjQwOTI2MjMxNTAxWjCBizELMAkGA1UEBhMCTVkxFjAUBgNVBAoTDVRIQyBTRE4uIEJIRC4xEzARBgNVBGETCkM4ODgyODEwOTAxFjAUBgNVBAMTDVRIQyBTRE4uIEJIRC4xFTATBgNVBAUTDDE5NzgwMTAwMDA3NDEgMB4GCSqGSIb3DQEJARYRbGMudGFuQHRoYy5jb20ubXkwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCoxfC5OkAAwKYECZZfa6oSlpCnglh1kINlg3i1ai1CqZfBG71QJYQ6Tf2X8UPXLcWBr3SbrBArD+a15ydEOnwP9b7XnT/yyJSugMULY81szRnsPp85VUBJ8zcQimq1L+Hir+s9hFxLZHL2MMQQ2/mL2+M5EaspYtX7OhspMYlmqZOxp/MnKESZyZiv90gLkPUg2BUAwh+igtpjCBKFvFpKpgSbraasne8Zsbmse4Sq8i0bj1fLhNMkU57X6Ybgn/VZHcvzSmUymSHmmkK+FaN5IGOiEdU3lQ1alesktsbNaGcfWKy5f2Iig9gxsSb0r326VFutr855Kd+xDXv2AaUjAgMBAAGjgfcwgfQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwEQYDVR0OBAoECEFpaJN3wvTBMFMGA1UdIARMMEowSAYJKwYBBAGDikUBMDswOQYIKwYBBQUHAgEWLWh0dHBzOi8vd3d3LnBvc2RpZ2ljZXJ0LmNvbS5teS9yZXBvc2l0b3J5L2NwczATBgNVHSMEDDAKgAhNf9lrtsUI0DAOBgNVHQ8BAf8EBAMCBkAwRAYDVR0fBD0wOzA5oDegNYYzaHR0cDovL3RyaWFsY3JsLnBvc2RpZ2ljZXJ0LmNvbS5teS9UcmlhbExIRE5NVjEuY3JsMA0GCSqGSIb3DQEBCwUAA4ICAQCnOiF+oMJVGWXlZ3nvol17rdeMGVVeOiWa6oV1lR14I4qwqgSUB82GzsAoPvbyshUeov1lxBkvM9TUeC7atROEgbQNOMUXS/bVeTOLrFZ9l8hZQhGDGBJa2NiURsvLfdT7MAIQMO74C2Bc06u6Uhcrcpbz2wWSbthwRgJ/xHlIhqULGN9a2mAv/lcQDD88ujOBSALOB8aE6V/cmhfmNoLdgDtoHVclwxstLEgFI+UyTU0UU3LOL4lTL04/hA9fFIhN/aZAlSvNTkzcCSIlMzVsVYHDsuelY8aHJ61v4GrV4yRVwWLXwYzAyZJ9zP8C0VoTakUMgBZt+59Dis2xpHGHnJNGkKhHyAFRrMi4Lny6wSJys7SkhsbnEt94PvBvhv0jTx7VVjvpZF5G69iyPq366FXPsKdFGXg3slr0ecnFy839zSquxzGHGpPUj+Oq8dHzdf4kBngyO+yyg42JLNAGmq3cCVqytJCuYvs7q1m9IHliiZRlRtOW5SufdGM9NBCO/dtRdz3HjlJ4DsMnUPPZLNRC7DM84XCT9hyP6cnaQhYL2L9myPTTJ4C2Nxu/P/XUWPUP7vmBEWI5vANAfSwiUwVdwD8RFd+y+VWc3rpp1o16cWR9kpt6FHA0qvcQedoJTx+bxcp3jpr6A9wjAi8OggRTRp3QNwGe2ygV4gndaQ==</ds:X509Certificate>
+                </ds:X509Data>
+              </ds:KeyInfo>
+              <ds:Object>
+                <xades:QualifyingProperties xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="signature">
+                  <xades:SignedProperties Id="id-xades-signed-props">
+                    <xades:SignedSignatureProperties>
+                      <xades:SigningTime>2024-09-25T06:51:37Z</xades:SigningTime>
+                      <xades:SigningCertificate>
+                        <xades:Cert>
+                          <xades:CertDigest>
+                            <ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/>
+                            <ds:DigestValue>mbtCC0dy0b+ih7VUz/8XMIgSPnNxTZ9KdLGfF5U5iW4=</ds:DigestValue>
+                          </xades:CertDigest>
+                          <xades:IssuerSerial>
+                            <ds:X509IssuerName>CN=Trial LHDNM Sub CA V1, OU=Terms of use at http://www.posdigicert.com.my, O=LHDNM, C=MY</ds:X509IssuerName>
+                            <ds:X509SerialNumber>355268</ds:X509SerialNumber>
+                          </xades:IssuerSerial>
+                        </xades:Cert>
+                      </xades:SigningCertificate>
+                    </xades:SignedSignatureProperties>
+                  </xades:SignedProperties>
+                </xades:QualifyingProperties>
+              </ds:Object>
+            </ds:Signature>
+          </sac:SignatureInformation>
+        </sig:UBLDocumentSignatures>
+      </ext:ExtensionContent>
+    </ext:UBLExtension>
+  </ext:UBLExtensions>
+  <cbc:ID>IV0000010134444</cbc:ID>
+  <cbc:IssueDate>2024-09-23</cbc:IssueDate>
+  <cbc:IssueTime>03:36:00Z</cbc:IssueTime>
+  <cbc:InvoiceTypeCode listVersionID="1.1">01</cbc:InvoiceTypeCode>
+  <cbc:DocumentCurrencyCode>MYR</cbc:DocumentCurrencyCode>
+  <cac:BillingReference>
+    <cac:AdditionalDocumentReference>
+      <cbc:ID>IV0000010134444</cbc:ID>
+    </cac:AdditionalDocumentReference>
+  </cac:BillingReference>
+  <cac:Signature>
+    <cbc:ID>urn:oasis:names:specification:ubl:signature:Invoice</cbc:ID>
+    <cbc:SignatureMethod>urn:oasis:names:specification:ubl:dsig:enveloped:xades</cbc:SignatureMethod>
+  </cac:Signature>
+  <cac:AccountingSupplierParty>
+    <cac:Party>
+      <cbc:IndustryClassificationCode name="Other information technology service activities n.e.c.">62099</cbc:IndustryClassificationCode>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="TIN">C888281090</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="BRN">197801000074</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:CityName>Cheras</cbc:CityName>
+        <cbc:PostalZone>56000</cbc:PostalZone>
+        <cbc:CountrySubentityCode>14</cbc:CountrySubentityCode>
+        <cac:AddressLine>
+          <cbc:Line>B-3, 13, Jalan 2/142a, </cbc:Line>
+        </cac:AddressLine>
+        <cac:AddressLine>
+          <cbc:Line>Cheras, 56000 Cheras</cbc:Line>
+        </cac:AddressLine>
+        <cac:AddressLine>
+          <cbc:Line>Wilayah Persekutuan Kuala Lumpur</cbc:Line>
+        </cac:AddressLine>
+        <cac:Country>
+          <cbc:IdentificationCode listAgencyID="6" listID="ISO3166-1">MYS</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>M POS SYSTEMS SERVICES</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:Contact>
+        <cbc:Telephone>019-626 3923</cbc:Telephone>
+        <cbc:ElectronicMail>Info@m-pos.com.my</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingSupplierParty>
+  <cac:AccountingCustomerParty>
+    <cac:Party>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="TIN">C20086138070</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PartyIdentification>
+        <cbc:ID schemeID="BRN">200701008200</cbc:ID>
+      </cac:PartyIdentification>
+      <cac:PostalAddress>
+        <cbc:CityName>Cheras</cbc:CityName>
+        <cbc:PostalZone>56000</cbc:PostalZone>
+        <cbc:CountrySubentityCode>14</cbc:CountrySubentityCode>
+        <cac:AddressLine>
+          <cbc:Line>B-3, 13, Jalan 2/142a, </cbc:Line>
+        </cac:AddressLine>
+        <cac:AddressLine>
+          <cbc:Line>Cheras, 56000 Cheras</cbc:Line>
+        </cac:AddressLine>
+        <cac:AddressLine>
+          <cbc:Line>Cheras, 56000 Cheras</cbc:Line>
+        </cac:AddressLine>
+        <cac:Country>
+          <cbc:IdentificationCode listAgencyID="6" listID="ISO3166-1">MYS</cbc:IdentificationCode>
+        </cac:Country>
+      </cac:PostalAddress>
+      <cac:PartyLegalEntity>
+        <cbc:RegistrationName>M POS SYSTEMS SERVICES</cbc:RegistrationName>
+      </cac:PartyLegalEntity>
+      <cac:Contact>
+        <cbc:Telephone>019-626 3923</cbc:Telephone>
+        <cbc:ElectronicMail>Info@m-pos.com.my</cbc:ElectronicMail>
+      </cac:Contact>
+    </cac:Party>
+  </cac:AccountingCustomerParty>
+  <cac:TaxTotal>
+    <cbc:TaxAmount currencyID="MYR">3.5</cbc:TaxAmount>
+    <cac:TaxSubtotal>
+      <cbc:TaxableAmount currencyID="MYR">3.5</cbc:TaxableAmount>
+      <cbc:TaxAmount currencyID="MYR">3.5</cbc:TaxAmount>
+      <cac:TaxCategory>
+        <cbc:ID>01</cbc:ID>
+        <cbc:Percent>10</cbc:Percent>
+        <cac:TaxScheme>
+          <cbc:ID schemeAgencyID="6" schemeID="UN/ECE 5153">OTH</cbc:ID>
+        </cac:TaxScheme>
+      </cac:TaxCategory>
+    </cac:TaxSubtotal>
+  </cac:TaxTotal>
+  <cac:LegalMonetaryTotal>
+    <cbc:LineExtensionAmount currencyID="MYR">35</cbc:LineExtensionAmount>
+    <cbc:TaxExclusiveAmount currencyID="MYR">35</cbc:TaxExclusiveAmount>
+    <cbc:TaxInclusiveAmount currencyID="MYR">38.5</cbc:TaxInclusiveAmount>
+    <cbc:AllowanceTotalAmount currencyID="MYR">5</cbc:AllowanceTotalAmount>
+    <cbc:PayableAmount currencyID="MYR">38.5</cbc:PayableAmount>
+  </cac:LegalMonetaryTotal>
+  <cac:InvoiceLine>
+    <cbc:ID>1</cbc:ID>
+    <cbc:InvoicedQuantity unitCode="H87">2</cbc:InvoicedQuantity>
+    <cbc:LineExtensionAmount currencyID="MYR">35</cbc:LineExtensionAmount>
+    <cac:AllowanceCharge>
+      <cbc:ChargeIndicator>false</cbc:ChargeIndicator>
+      <cbc:AllowanceChargeReason>Item Discount</cbc:AllowanceChargeReason>
+      <cbc:MultiplierFactorNumeric>1</cbc:MultiplierFactorNumeric>
+      <cbc:Amount currencyID="MYR">5</cbc:Amount>
+    </cac:AllowanceCharge>
+    <cac:TaxTotal>
+      <cbc:TaxAmount currencyID="MYR">3.5</cbc:TaxAmount>
+      <cac:TaxSubtotal>
+        <cbc:TaxableAmount currencyID="MYR">35</cbc:TaxableAmount>
+        <cbc:TaxAmount currencyID="MYR">3.5</cbc:TaxAmount>
+        <cac:TaxCategory>
+          <cbc:ID>01</cbc:ID>
+          <cbc:Percent>10</cbc:Percent>
+          <cac:TaxScheme>
+            <cbc:ID schemeAgencyID="6" schemeID="UN/ECE 5153">OTH</cbc:ID>
+          </cac:TaxScheme>
+        </cac:TaxCategory>
+      </cac:TaxSubtotal>
+    </cac:TaxTotal>
+    <cac:Item>
+      <cbc:Description>Computer Monitor 24 inch</cbc:Description>
+      <cac:CommodityClassification>
+        <cbc:ItemClassificationCode listID="CLASS">003</cbc:ItemClassificationCode>
+      </cac:CommodityClassification>
+    </cac:Item>
+    <cac:Price>
+      <cbc:PriceAmount currencyID="MYR">20</cbc:PriceAmount>
+    </cac:Price>
+    <cac:ItemPriceExtension>
+      <cbc:Amount currencyID="MYR">40</cbc:Amount>
+    </cac:ItemPriceExtension>
+  </cac:InvoiceLine>
+</Invoice>

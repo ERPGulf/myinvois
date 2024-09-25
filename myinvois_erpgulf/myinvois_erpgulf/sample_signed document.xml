@@ -1,0 +1,261 @@
+<Invoice
+	xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2"
+	xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+	xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+	xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+	<ext:UBLExtensions>
+		<ext:UBLExtension>
+			<ext:ExtensionURI>urn:oasis:names:specification:ubl:dsig:enveloped:xades</ext:ExtensionURI>
+			<ext:ExtensionContent>
+				<sig:UBLDocumentSignatures
+					xmlns:sac="urn:oasis:names:specification:ubl:schema:xsd:SignatureAggregateComponents-2"
+					xmlns:sbc="urn:oasis:names:specification:ubl:schema:xsd:SignatureBasicComponents-2"
+					xmlns:sig="urn:oasis:names:specification:ubl:schema:xsd:CommonSignatureComponents-2">
+					<sac:SignatureInformation>
+						<cbc:ID>urn:oasis:names:specification:ubl:signature:1</cbc:ID>
+						<sbc:ReferencedSignatureID>urn:oasis:names:specification:ubl:signature:Invoice</sbc:ReferencedSignatureID>
+						<ds:Signature
+							xmlns:ds="http://www.w3.org/2000/09/xmldsig#" Id="signature">
+							<ds:SignedInfo>
+								<ds:CanonicalizationMethod Algorithm="http://www.w3.org/2006/12/xml-c14n11"></ds:CanonicalizationMethod>
+								<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"></ds:SignatureMethod>
+								<ds:Reference Id="id-doc-signed-data" URI="">
+									<ds:Transforms>
+										<ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+											<ds:XPath>not(//ancestor-or-self::ext:UBLExtensions)</ds:XPath>
+										</ds:Transform>
+										<ds:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116">
+											<ds:XPath>not(//ancestor-or-self::cac:Signature)</ds:XPath>
+										</ds:Transform>
+										<ds:Transform Algorithm="http://www.w3.org/2006/12/xml-c14n11"></ds:Transform>
+									</ds:Transforms>
+									<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod>
+									<ds:DigestValue>9EuZnwhLP6+YJ53RSG0CqO+2ekTeObxBYPmb6CKyeS0=</ds:DigestValue>
+								</ds:Reference>
+								<ds:Reference Type="http://www.w3.org/2000/09/xmldsig#SignatureProperties" URI="#id-xades-signed-props">
+									<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"></ds:DigestMethod>
+									<ds:DigestValue>ST8TfD4w/lo8umr/e4CH6HVNaF4BVOWzwVGCBc/Avsw=</ds:DigestValue>
+								</ds:Reference>
+							</ds:SignedInfo>
+							<ds:SignatureValue>F6f2IbviQhvOmQ2Gj7P3hjB0dfZih2lK+pmA98FTNpxfs+LKg8zOGnknZT8X5EPaZj5M8dEP2S2aPVz9A4AtoBX2dFG4xxRC8hpB/r/TSYehQ6BFMskT6XqBeqQ78TOhCsTz09HkuJgUh2KBivkkrfHMcgncBrHzWGKEjMx/NaewzoXnjq1FJUWUJuO831KGn75L104BgkxyHY0o8Luqz2ipUFvJAXu39G9gdoMnuOrZZpj6wa0IMmeV6daTGwi9UrN4gSuCp/SCEebwbPqkTKNAUzpm0h76MLQ3GUe5X3r+0gtpZIC7HcPgbuPIJorttxiORqxyoHmUVy6ielUSMg==</ds:SignatureValue>
+							<ds:KeyInfo>
+								<ds:X509Data>
+									<ds:X509Certificate>MIIFizCCA3OgAwIBAgIDBabOMA0GCSqGSIb3DQEBCwUAMHUxCzAJBgNVBAYTAk1ZMQ4wDAYDVQQKEwVMSEROTTE2MDQGA1UECxMtVGVybXMgb2YgdXNlIGF0IGh0dHA6Ly93d3cucG9zZGlnaWNlcnQuY29tLm15MR4wHAYDVQQDExVUcmlhbCBMSEROTSBTdWIgQ0EgVjEwHhcNMjQwNzI0MTUxNTMzWhcNMjQxMDIyMTUxNTMzWjCBoDELMAkGA1UEBhMCTVkxHzAdBgNVBAoTFk1BTEFZQU4gQkFOS0lORyBCRVJIQUQxEzARBgNVBGETCkM4NTQ2ODAwMDAxHzAdBgNVBAMTFk1BTEFZQU4gQkFOS0lORyBCRVJIQUQxFTATBgNVBAUTDDE5NjAwMTAwMDE0MjEjMCEGCSqGSIb3DQEJARYUZWludm9pY2VAbWF5YmFuay5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCUmchXZTGsyJE5P3JATPc8Zf8X2nsoSsXsq57r2PNoQi+QiPln1HFUjCJLRUv+Fg2/uLuc3dN4IFIc4O0QtVl2joZkAIAzQkpTD76QxNqrSmDfjLeRTU0vlZxrKxjPzXPqRWUq/8l73qAzO55JWcB6KJa0ladRsjAkvlX6uY18YZ79VBX8cx8mOx9Fi/CqjXXpdMushYbD7PDBrI762JSdFt55QUnNjHRrOQLo9PnFxojL9p35dvi2GF2rrJuLQ+s/x7ryQuJztFGrnKUcinGRQkbuH5pQ1INbwOuMEamHGIqESnnczIt/L/RZ5BCmHItfrqgvNN6R8xXWRM5g9XPlAgMBAAGjgfcwgfQwHwYDVR0lBBgwFgYIKwYBBQUHAwQGCisGAQQBgjcKAwwwEQYDVR0OBAoECEOHqqqVWyKEMFMGA1UdIARMMEowSAYJKwYBBAGDikUBMDswOQYIKwYBBQUHAgEWLWh0dHBzOi8vd3d3LnBvc2RpZ2ljZXJ0LmNvbS5teS9yZXBvc2l0b3J5L2NwczATBgNVHSMEDDAKgAhNf9lrtsUI0DAOBgNVHQ8BAf8EBAMCBkAwRAYDVR0fBD0wOzA5oDegNYYzaHR0cDovL3RyaWFsY3JsLnBvc2RpZ2ljZXJ0LmNvbS5teS9UcmlhbExIRE5NVjEuY3JsMA0GCSqGSIb3DQEBCwUAA4ICAQCsCyqY934ORE5+BVZ+IJMz7rh3zD9DkRskeLoVETXOnV9rPt0HWjDrojy6hcMfddSzNkUuplLE6Rtmq0DE2I4m1Qo+YLOk0bJ92eSVA7e04tBLggtV/IdMmosPdPRNBlA4xEeFiMefxLlnL16794yyoAA+FMl2/bsQF1IJf2GgsmlB7l47xqe7xlMq+zj5QceShJ0OJ5RvD4xxL/z+4XK2IdC9icGjBc2I1DjPNtu7Q4Bq9/N9W977KeO8zdw/lQjIC5Y/ue4we1f6P9xRE7yzVUseg58ma4dkyH58mpEHgGJCr3h8POVsJBdCWmQvPb9MMl3aML2buX0E8lGXYKE8RER+fG1OXlRw3/bUWgwVeNGldMYQyNNiyfFVsJ1Sylx35ygzsrrqMWWKECSv5D7TINKqjwTR0yEWeozoHmPAk9+UEyiDaZl23xypWXqlD75eN1NOcKX/KfsMnq0etrMU6RcVliMsA9KnMRVPwVkcKW2kItwT+OBFR4CjpqM1SaupVH9nw2BlK/X2iRiscwEllRMkePYAH8ac6NzNk43u6Qh8ZMtAVEdFb7utJ0lSl6arl75j4BvJV9X78vYPjHKbHnJOpRHX7LNyrwDld2k1cO6QSzC1JGOhz9McuAcprk3KiEhwkzS84+hs65lAuWK5pF8FmvQIbYOHn3rlQfIm+g==</ds:X509Certificate>
+								</ds:X509Data>
+							</ds:KeyInfo>
+							<ds:Object>
+								<xades:QualifyingProperties
+									xmlns:xades="http://uri.etsi.org/01903/v1.3.2#" Target="signature">
+									<xades:SignedProperties Id="id-xades-signed-props">
+										<xades:SignedSignatureProperties>
+											<xades:SigningTime>2024-08-12T09:30:43Z</xades:SigningTime>
+											<xades:SigningCertificate>
+												<xades:Cert>
+													<xades:CertDigest>
+														<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" />
+														<ds:DigestValue>nGobyqofYC+4rHzC74ckBieqEtj3fd0QBMhgPnWhZdQ=</ds:DigestValue>
+													</xades:CertDigest>
+													<xades:IssuerSerial>
+														<ds:X509IssuerName>CN=Trial LHDNM Sub CA V1, OU=Terms of use at http://www.posdigicert.com.my, O=LHDNM, C=MY</ds:X509IssuerName>
+														<ds:X509SerialNumber>370382</ds:X509SerialNumber>
+													</xades:IssuerSerial>
+												</xades:Cert>
+											</xades:SigningCertificate>
+										</xades:SignedSignatureProperties>
+									</xades:SignedProperties>
+								</xades:QualifyingProperties>
+							</ds:Object>
+						</ds:Signature>
+					</sac:SignatureInformation>
+				</sig:UBLDocumentSignatures>
+			</ext:ExtensionContent>
+		</ext:UBLExtension>
+	</ext:UBLExtensions>
+	<cbc:ID>NCT16_SUB</cbc:ID>
+	<cbc:IssueDate>2024-08-10</cbc:IssueDate>
+	<cbc:IssueTime>14:49:40Z</cbc:IssueTime>
+	<cbc:InvoiceTypeCode listVersionID="1.1">11</cbc:InvoiceTypeCode>
+	<cbc:DocumentCurrencyCode>MYR</cbc:DocumentCurrencyCode>
+	<cac:BillingReference>
+		<cac:AdditionalDocumentReference>
+			<cbc:ID></cbc:ID>
+		</cac:AdditionalDocumentReference>
+	</cac:BillingReference>
+	<cac:Signature>
+		<cbc:ID>urn:oasis:names:specification:ubl:signature:Invoice</cbc:ID>
+		<cbc:SignatureMethod>urn:oasis:names:specification:ubl:dsig:enveloped:xades</cbc:SignatureMethod>
+	</cac:Signature>
+	<cac:AccountingSupplierParty>
+		<cac:Party>
+			<cbc:IndustryClassificationCode name="Other information technology service activities n.e.c.">62099</cbc:IndustryClassificationCode>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="TIN">EI00000000030</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="BRN">4303412NCL</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="SST">NCT17216</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PostalAddress>
+				<cbc:CityName>Singapore</cbc:CityName>
+				<cbc:PostalZone>10000</cbc:PostalZone>
+				<cbc:CountrySubentityCode>17</cbc:CountrySubentityCode>
+				<cac:AddressLine>
+					<cbc:Line>500</cbc:Line>
+				</cac:AddressLine>
+				<cac:AddressLine>
+					<cbc:Line>LEVEL 33</cbc:Line>
+				</cac:AddressLine>
+				<cac:AddressLine>
+					<cbc:Line>FLOWER TOWER 1</cbc:Line>
+				</cac:AddressLine>
+				<cac:Country>
+					<cbc:IdentificationCode listAgencyID="6" listID="ISO3166-1">MYS</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>TESTBOBKAS NCT</cbc:RegistrationName>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:Telephone>NULL-65320708833</cbc:Telephone>
+				<cbc:ElectronicMail>s2p-support@maybank.com</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:AccountingSupplierParty>
+	<cac:AccountingCustomerParty>
+		<cac:Party>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="TIN">C854680000</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="BRN">196001000142</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PartyIdentification>
+				<cbc:ID schemeID="SST">SST102030</cbc:ID>
+			</cac:PartyIdentification>
+			<cac:PostalAddress>
+				<cbc:CityName>Kuala Lumpur</cbc:CityName>
+				<cbc:PostalZone>50050</cbc:PostalZone>
+				<cbc:CountrySubentityCode>08</cbc:CountrySubentityCode>
+				<cac:AddressLine>
+					<cbc:Line>14th Floor, Menara Maybank</cbc:Line>
+				</cac:AddressLine>
+				<cac:AddressLine>
+					<cbc:Line>100, Jalan Tun Perak</cbc:Line>
+				</cac:AddressLine>
+				<cac:AddressLine>
+					<cbc:Line></cbc:Line>
+				</cac:AddressLine>
+				<cac:Country>
+					<cbc:IdentificationCode listAgencyID="6" listID="ISO3166-1">MYS</cbc:IdentificationCode>
+				</cac:Country>
+			</cac:PostalAddress>
+			<cac:PartyLegalEntity>
+				<cbc:RegistrationName>MALAYAN BANKING BERHAD</cbc:RegistrationName>
+			</cac:PartyLegalEntity>
+			<cac:Contact>
+				<cbc:Telephone>88889999</cbc:Telephone>
+				<cbc:ElectronicMail>admin@maybank.com</cbc:ElectronicMail>
+			</cac:Contact>
+		</cac:Party>
+	</cac:AccountingCustomerParty>
+	<cac:PaymentMeans>
+		<cbc:PaymentMeansCode>03</cbc:PaymentMeansCode>
+		<cac:PayeeFinancialAccount>
+			<cbc:ID></cbc:ID>
+		</cac:PayeeFinancialAccount>
+	</cac:PaymentMeans>
+	<cac:PaymentTerms>
+		<cbc:Note></cbc:Note>
+	</cac:PaymentTerms>
+	<cac:TaxTotal>
+		<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+		<cac:TaxSubtotal>
+			<cbc:TaxableAmount currencyID="MYR">0.00</cbc:TaxableAmount>
+			<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+			<cac:TaxCategory>
+				<cbc:ID>06</cbc:ID>
+				<cbc:TaxExemptionReason></cbc:TaxExemptionReason>
+				<cac:TaxScheme>
+					<cbc:ID schemeAgencyID="6" schemeID="UN/ECE 5153">OTH</cbc:ID>
+				</cac:TaxScheme>
+			</cac:TaxCategory>
+		</cac:TaxSubtotal>
+	</cac:TaxTotal>
+	<cac:LegalMonetaryTotal>
+		<cbc:LineExtensionAmount currencyID="MYR">1400.00</cbc:LineExtensionAmount>
+		<cbc:TaxExclusiveAmount currencyID="MYR">1400.00</cbc:TaxExclusiveAmount>
+		<cbc:TaxInclusiveAmount currencyID="MYR">1400.00</cbc:TaxInclusiveAmount>
+		<cbc:PayableRoundingAmount currencyID="MYR">0.00</cbc:PayableRoundingAmount>
+		<cbc:PayableAmount currencyID="MYR">1400.00</cbc:PayableAmount>
+	</cac:LegalMonetaryTotal>
+	<cac:InvoiceLine>
+		<cbc:ID>001</cbc:ID>
+		<cbc:LineExtensionAmount currencyID="MYR">1400.00</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="MYR">0.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+				<cbc:BaseUnitMeasure unitCode="C62">0.00</cbc:BaseUnitMeasure>
+				<cac:TaxCategory>
+					<cbc:ID>06</cbc:ID>
+					<cbc:TaxExemptionReason></cbc:TaxExemptionReason>
+					<cac:TaxScheme>
+						<cbc:ID schemeAgencyID="6" schemeID="UN/ECE 5153">OTH</cbc:ID>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>SST8% COMMISSION</cbc:Description>
+			<cac:OriginCountry>
+				<cbc:IdentificationCode>MYS</cbc:IdentificationCode>
+			</cac:OriginCountry>
+			<cac:CommodityClassification>
+				<cbc:ItemClassificationCode listID="CLASS">035</cbc:ItemClassificationCode>
+			</cac:CommodityClassification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="MYR">800.00</cbc:PriceAmount>
+		</cac:Price>
+		<cac:ItemPriceExtension>
+			<cbc:Amount currencyID="MYR">800.00</cbc:Amount>
+		</cac:ItemPriceExtension>
+	</cac:InvoiceLine>
+	<cac:InvoiceLine>
+		<cbc:ID>002</cbc:ID>
+		<cbc:LineExtensionAmount currencyID="MYR">1400.00</cbc:LineExtensionAmount>
+		<cac:TaxTotal>
+			<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+			<cac:TaxSubtotal>
+				<cbc:TaxableAmount currencyID="MYR">0.00</cbc:TaxableAmount>
+				<cbc:TaxAmount currencyID="MYR">0.00</cbc:TaxAmount>
+				<cbc:BaseUnitMeasure unitCode="C62">0.00</cbc:BaseUnitMeasure>
+				<cac:TaxCategory>
+					<cbc:ID>06</cbc:ID>
+					<cbc:TaxExemptionReason></cbc:TaxExemptionReason>
+					<cac:TaxScheme>
+						<cbc:ID schemeAgencyID="6" schemeID="UN/ECE 5153">OTH</cbc:ID>
+					</cac:TaxScheme>
+				</cac:TaxCategory>
+			</cac:TaxSubtotal>
+		</cac:TaxTotal>
+		<cac:Item>
+			<cbc:Description>COMMISSION</cbc:Description>
+			<cac:OriginCountry>
+				<cbc:IdentificationCode>MYS</cbc:IdentificationCode>
+			</cac:OriginCountry>
+			<cac:CommodityClassification>
+				<cbc:ItemClassificationCode listID="CLASS">035</cbc:ItemClassificationCode>
+			</cac:CommodityClassification>
+		</cac:Item>
+		<cac:Price>
+			<cbc:PriceAmount currencyID="MYR">600.00</cbc:PriceAmount>
+		</cac:Price>
+		<cac:ItemPriceExtension>
+			<cbc:Amount currencyID="MYR">600.00</cbc:Amount>
+		</cac:ItemPriceExtension>
+	</cac:InvoiceLine>
+</Invoice>

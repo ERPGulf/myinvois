@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='UTF-8'?>
 <Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2" xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
   <ext:UBLExtensions>
     <ext:UBLExtension>
@@ -65,12 +65,12 @@
   </ext:UBLExtensions>
   <cbc:ProfileID>reporting:1.0</cbc:ProfileID>
   <cbc:ID>INV12345</cbc:ID>
-  <cbc:IssueDate>2024-09-25</cbc:IssueDate>
-  <cbc:IssueTime>09:29:02Z</cbc:IssueTime>
+  <cbc:IssueDate>2024-09-17</cbc:IssueDate>
+  <cbc:IssueTime>06:50:19Z</cbc:IssueTime>
   <cbc:InvoiceTypeCode listVersionID="1.1">01</cbc:InvoiceTypeCode>
   <cbc:DocumentCurrencyCode>MYR</cbc:DocumentCurrencyCode>
   <cac:InvoicePeriod>
-    <cbc:StartDate>2024-09-25</cbc:StartDate>
+    <cbc:StartDate>2024-09-17</cbc:StartDate>
     <cbc:EndDate>2024-10-16</cbc:EndDate>
     <cbc:Description>Monthly</cbc:Description>
   </cac:InvoicePeriod>
@@ -274,4 +274,4 @@
       <cbc:Amount currencyID="MYR">100</cbc:Amount>
     </cac:ItemPriceExtension>
   </cac:InvoiceLine>
-</Invoice>
+<SignatureValue>layISyYdiCRM4/andTKNWEvo3hEV707rNE4rrMhCbwt3wGPv8wWACQb0jtBfjCMZnNpKqYNo4QheXxgjXocPguJSsXdZqlhQHbCXgtpWfLici49PpKR5hUFAKiuZxFVgkbImXwm+10yR0YaBrgNOYNR0XwzIJzu6iTTbuQvPMv81QdCUnZUMtbopxK5/2ii9fnMDR+CpaiadxgrIGroyRVdVrpDF3lyW0h2OLxb6QzWzyMEAN5/ruDXQ85Uy8aRseaP79/medR84pcgHU3/3PDUbO53BAA4O3gZA/PSDch6PsPkPxBwqOjODNVe+7Y9z6o5UDV1CoK1b0oFYYDeapA==</SignatureValue></Invoice>

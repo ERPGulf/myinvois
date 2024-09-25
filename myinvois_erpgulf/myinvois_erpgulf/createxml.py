@@ -85,12 +85,12 @@ def create_invoice_with_extensions():
                 Digest_Method2 = ET.SubElement(CertDigest , "ds:DigestMethod"  )
                 Digest_Value2 = ET.SubElement(CertDigest , "ds:DigestValue"  )
                 Digest_Method2.set("Algorithm", "http://www.w3.org/2001/04/xmlenc#sha256")
-                Digest_Value2.text = "YTJkM2JhYTcwZTBhZTAxOGYwODMyNzY3NTdkZDM3YzhjY2IxOTIyZDZhM2RlZGJiMGY0NDUzZWJhYWI4MDhmYg=="
+                Digest_Value2.text = "YTJkM2"
                 IssuerSerial = ET.SubElement(Cert , "xades:IssuerSerial"  )
                 X509IssuerName = ET.SubElement(IssuerSerial , "ds:X509IssuerName"  )
                 X509SerialNumber = ET.SubElement(IssuerSerial , "ds:X509SerialNumber"  )
-                X509IssuerName.text = "CN = Contoso Malaysia Sdn Bhd, E = noemail@contoso.com, OU = Contoso Malaysia Sdn Bhd, O = Contoso Malaysia Sdn Bhd, C = MY"
-                X509SerialNumber.text = "2475382886904809774818644480820936050208702411"
+                X509IssuerName.text = "89"
+                X509SerialNumber.text = "32"
                 return invoice
             except Exception as e:
                     print("error in xml tags formation:  "+ str(e) )
