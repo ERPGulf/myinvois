@@ -242,3 +242,16 @@ app_license = "mit"
 # 	"Logging DocType Name": 30  # days to retain logs
 # }
 
+
+
+
+
+# hooks.py
+
+doctype_js = {
+    "Sales Invoice" : "public/js/sales_invoice.js" ,
+    "LHDN Setting" : "myinvois_erpgulf/public/js/LHDN_setting.js",
+    }
+
+
+fixtures = [ {"dt": "Custom Field","filters": [["module", "=", "Myinvois Erpgulf"]] }]

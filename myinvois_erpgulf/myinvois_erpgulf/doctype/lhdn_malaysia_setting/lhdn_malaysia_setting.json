@@ -1,0 +1,121 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-10-09 12:54:26.246521",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "bearer_token",
+  "taxpayer_login",
+  "column_break_idlw",
+  "client_id",
+  "client_secret",
+  "certificate_file",
+  "pfx_cert_password",
+  "section_break_fbuk",
+  "company_tin_number",
+  "company_id_type",
+  "company_id_value",
+  "column_break_deqt",
+  "customer_tin_number",
+  "customer_id_type",
+  "customer_id_value"
+ ],
+ "fields": [
+  {
+   "fieldname": "bearer_token",
+   "fieldtype": "Small Text",
+   "label": "Bearer Token"
+  },
+  {
+   "fieldname": "column_break_idlw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "client_id",
+   "fieldtype": "Data",
+   "label": "Client ID"
+  },
+  {
+   "fieldname": "client_secret",
+   "fieldtype": "Data",
+   "label": "Client Secret"
+  },
+  {
+   "fieldname": "pfx_cert_password",
+   "fieldtype": "Data",
+   "label": "PFX cert Password"
+  },
+  {
+   "fieldname": "taxpayer_login",
+   "fieldtype": "Button",
+   "label": "Taxpayer Login"
+  },
+  {
+   "fieldname": "section_break_fbuk",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "company_tin_number",
+   "fieldtype": "Data",
+   "label": "Company TIN Number"
+  },
+  {
+   "fieldname": "column_break_deqt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company_id_type",
+   "fieldtype": "Data",
+   "label": "Company ID Type"
+  },
+  {
+   "fieldname": "company_id_value",
+   "fieldtype": "Data",
+   "label": "Company ID value"
+  },
+  {
+   "fieldname": "customer_tin_number",
+   "fieldtype": "Data",
+   "label": "Customer TIN number"
+  },
+  {
+   "fieldname": "customer_id_type",
+   "fieldtype": "Data",
+   "label": "Customer ID type"
+  },
+  {
+   "fieldname": "customer_id_value",
+   "fieldtype": "Data",
+   "label": "Customer ID value"
+  },
+  {
+   "fieldname": "certificate_file",
+   "fieldtype": "Attach",
+   "label": "Certificate File"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-10-09 13:22:00.185608",
+ "modified_by": "Administrator",
+ "module": "Myinvois Erpgulf",
+ "name": "LHDN Malaysia Setting",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
