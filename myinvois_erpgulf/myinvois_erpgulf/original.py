@@ -30,7 +30,6 @@ def certificate_data():
     try:
 
         settings = frappe.get_doc('LHDN Malaysia Setting')
-        # pfx_path = "/opt/malaysia/frappe-bench/apps/myinvois_erpgulf/myinvois_erpgulf/myinvois_erpgulf/THC SDN. BHD.p12"
         attached_file = settings.certificate_file
 
         if not attached_file:
@@ -267,31 +266,48 @@ def submission_url():
 
 
 @frappe.whitelist(allow_guest=True)
-def submit_document(invoice_number, any_item_has_tax_template= False):
-                
-            try:
-                sales_invoice_doc = frappe.get_doc('Sales Invoice' ,invoice_number)
-                invoice = create_invoice_with_extensions()
-                salesinvoice_data(invoice,sales_invoice_doc)
-                # create_billing_reference(invoice)
-                # create_signature(invoice)
-                company_data(invoice,sales_invoice_doc)
-                customer_data(invoice,sales_invoice_doc)
-                if not any_item_has_tax_template:
-                    tax_total(invoice,sales_invoice_doc)
-                else:
-                     tax_total_with_template(invoice,sales_invoice_doc)
-                legal_monetary_total(invoice,sales_invoice_doc)
-                if not any_item_has_tax_template:
-                    invoice_line_item(invoice,sales_invoice_doc)
-                else:
-                    item_data_with_template(invoice,sales_invoice_doc)
-                xml_output = xml_structuring(invoice,sales_invoice_doc)
-                line_xml ,doc_hash= xml_hash()
-                certificate_base64,formatted_issuer_name,  x509_serial_number ,cert_digest ,signing_time =certificate_data()
-                signature=sign_data(line_xml);
-                prop_cert_base64 = signed_properties_hash(signing_time,cert_digest,formatted_issuer_name,x509_serial_number)
-                ubl_extension_string(doc_hash,prop_cert_base64,signature,certificate_base64,signing_time,cert_digest,formatted_issuer_name,x509_serial_number,line_xml)
-                submission_url()
-            except Exception as e:
-                frappe.throw(f"Error in submit document: {str(e)}")
+def submit_document(invoice_number, any_item_has_tax_template=False):
+    try:
+        sales_invoice_doc = frappe.get_doc('Sales Invoice', invoice_number)
+
+        # Check if any item has a tax template but not all items have one
+        if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(item.item_tax_template for item in sales_invoice_doc.items):
+            frappe.throw("If any one item has an Item Tax Template, all items must have an Item Tax Template.")
+        else:
+            # Set to True if all items have a tax template
+            any_item_has_tax_template = all(item.item_tax_template for item in sales_invoice_doc.items)
+
+        invoice = create_invoice_with_extensions()
+        salesinvoice_data(invoice, sales_invoice_doc)
+        
+        company_data(invoice, sales_invoice_doc)
+        customer_data(invoice, sales_invoice_doc)
+        
+        # Call appropriate tax total function
+        if not any_item_has_tax_template:
+            tax_total(invoice, sales_invoice_doc)
+        else:
+            tax_total_with_template(invoice, sales_invoice_doc)
+        
+        legal_monetary_total(invoice, sales_invoice_doc)
+
+        # Call appropriate item data function
+        if not any_item_has_tax_template:
+            invoice_line_item(invoice, sales_invoice_doc)
+        else:
+            item_data_with_template(invoice, sales_invoice_doc)
+        
+        xml_output = xml_structuring(invoice, sales_invoice_doc)
+        line_xml, doc_hash = xml_hash()
+        
+        certificate_base64, formatted_issuer_name, x509_serial_number, cert_digest, signing_time = certificate_data()
+        
+        signature = sign_data(line_xml)
+        prop_cert_base64 = signed_properties_hash(signing_time, cert_digest, formatted_issuer_name, x509_serial_number)
+        
+        ubl_extension_string(doc_hash, prop_cert_base64, signature, certificate_base64, signing_time, cert_digest, formatted_issuer_name, x509_serial_number, line_xml)
+        
+        submission_url()
+
+    except Exception as e:
+        frappe.throw(f"Error in submit document: {str(e)}")
