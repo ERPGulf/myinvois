@@ -319,16 +319,16 @@ def legal_monetary_total(invoice,sales_invoice_doc):
 
             taxable_amount_1 = sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)
             tax_amount_without_retention = taxable_amount_1 * (sales_invoice_doc.taxes[0].rate) / 100
-            cac_LegalMonetaryTotal = ET.SubElement(invoice, "cac:LegalMonetaryTotal")
-            line_ext_amnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:LineExtensionAmount", currencyID="MYR")
+            legal_monetary_total = ET.SubElement(invoice, "cac:LegalMonetaryTotal")
+            line_ext_amnt = ET.SubElement(legal_monetary_total, "cbc:LineExtensionAmount", currencyID="MYR")
             line_ext_amnt.text =str(abs(sales_invoice_doc.total))
-            tax_exc_ = ET.SubElement(cac_LegalMonetaryTotal, "cbc:TaxExclusiveAmount", currencyID="MYR")
+            tax_exc_ = ET.SubElement(legal_monetary_total, "cbc:TaxExclusiveAmount", currencyID="MYR")
             tax_exc_.text = str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)))
-            tax_inc = ET.SubElement(cac_LegalMonetaryTotal, "cbc:TaxInclusiveAmount", currencyID="MYR")
+            tax_inc = ET.SubElement(legal_monetary_total, "cbc:TaxInclusiveAmount", currencyID="MYR")
             tax_inc.text = str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)) + abs(round(tax_amount_without_retention, 2)))
-            allw_tot = ET.SubElement(cac_LegalMonetaryTotal, "cbc:AllowanceTotalAmount", currencyID="MYR")
+            allw_tot = ET.SubElement(legal_monetary_total, "cbc:AllowanceTotalAmount", currencyID="MYR")
             allw_tot.text =  str(abs(sales_invoice_doc.get('discount_amount', 0.0)))
-            payable_ = ET.SubElement(cac_LegalMonetaryTotal, "cbc:PayableAmount", currencyID="MYR")
+            payable_ = ET.SubElement(legal_monetary_total, "cbc:PayableAmount", currencyID="MYR")
             payable_.text =  str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)) + abs(round(tax_amount_without_retention, 2)))
 
         except Exception as e:
