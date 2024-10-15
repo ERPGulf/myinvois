@@ -45,10 +45,10 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:DocumentCurrencyCode", "MYR")  # or sales_invoice_doc.currency
         create_element(invoice, "cbc:TaxCurrencyCode", "MYR")
 
-        invoice_Period = create_element(invoice, "cac:InvoicePeriod")
-        create_element(invoice_Period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
-        create_element(invoice_Period, "cbc:EndDate", str(sales_invoice_doc.due_date))
-        create_element(invoice_Period, "cbc:Description", "Monthly")
+        inv_period = create_element(invoice, "cac:InvoicePeriod")
+        create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
+        create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
+        create_element(inv_period, "cbc:Description", "Monthly")
 
     except Exception as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
