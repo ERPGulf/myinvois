@@ -108,8 +108,9 @@ def sign_data(line_xml):
             base64_bytes = base64.b64encode(signed_data)
             base64_string = base64_bytes.decode("ascii")
             # print(f"Encoded string: {base64_string}")
-        except InvalidSignature as ex:
-            raise Exception("An error occurred while signing the data.") from ex
+        except Exception as e:
+            frappe.throw(f"An error occurred while signing the data.: {str(e)}")
+           
         return base64_string
     except Exception as e:
         frappe.throw(f"Error in sign data: {str(e)}")
