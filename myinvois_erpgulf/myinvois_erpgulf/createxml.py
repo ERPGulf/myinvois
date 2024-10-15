@@ -488,7 +488,7 @@ def xml_structuring(invoice,sales_invoice_doc):
     with open(frappe.local.site + "/private/files/create.xml", 'w') as file:
         file.write(raw_xml)
     try:
-                    fileX = frappe.get_doc(
+                    fileXx = frappe.get_doc(
                         {   "doctype": "File",        
                             "file_type": "xml",  
                             "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
@@ -496,7 +496,7 @@ def xml_structuring(invoice,sales_invoice_doc):
                             "attached_to_name":sales_invoice_doc.name, 
                             "content": raw_xml,
                             "is_private": 1,})
-                    fileX.save()
+                    fileXx.save()
     except Exception as e:
                     frappe.throw(frappe.get_traceback())
     return raw_xml
