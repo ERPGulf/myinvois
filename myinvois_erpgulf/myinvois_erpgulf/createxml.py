@@ -80,34 +80,34 @@ def company_data(invoice, sales_invoice_doc):
 
         for address in address_list:
     
-            cac_PostalAddress = ET.SubElement(party_, "cac:PostalAddress")
-            city_name = ET.SubElement(cac_PostalAddress, "cbc:CityName")
+            post_add = ET.SubElement(party_, "cac:PostalAddress")
+            city_name = ET.SubElement(post_add, "cbc:CityName")
             city_name.text = address.city
 
-            postal_zone = ET.SubElement(cac_PostalAddress, "cbc:PostalZone")
+            postal_zone = ET.SubElement(post_add, "cbc:PostalZone")
             postal_zone.text = address.pincode
 
-            cntry_subentity_cod = ET.SubElement(cac_PostalAddress, "cbc:CountrySubentityCode")
+            cntry_subentity_cod = ET.SubElement(post_add, "cbc:CountrySubentityCode")
             cntry_subentity_cod.text = address.state
 
            
             if address.address_line1:
-                cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
                 line_val = ET.SubElement(cac_AddressLine, "cbc:Line")
                 line_val.text = address.address_line1
 
             if address.address_line2:
-                cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
                 line2_val = ET.SubElement(cac_AddressLine, "cbc:Line")
                 line2_val.text = address.address_line2
 
             combined_city_pincode = f"{address.city}, {address.pincode}"
-            cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+            cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
             line_3_val = ET.SubElement(cac_AddressLine, "cbc:Line")
             line_3_val.text = combined_city_pincode
 
 
-            cac_Country = ET.SubElement(cac_PostalAddress, "cac:Country")
+            cac_Country = ET.SubElement(post_add, "cac:Country")
             idntfn_cod = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
             idntfn_cod.text = "MYS"
 
@@ -152,8 +152,8 @@ def customer_data(invoice,sales_invoice_doc):
                     accounting_customer_party = ET.SubElement(invoice, "cac:AccountingCustomerParty")
                     cac_Party = ET.SubElement(accounting_customer_party, "cac:Party")
 
-                    party_Identification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    prty_id = ET.SubElement(party_Identification_1, "cbc:ID", schemeID="TIN")
+                    party_id_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+                    prty_id = ET.SubElement(party_id_1, "cbc:ID", schemeID="TIN")
                     prty_id.text = settings.customer_tin_number
 
                     party_Identifn_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
@@ -191,8 +191,8 @@ def customer_data(invoice,sales_invoice_doc):
                     idntfn_code_val= ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
                     idntfn_code_val.text = "MYS"
 
-                    cac_PartyLegalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
-                    reg_name_val = ET.SubElement(cac_PartyLegalEntity, "cbc:RegistrationName")
+                    party_legalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
+                    reg_name_val = ET.SubElement(party_legalEntity, "cbc:RegistrationName")
                     reg_name_val.text = sales_invoice_doc.customer
                     
                     cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
