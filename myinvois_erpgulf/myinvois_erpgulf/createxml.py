@@ -60,6 +60,45 @@ def salesinvoice_data(invoice, sales_invoice_doc):
     except Exception as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
 
+# def salesinvoice_data(invoice, sales_invoice_doc):
+#     try:
+    
+#         cbID1 = ET.SubElement(invoice, "cbc:ID")
+#         cbID1.text = str(sales_invoice_doc.name) 
+#         current_datetime_utc = datetime.now(timezone.utc)
+#         formatted_date = current_datetime_utc.strftime('%Y-%m-%d')
+#         formatted_time = current_datetime_utc.strftime('%H:%M:%SZ')
+
+#         Date1 = ET.SubElement(invoice, "cbc:IssueDate")
+#         Date1.text = formatted_date 
+#         Time1 = ET.SubElement(invoice, "cbc:IssueTime")
+#         Time1.text = formatted_time
+
+#         cbc_InvoiceTypeCode1 = ET.SubElement(invoice, "cbc:InvoiceTypeCode", listVersionID="1.0")
+#         if sales_invoice_doc.is_return == 0:
+#                         cbc_InvoiceTypeCode1.text = "01"
+#         elif sales_invoice_doc.is_return == 1:     
+#                         cbc_InvoiceTypeCode1.text = "02"
+        
+
+#         Document_Currency_Code = ET.SubElement(invoice, "cbc:DocumentCurrencyCode")
+#         Document_Currency_Code.text =  "MYR"                  #sales_invoice_doc.currency
+#         cbc_TaxCurrencyCode1 = ET.SubElement(invoice, "cbc:TaxCurrencyCode")
+#         cbc_TaxCurrencyCode1.text = "MYR"
+
+#         cac_InvoicePeriod = ET.SubElement(invoice, "cac:InvoicePeriod")
+
+#         start1 = ET.SubElement(cac_InvoicePeriod, "cbc:StartDate")
+#         start1.text = str(sales_invoice_doc.posting_date)
+#         end = ET.SubElement(cac_InvoicePeriod, "cbc:EndDate")
+#         end.text = str(sales_invoice_doc.due_date)
+
+
+#         cbc_Description1 = ET.SubElement(cac_InvoicePeriod, "cbc:Description")
+#         cbc_Description1.text = "Monthly"
+
+#     except Exception as e:
+#         frappe.msgprint(f"Error sales invoice data: {str(e)}")
 
 # Create billing reference
 # def create_billing_reference(invoice):
