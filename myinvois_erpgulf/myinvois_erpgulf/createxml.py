@@ -164,7 +164,7 @@ def customer_data(invoice, sales_invoice_doc):
     except Exception as e:
         frappe.throw(f"Error customer data: {str(e)}")
 
-# Create tax totals section
+
 def tax_total(invoice,sales_invoice_doc):
         try:
             taxable_amount = sales_invoice_doc.base_total - sales_invoice_doc.get('base_discount_amount', 0.0)
@@ -201,7 +201,6 @@ def tax_total_with_template(invoice, sales_invoice_doc):
     try:
         tax_category_totals = {}
 
-        # Group items by ZATCA tax category and calculate taxable amounts
         for item in sales_invoice_doc.items:
             item_tax_template = frappe.get_doc('Item Tax Template', item.item_tax_template)
             zatca_tax_category = item_tax_template.custom_zatca_tax_category
@@ -219,12 +218,12 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             else:
                 tax_category_totals[zatca_tax_category]["taxable_amount"] += abs(item.amount)
 
-        # Apply discount only once to the first tax category
+   
         first_tax_category = next(iter(tax_category_totals))
         base_discount_amount = sales_invoice_doc.get('discount_amount', 0.0)
         tax_category_totals[first_tax_category]["taxable_amount"] -= base_discount_amount
 
-        # Calculate tax amounts
+       
         for zatca_tax_category in tax_category_totals:
             taxable_amount = tax_category_totals[zatca_tax_category]["taxable_amount"]
             tax_rate = tax_category_totals[zatca_tax_category]["tax_rate"]
@@ -232,18 +231,17 @@ def tax_total_with_template(invoice, sales_invoice_doc):
                 round(taxable_amount * tax_rate / 100, 2)
             )
 
-        # Calculate total tax
+    
         total_tax = sum(
             totals["tax_amount"] for totals in tax_category_totals.values()
         )
         tax_amount_without_retention_sar = round(abs(total_tax), 2)
 
-        # Add TaxTotal XML element
         cac_TaxTotal = ET.SubElement(invoice, "cac:TaxTotal")
         cbc_TaxAmount = ET.SubElement(cac_TaxTotal, "cbc:TaxAmount", currencyID="MYR")
         cbc_TaxAmount.text = str(tax_amount_without_retention_sar)
 
-        # Add TaxSubtotal XML elements for each ZATCA tax category
+    
         for zatca_tax_category, totals in tax_category_totals.items():
             cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
             cbc_TaxableAmount = ET.SubElement(cac_TaxSubtotal, "cbc:TaxableAmount", currencyID="MYR")
