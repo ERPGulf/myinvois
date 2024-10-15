@@ -144,63 +144,6 @@ def company_data(invoice, sales_invoice_doc):
     except Exception as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
         
-def add_address_lines(cac_PostalAddress, address):
-    if address.address_line1:
-        create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", address.address_line1)
-    if address.address_line2:
-        create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", address.address_line2)
-
-def company_data(invoice, sales_invoice_doc):
-    try:
-        settings = frappe.get_doc('LHDN Malaysia Setting')
-        cac_AccountingSupplierParty = create_element(invoice, "cac:AccountingSupplierParty")
-        cac_Party = create_element(cac_AccountingSupplierParty, "cac:Party")
-
-        create_element(cac_Party, "cbc:IndustryClassificationCode", "62099", {"name": "Other information technology service activities n.e.c."})
-        
-        # Add Party Identifications
-        create_element(create_element(cac_Party, "cac:PartyIdentification"), "cbc:ID", str(settings.company_tin_number), {"schemeID": "TIN"})
-        create_element(create_element(cac_Party, "cac:PartyIdentification"), "cbc:ID", str(settings.company_id_value), {"schemeID": str(settings.company_id_type)})
-
-        address_list = frappe.get_list(
-            "Address", 
-            filters={"is_your_company_address": "1"}, 
-            fields=["address_line1", "address_line2", "city", "pincode", "state", "phone", "email_id"]
-        )
-
-        if not address_list:
-            frappe.throw("Invoice requires a proper address. Please add your company address in the Address field.")
-
-        for address in address_list:
-            cac_PostalAddress = create_element(cac_Party, "cac:PostalAddress")
-            create_element(cac_PostalAddress, "cbc:CityName", address.city)
-            create_element(cac_PostalAddress, "cbc:PostalZone", address.pincode)
-            create_element(cac_PostalAddress, "cbc:CountrySubentityCode", address.state)
-
-            # Add address lines
-            add_address_lines(cac_PostalAddress, address)
-
-            # Combine city and pincode
-            combined_city_pincode = f"{address.city}, {address.pincode}"
-            create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", combined_city_pincode)
-
-            # Add country code
-            cac_Country = create_element(cac_PostalAddress, "cac:Country")
-            create_element(cac_Country, "cbc:IdentificationCode", "MYS", {"listAgencyID": "6", "listID": "ISO3166-1"})
-
-        # Add Party Legal Entity
-        cac_PartyLegalEntity = create_element(cac_Party, "cac:PartyLegalEntity")
-        create_element(cac_PartyLegalEntity, "cbc:RegistrationName", sales_invoice_doc.company)
-
-        # Add contact details if available
-        cac_Contact = create_element(cac_Party, "cac:Contact")
-        if address.get("phone"):
-            create_element(cac_Contact, "cbc:Telephone", address.phone)
-        if address.get("email_id"):
-            create_element(cac_Contact, "cbc:ElectronicMail", address.email_id)
-
-    except Exception as e:
-        frappe.throw(f"Error in company data generation: {str(e)}")
 
 
 def customer_data(invoice,sales_invoice_doc):
