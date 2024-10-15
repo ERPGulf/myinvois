@@ -153,12 +153,12 @@ def customer_data(invoice,sales_invoice_doc):
                     cac_Party = ET.SubElement(cac_AccountingCustomerParty, "cac:Party")
 
                     cac_PartyIdentification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    cbc_ID_1 = ET.SubElement(cac_PartyIdentification_1, "cbc:ID", schemeID="TIN")
-                    cbc_ID_1.text = settings.customer_tin_number
+                    prty_id = ET.SubElement(cac_PartyIdentification_1, "cbc:ID", schemeID="TIN")
+                    prty_id.text = settings.customer_tin_number
 
                     cac_PartyIdentification_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    cbc_ID_2 = ET.SubElement(cac_PartyIdentification_2, "cbc:ID", schemeID=settings.customer_id_type)
-                    cbc_ID_2.text = settings.customer_id_value
+                    id_party2 = ET.SubElement(cac_PartyIdentification_2, "cbc:ID", schemeID=settings.customer_id_type)
+                    id_party2.text = settings.customer_id_value
 
 
                     if int(frappe.__version__.split('.')[0]) == 13:
@@ -166,41 +166,41 @@ def customer_data(invoice,sales_invoice_doc):
                     else:
                         address = frappe.get_doc("Address", customer_doc.customer_primary_address)
                     cac_PostalAddress = ET.SubElement(cac_Party, "cac:PostalAddress")
-                    cbc_CityName = ET.SubElement(cac_PostalAddress, "cbc:CityName")
-                    cbc_CityName.text = address.city
-                    cbc_PostalZone = ET.SubElement(cac_PostalAddress, "cbc:PostalZone")
-                    cbc_PostalZone.text = address.pincode 
-                    cbc_CountrySubentityCode = ET.SubElement(cac_PostalAddress, "cbc:CountrySubentityCode")
-                    cbc_CountrySubentityCode.text = address.state
+                    name_city = ET.SubElement(cac_PostalAddress, "cbc:CityName")
+                    name_city.text = address.city
+                    post_zone = ET.SubElement(cac_PostalAddress, "cbc:PostalZone")
+                    post_zone.text = address.pincode 
+                    cntry_sub_cod = ET.SubElement(cac_PostalAddress, "cbc:CountrySubentityCode")
+                    cntry_sub_cod.text = address.state
 
                     cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
-                    cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
-                    cbc_Line.text = address.address_line1
+                    add_line1 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_line1.text = address.address_line1
 
                     cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
-                    cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
-                    cbc_Line.text = address.address_line2
+                    add_line2 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_line2.text = address.address_line2
 
                     
                     combined_city_pincode = f"{address.city}, {address.pincode}"
                     cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
-                    cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
-                    cbc_Line.text = combined_city_pincode
+                    add_line3 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_line3.text = combined_city_pincode
 
                     cac_Country = ET.SubElement(cac_PostalAddress, "cac:Country")
-                    cbc_IdentificationCode = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
-                    cbc_IdentificationCode.text = "MYS"
+                    idntfn_code_val= ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
+                    idntfn_code_val.text = "MYS"
 
                     cac_PartyLegalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
-                    cbc_RegistrationName = ET.SubElement(cac_PartyLegalEntity, "cbc:RegistrationName")
-                    cbc_RegistrationName.text = sales_invoice_doc.customer
+                    reg_name_val = ET.SubElement(cac_PartyLegalEntity, "cbc:RegistrationName")
+                    reg_name_val.text = sales_invoice_doc.customer
                     
                     cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
-                    cbc_Telephone = ET.SubElement(cac_Contact, "cbc:Telephone")
-                    cbc_Telephone.text = str(address.phone)
+                    tele_party = ET.SubElement(cac_Contact, "cbc:Telephone")
+                    tele_party.text = str(address.phone)
                     
-                    cbc_ElectronicMail = ET.SubElement(cac_Contact, "cbc:ElectronicMail")
-                    cbc_ElectronicMail.text = str(address.email_id)
+                    mail_party = ET.SubElement(cac_Contact, "cbc:ElectronicMail")
+                    mail_party.text = str(address.email_id)
 
                 
             except Exception as e:
