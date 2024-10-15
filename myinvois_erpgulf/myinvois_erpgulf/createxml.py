@@ -115,14 +115,14 @@ def company_data(invoice, sales_invoice_doc):
         reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
         reg_name.text = sales_invoice_doc.company
 
-        cac_Contact = ET.SubElement(party_, "cac:Contact")
+        cont_ct = ET.SubElement(party_, "cac:Contact")
 
         if address.get("phone"):
-            tele = ET.SubElement(cac_Contact, "cbc:Telephone")
+            tele = ET.SubElement(cont_ct, "cbc:Telephone")
             tele.text = address.phone
 
         if address.get("email_id"):
-            mail = ET.SubElement(cac_Contact, "cbc:ElectronicMail")
+            mail = ET.SubElement(cont_ct, "cbc:ElectronicMail")
             mail.text = address.email_id
 
     except Exception as e:
@@ -187,19 +187,19 @@ def customer_data(invoice,sales_invoice_doc):
                     add_line3 = ET.SubElement(add_cust_line3, "cbc:Line")
                     add_line3.text = combined_city_pincode
 
-                    cac_Country = ET.SubElement(posta_address, "cac:Country")
-                    idntfn_code_val= ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
+                    cnty_customer = ET.SubElement(posta_address, "cac:Country")
+                    idntfn_code_val= ET.SubElement(cnty_customer, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
                     idntfn_code_val.text = "MYS"
 
                     party_legalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
                     reg_name_val = ET.SubElement(party_legalEntity, "cbc:RegistrationName")
                     reg_name_val.text = sales_invoice_doc.customer
                     
-                    cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
-                    tele_party = ET.SubElement(cac_Contact, "cbc:Telephone")
+                    cont_customer = ET.SubElement(cac_Party, "cac:Contact")
+                    tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
                     tele_party.text = str(address.phone)
                     
-                    mail_party = ET.SubElement(cac_Contact, "cbc:ElectronicMail")
+                    mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
                     mail_party.text = str(address.email_id)
 
                 
