@@ -92,23 +92,23 @@ def company_data(invoice, sales_invoice_doc):
 
            
             if address.address_line1:
-                cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
-                line_val = ET.SubElement(cac_AddressLine, "cbc:Line")
+                add_line1 = ET.SubElement(post_add, "cac:AddressLine")
+                line_val = ET.SubElement(add_line1, "cbc:Line")
                 line_val.text = address.address_line1
 
             if address.address_line2:
-                cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
-                line2_val = ET.SubElement(cac_AddressLine, "cbc:Line")
+                add_line2 = ET.SubElement(post_add, "cac:AddressLine")
+                line2_val = ET.SubElement(add_line2, "cbc:Line")
                 line2_val.text = address.address_line2
 
             combined_city_pincode = f"{address.city}, {address.pincode}"
-            cac_AddressLine = ET.SubElement(post_add, "cac:AddressLine")
-            line_3_val = ET.SubElement(cac_AddressLine, "cbc:Line")
+            add_line3 = ET.SubElement(post_add, "cac:AddressLine")
+            line_3_val = ET.SubElement(add_line3, "cbc:Line")
             line_3_val.text = combined_city_pincode
 
 
-            cac_Country = ET.SubElement(post_add, "cac:Country")
-            idntfn_cod = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
+            cntry = ET.SubElement(post_add, "cac:Country")
+            idntfn_cod = ET.SubElement(cntry, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
             idntfn_cod.text = "MYS"
 
         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
@@ -173,18 +173,18 @@ def customer_data(invoice,sales_invoice_doc):
                     cntry_sub_cod = ET.SubElement(posta_address, "cbc:CountrySubentityCode")
                     cntry_sub_cod.text = address.state
 
-                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
-                    add_line1 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_cust_line1 = ET.SubElement(posta_address, "cac:AddressLine")
+                    add_line1 = ET.SubElement(add_cust_line1, "cbc:Line")
                     add_line1.text = address.address_line1
 
-                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
-                    add_line2 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_cust_line2 = ET.SubElement(posta_address, "cac:AddressLine")
+                    add_line2 = ET.SubElement(add_cust_line2, "cbc:Line")
                     add_line2.text = address.address_line2
 
                     
                     combined_city_pincode = f"{address.city}, {address.pincode}"
-                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
-                    add_line3 = ET.SubElement(cac_AddressLine, "cbc:Line")
+                    add_cust_line3 = ET.SubElement(posta_address, "cac:AddressLine")
+                    add_line3 = ET.SubElement(add_cust_line3, "cbc:Line")
                     add_line3.text = combined_city_pincode
 
                     cac_Country = ET.SubElement(posta_address, "cac:Country")
