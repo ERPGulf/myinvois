@@ -323,25 +323,26 @@ def tax_total_with_template(invoice, sales_invoice_doc):
         frappe.throw(f"Error in tax total calculation: {str(e)}")
 
 
-def legal_monetary_total(invoice,sales_invoice_doc):
-        try:
+def legal_monetary_total(invoice, sales_invoice_doc):
+    try:
+    
+        discount_amount = sales_invoice_doc.get('discount_amount', 0.0)
+        taxable_amount_1 = sales_invoice_doc.total - discount_amount
+        tax_amount_without_retention = taxable_amount_1 * (sales_invoice_doc.taxes[0].rate) / 100
+        tax_exclusive_amount = abs(taxable_amount_1)
+        tax_inclusive_amount = tax_exclusive_amount + abs(round(tax_amount_without_retention, 2))
+        payable_amount = tax_inclusive_amount
 
-            taxable_amount_1 = sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)
-            tax_amount_without_retention = taxable_amount_1 * (sales_invoice_doc.taxes[0].rate) / 100
-            cac_LegalMonetaryTotal = ET.SubElement(invoice, "cac:LegalMonetaryTotal")
-            LineExtAmnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:LineExtensionAmount", currencyID="MYR")
-            LineExtAmnt.text =str(abs(sales_invoice_doc.total))
-            TaxExcAmnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:TaxExclusiveAmount", currencyID="MYR")
-            TaxExcAmnt.text = str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)))
-            TaxIncAmnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:TaxInclusiveAmount", currencyID="MYR")
-            TaxIncAmnt.text = str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)) + abs(round(tax_amount_without_retention, 2)))
-            AlwTotAmnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:AllowanceTotalAmount", currencyID="MYR")
-            AlwTotAmnt.text =  str(abs(sales_invoice_doc.get('discount_amount', 0.0)))
-            PayableAmnt = ET.SubElement(cac_LegalMonetaryTotal, "cbc:PayableAmount", currencyID="MYR")
-            PayableAmnt.text =  str(abs(sales_invoice_doc.total - sales_invoice_doc.get('discount_amount', 0.0)) + abs(round(tax_amount_without_retention, 2)))
+        cac_LegalMonetaryTotal = create_element(invoice, "cac:LegalMonetaryTotal")
+        
+        create_element(cac_LegalMonetaryTotal, "cbc:LineExtensionAmount", str(abs(sales_invoice_doc.total)), {"currencyID": "MYR"})
+        create_element(cac_LegalMonetaryTotal, "cbc:TaxExclusiveAmount", str(tax_exclusive_amount), {"currencyID": "MYR"})
+        create_element(cac_LegalMonetaryTotal, "cbc:TaxInclusiveAmount", str(tax_inclusive_amount), {"currencyID": "MYR"})
+        create_element(cac_LegalMonetaryTotal, "cbc:AllowanceTotalAmount", str(abs(discount_amount)), {"currencyID": "MYR"})
+        create_element(cac_LegalMonetaryTotal, "cbc:PayableAmount", str(payable_amount), {"currencyID": "MYR"})
 
-        except Exception as e:
-                frappe.throw(f"Error legal monetary: {str(e)}")
+    except Exception as e:
+        frappe.throw(f"Error legal monetary: {str(e)}")
 
 def get_Tax_for_Item(full_string,item):
                     try:                                          
