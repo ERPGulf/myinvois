@@ -143,6 +143,7 @@ def company_data(invoice, sales_invoice_doc):
 
     except Exception as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
+        
 def add_address_lines(cac_PostalAddress, address):
     if address.address_line1:
         create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", address.address_line1)
