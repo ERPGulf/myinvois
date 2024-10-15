@@ -46,10 +46,10 @@ def salesinvoice_data(invoice, sales_invoice_doc):
 
         cac_InvoicePeriod = ET.SubElement(invoice, "cac:InvoicePeriod")
 
-        cbc_StartDate1 = ET.SubElement(cac_InvoicePeriod, "cbc:StartDate")
-        cbc_StartDate1.text = str(sales_invoice_doc.posting_date)
-        cbc_EndDate1 = ET.SubElement(cac_InvoicePeriod, "cbc:EndDate")
-        cbc_EndDate1.text = str(sales_invoice_doc.due_date)
+        start1 = ET.SubElement(cac_InvoicePeriod, "cbc:StartDate")
+        start1.text = str(sales_invoice_doc.posting_date)
+        end = ET.SubElement(cac_InvoicePeriod, "cbc:EndDate")
+        end.text = str(sales_invoice_doc.due_date)
 
 
         cbc_Description1 = ET.SubElement(cac_InvoicePeriod, "cbc:Description")
@@ -498,7 +498,7 @@ def xml_structuring(invoice,sales_invoice_doc):
                             "is_private": 1,})
                     fileXx.save()
 
-                    
+
     except Exception as e:
                     frappe.throw(frappe.get_traceback())
     return raw_xml
