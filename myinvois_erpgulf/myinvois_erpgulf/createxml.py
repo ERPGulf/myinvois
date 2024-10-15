@@ -57,8 +57,8 @@ def company_data(invoice, sales_invoice_doc):
     try:
 
         settings = frappe.get_doc('LHDN Malaysia Setting')
-        cac_AccountingSupplierParty = ET.SubElement(invoice, "cac:AccountingSupplierParty")
-        cac_Party = ET.SubElement(cac_AccountingSupplierParty, "cac:Party")
+        account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
+        cac_Party = ET.SubElement(account_supplier_party, "cac:Party")
         cbc_IndClaCode = ET.SubElement(cac_Party, "cbc:IndustryClassificationCode", name="Other information technology service activities n.e.c.")
         cbc_IndClaCode.text = "62099" 
         cac_PartyIdentification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
@@ -111,8 +111,8 @@ def company_data(invoice, sales_invoice_doc):
             idntfn_cod = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
             idntfn_cod.text = "MYS"
 
-        cac_PartyLegalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
-        reg_name = ET.SubElement(cac_PartyLegalEntity, "cbc:RegistrationName")
+        party_legal_entity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
+        reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
         reg_name.text = sales_invoice_doc.company
 
         cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
@@ -149,15 +149,15 @@ def customer_data(invoice,sales_invoice_doc):
             try:
                     settings = frappe.get_doc('LHDN Malaysia Setting')
                     customer_doc= frappe.get_doc("Customer",sales_invoice_doc.customer)
-                    cac_AccountingCustomerParty = ET.SubElement(invoice, "cac:AccountingCustomerParty")
-                    cac_Party = ET.SubElement(cac_AccountingCustomerParty, "cac:Party")
+                    accounting_customer_party = ET.SubElement(invoice, "cac:AccountingCustomerParty")
+                    cac_Party = ET.SubElement(accounting_customer_party, "cac:Party")
 
-                    cac_PartyIdentification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    prty_id = ET.SubElement(cac_PartyIdentification_1, "cbc:ID", schemeID="TIN")
+                    party_Identification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+                    prty_id = ET.SubElement(party_Identification_1, "cbc:ID", schemeID="TIN")
                     prty_id.text = settings.customer_tin_number
 
-                    cac_PartyIdentification_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    id_party2 = ET.SubElement(cac_PartyIdentification_2, "cbc:ID", schemeID=settings.customer_id_type)
+                    party_Identifn_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+                    id_party2 = ET.SubElement(party_Identifn_2, "cbc:ID", schemeID=settings.customer_id_type)
                     id_party2.text = settings.customer_id_value
 
 
@@ -165,29 +165,29 @@ def customer_data(invoice,sales_invoice_doc):
                         address = frappe.get_doc("Address", sales_invoice_doc.customer_address)    
                     else:
                         address = frappe.get_doc("Address", customer_doc.customer_primary_address)
-                    cac_PostalAddress = ET.SubElement(cac_Party, "cac:PostalAddress")
-                    name_city = ET.SubElement(cac_PostalAddress, "cbc:CityName")
+                    posta_address = ET.SubElement(cac_Party, "cac:PostalAddress")
+                    name_city = ET.SubElement(posta_address, "cbc:CityName")
                     name_city.text = address.city
-                    post_zone = ET.SubElement(cac_PostalAddress, "cbc:PostalZone")
+                    post_zone = ET.SubElement(posta_address, "cbc:PostalZone")
                     post_zone.text = address.pincode 
-                    cntry_sub_cod = ET.SubElement(cac_PostalAddress, "cbc:CountrySubentityCode")
+                    cntry_sub_cod = ET.SubElement(posta_address, "cbc:CountrySubentityCode")
                     cntry_sub_cod.text = address.state
 
-                    cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
                     add_line1 = ET.SubElement(cac_AddressLine, "cbc:Line")
                     add_line1.text = address.address_line1
 
-                    cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
                     add_line2 = ET.SubElement(cac_AddressLine, "cbc:Line")
                     add_line2.text = address.address_line2
 
                     
                     combined_city_pincode = f"{address.city}, {address.pincode}"
-                    cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                    cac_AddressLine = ET.SubElement(posta_address, "cac:AddressLine")
                     add_line3 = ET.SubElement(cac_AddressLine, "cbc:Line")
                     add_line3.text = combined_city_pincode
 
-                    cac_Country = ET.SubElement(cac_PostalAddress, "cac:Country")
+                    cac_Country = ET.SubElement(posta_address, "cac:Country")
                     idntfn_code_val= ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
                     idntfn_code_val.text = "MYS"
 
