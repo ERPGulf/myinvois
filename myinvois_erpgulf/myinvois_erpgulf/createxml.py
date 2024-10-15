@@ -68,61 +68,78 @@ def salesinvoice_data(invoice, sales_invoice_doc):
 #                 frappe.msgprint(f"Error create billing: {str(e)}")
 
 
-        
-def add_address_lines(cac_PostalAddress, address):
-    if address.address_line1:
-        create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", address.address_line1)
-    if address.address_line2:
-        create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", address.address_line2)
 
 def company_data(invoice, sales_invoice_doc):
     try:
+
         settings = frappe.get_doc('LHDN Malaysia Setting')
-        cac_AccountingSupplierParty = create_element(invoice, "cac:AccountingSupplierParty")
-        cac_Party = create_element(cac_AccountingSupplierParty, "cac:Party")
+        cac_AccountingSupplierParty = ET.SubElement(invoice, "cac:AccountingSupplierParty")
+        cac_Party = ET.SubElement(cac_AccountingSupplierParty, "cac:Party")
+        cbc_IndustryClassificationCode = ET.SubElement(cac_Party, "cbc:IndustryClassificationCode", name="Other information technology service activities n.e.c.")
+        cbc_IndustryClassificationCode.text = "62099" #refer the name and code as per the company
+        cac_PartyIdentification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        cbc_ID_1 = ET.SubElement(cac_PartyIdentification_1, "cbc:ID", schemeID="TIN")
+        cbc_ID_1.text = str(settings.company_tin_number)
 
-        create_element(cac_Party, "cbc:IndustryClassificationCode", "62099", {"name": "Other information technology service activities n.e.c."})
+        cac_PartyIdentification_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        cbc_ID_2 = ET.SubElement(cac_PartyIdentification_2, "cbc:ID", schemeID=str(settings.company_id_type))
+        cbc_ID_2.text = str(settings.company_id_value)
         
-        # Add Party Identifications
-        create_element(create_element(cac_Party, "cac:PartyIdentification"), "cbc:ID", str(settings.company_tin_number), {"schemeID": "TIN"})
-        create_element(create_element(cac_Party, "cac:PartyIdentification"), "cbc:ID", str(settings.company_id_value), {"schemeID": str(settings.company_id_type)})
-
         address_list = frappe.get_list(
             "Address", 
             filters={"is_your_company_address": "1"}, 
             fields=["address_line1", "address_line2", "city", "pincode", "state", "phone", "email_id"]
         )
 
-        if not address_list:
+        if len(address_list) == 0:
             frappe.throw("Invoice requires a proper address. Please add your company address in the Address field.")
 
         for address in address_list:
-            cac_PostalAddress = create_element(cac_Party, "cac:PostalAddress")
-            create_element(cac_PostalAddress, "cbc:CityName", address.city)
-            create_element(cac_PostalAddress, "cbc:PostalZone", address.pincode)
-            create_element(cac_PostalAddress, "cbc:CountrySubentityCode", address.state)
+    
+            cac_PostalAddress = ET.SubElement(cac_Party, "cac:PostalAddress")
+            cbc_CityName = ET.SubElement(cac_PostalAddress, "cbc:CityName")
+            cbc_CityName.text = address.city
 
-            # Add address lines
-            add_address_lines(cac_PostalAddress, address)
+            cbc_PostalZone = ET.SubElement(cac_PostalAddress, "cbc:PostalZone")
+            cbc_PostalZone.text = address.pincode
 
-            # Combine city and pincode
+            cbc_CountrySubentityCode = ET.SubElement(cac_PostalAddress, "cbc:CountrySubentityCode")
+            cbc_CountrySubentityCode.text = address.state
+
+           
+            if address.address_line1:
+                cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
+                cbc_Line.text = address.address_line1
+
+            if address.address_line2:
+                cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+                cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
+                cbc_Line.text = address.address_line2
+
             combined_city_pincode = f"{address.city}, {address.pincode}"
-            create_element(create_element(cac_PostalAddress, "cac:AddressLine"), "cbc:Line", combined_city_pincode)
+            cac_AddressLine = ET.SubElement(cac_PostalAddress, "cac:AddressLine")
+            cbc_Line = ET.SubElement(cac_AddressLine, "cbc:Line")
+            cbc_Line.text = combined_city_pincode
 
-            # Add country code
-            cac_Country = create_element(cac_PostalAddress, "cac:Country")
-            create_element(cac_Country, "cbc:IdentificationCode", "MYS", {"listAgencyID": "6", "listID": "ISO3166-1"})
 
-        # Add Party Legal Entity
-        cac_PartyLegalEntity = create_element(cac_Party, "cac:PartyLegalEntity")
-        create_element(cac_PartyLegalEntity, "cbc:RegistrationName", sales_invoice_doc.company)
+            cac_Country = ET.SubElement(cac_PostalAddress, "cac:Country")
+            cbc_IdentificationCode = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
+            cbc_IdentificationCode.text = "MYS"
 
-        # Add contact details if available
-        cac_Contact = create_element(cac_Party, "cac:Contact")
+        cac_PartyLegalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
+        cbc_RegistrationName = ET.SubElement(cac_PartyLegalEntity, "cbc:RegistrationName")
+        cbc_RegistrationName.text = sales_invoice_doc.company
+
+        cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
+
         if address.get("phone"):
-            create_element(cac_Contact, "cbc:Telephone", address.phone)
+            cbc_Telephone = ET.SubElement(cac_Contact, "cbc:Telephone")
+            cbc_Telephone.text = address.phone
+
         if address.get("email_id"):
-            create_element(cac_Contact, "cbc:ElectronicMail", address.email_id)
+            cbc_ElectronicMail = ET.SubElement(cac_Contact, "cbc:ElectronicMail")
+            cbc_ElectronicMail.text = address.email_id
 
     except Exception as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
