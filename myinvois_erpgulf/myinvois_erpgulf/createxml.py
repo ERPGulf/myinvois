@@ -27,10 +27,10 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         formatted_date = current_datetime_utc.strftime('%Y-%m-%d')
         formatted_time = current_datetime_utc.strftime('%H:%M:%SZ')
 
-        Issue_Date1 = ET.SubElement(invoice, "cbc:IssueDate")
-        Issue_Date1.text = formatted_date 
-        Issue_Time1 = ET.SubElement(invoice, "cbc:IssueTime")
-        Issue_Time1.text = formatted_time
+        Date1 = ET.SubElement(invoice, "cbc:IssueDate")
+        Date1.text = formatted_date 
+        Time1 = ET.SubElement(invoice, "cbc:IssueTime")
+        Time1.text = formatted_time
 
         cbc_InvoiceTypeCode1 = ET.SubElement(invoice, "cbc:InvoiceTypeCode", listVersionID="1.0")
         if sales_invoice_doc.is_return == 0:
