@@ -346,64 +346,64 @@ def get_Tax_for_Item(full_string,item):
 def invoice_line_item(invoice, sales_invoice_doc):
     try:
         for single_item in sales_invoice_doc.items:
-            cac_InvoiceLine = ET.SubElement(invoice, "cac:InvoiceLine")
-            cbc_ID = ET.SubElement(cac_InvoiceLine, "cbc:ID")
-            cbc_ID.text = str(single_item.idx)
-            cbc_InvoicedQuantity = ET.SubElement(cac_InvoiceLine, "cbc:InvoicedQuantity", unitCode="H87")
-            cbc_InvoicedQuantity.text = str(abs(single_item.qty))
-            cbc_LineExtensionAmount = ET.SubElement(cac_InvoiceLine, "cbc:LineExtensionAmount", currencyID="MYR")
-            cbc_LineExtensionAmount.text = str(abs(single_item.amount))
+            invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
+            item_id = ET.SubElement(invoice_line, "cbc:ID")
+            item_id.text = str(single_item.idx)
+            item_qty = ET.SubElement(invoice_line, "cbc:InvoicedQuantity", unitCode="H87")
+            item_qty.text = str(abs(single_item.qty))
+            item_line_exte_amnt = ET.SubElement(invoice_line, "cbc:LineExtensionAmount", currencyID="MYR")
+            item_line_exte_amnt.text = str(abs(single_item.amount))
 
             discount_amount = abs(single_item.get('discount_amount', 0.0))
             if discount_amount > 0:
-                cac_AllowanceCharge = ET.SubElement(cac_InvoiceLine, "cac:AllowanceCharge")
-                cbc_ChargeIndicator = ET.SubElement(cac_AllowanceCharge, "cbc:ChargeIndicator")
-                cbc_ChargeIndicator.text = "false"
-                cbc_AllowanceChargeReason = ET.SubElement(cac_AllowanceCharge, "cbc:AllowanceChargeReason")
-                cbc_AllowanceChargeReason.text = "Item Discount"
-                cbc_MultiplierFactorNumeric = ET.SubElement(cac_AllowanceCharge, "cbc:MultiplierFactorNumeric")
-                cbc_MultiplierFactorNumeric.text = "1"
-                cbc_Amount = ET.SubElement(cac_AllowanceCharge, "cbc:Amount", currencyID="MYR")
-                cbc_Amount.text = str(discount_amount)
+                allw_chrge = ET.SubElement(invoice_line, "cac:AllowanceCharge")
+                chrg_indic = ET.SubElement(allw_chrge, "cbc:ChargeIndicator")
+                chrg_indic.text = "false"
+                allwa_chrge_reson = ET.SubElement(allw_chrge, "cbc:AllowanceChargeReason")
+                allwa_chrge_reson.text = "Item Discount"
+                multi_fac = ET.SubElement(allw_chrge, "cbc:MultiplierFactorNumeric")
+                multi_fac.text = "1"
+                amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID="MYR")
+                amnt.text = str(discount_amount)
 
            
-            cac_TaxTotal = ET.SubElement(cac_InvoiceLine, "cac:TaxTotal")
-            cbc_TaxAmount = ET.SubElement(cac_TaxTotal, "cbc:TaxAmount", currencyID="MYR")
-            cbc_TaxAmount.text = str(abs(round((sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2)))
+            tax_total = ET.SubElement(invoice_line, "cac:TaxTotal")
+            tax_amount_item = ET.SubElement(tax_total, "cbc:TaxAmount", currencyID="MYR")
+            tax_amount_item.text = str(abs(round((sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2)))
 
-            cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
-            cbc_TaxableAmount = ET.SubElement(cac_TaxSubtotal, "cbc:TaxableAmount", currencyID="MYR")
-            cbc_TaxableAmount.text = str(abs(single_item.amount - discount_amount))
-            cbc_TaxAmount = ET.SubElement(cac_TaxSubtotal, "cbc:TaxAmount", currencyID="MYR")
-            cbc_TaxAmount.text = str(abs(round((sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2)))
+            tax_subtot_item = ET.SubElement(tax_total, "cac:TaxSubtotal")
+            taxable_amnt_item = ET.SubElement(tax_subtot_item, "cbc:TaxableAmount", currencyID="MYR")
+            taxable_amnt_item.text = str(abs(single_item.amount - discount_amount))
+            tax_amnt = ET.SubElement(tax_subtot_item, "cbc:TaxAmount", currencyID="MYR")
+            tax_amnt.text = str(abs(round((sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2)))
 
-            cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
-            cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
-            cbc_ID.text = str(sales_invoice_doc.custom_zatca_tax_category)
-            cbc_Percent = ET.SubElement(cac_TaxCategory, "cbc:Percent")
-            cbc_Percent.text = str(sales_invoice_doc.taxes[0].rate)
-            cac_TaxScheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
-            cbc_TaxScheme_ID = ET.SubElement(cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153")
-            cbc_TaxScheme_ID.text = "OTH"
+            tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
+            cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
+            cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
+            item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
+            item_prct.text = str(sales_invoice_doc.taxes[0].rate)
+            tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
+            tax_id_scheme_item = ET.SubElement(tax_scheme_item, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153")
+            tax_id_scheme_item.text = "OTH"
 
             
-            cac_Item = ET.SubElement(cac_InvoiceLine, "cac:Item")
-            cbc_Description = ET.SubElement(cac_Item, "cbc:Description")
-            cbc_Description.text = str(single_item.description)
+            item_data = ET.SubElement(invoice_line, "cac:Item")
+            descp_item = ET.SubElement(item_data, "cbc:Description")
+            descp_item.text = str(single_item.description)
 
-            cac_CommodityClassification = ET.SubElement(cac_Item, "cac:CommodityClassification")
-            cbc_ItemClassificationCode = ET.SubElement(cac_CommodityClassification, "cbc:ItemClassificationCode", listID="CLASS")
-            cbc_ItemClassificationCode.text =str(sales_invoice_doc.custom_item_classification_code_)
+            comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
+            item_class_cod = ET.SubElement(comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS")
+            item_class_cod.text =str(sales_invoice_doc.custom_item_classification_code_)
 
            
-            cac_Price = ET.SubElement(cac_InvoiceLine, "cac:Price")
-            cbc_PriceAmount = ET.SubElement(cac_Price, "cbc:PriceAmount", currencyID="MYR")
-            cbc_PriceAmount.text = str(abs(single_item.base_price_list_rate) - discount_amount)
+            price_item = ET.SubElement(invoice_line, "cac:Price")
+            pri_amnt_item = ET.SubElement(price_item, "cbc:PriceAmount", currencyID="MYR")
+            pri_amnt_item.text = str(abs(single_item.base_price_list_rate) - discount_amount)
 
             
-            cac_ItemPriceExtension = ET.SubElement(cac_InvoiceLine, "cac:ItemPriceExtension")
-            cbc_Amount = ET.SubElement(cac_ItemPriceExtension, "cbc:Amount", currencyID="MYR")
-            cbc_Amount.text = str(abs(single_item.base_amount))
+            item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
+            item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID="MYR")
+            item_val_amnt.text = str(abs(single_item.base_amount))
 
     except Exception as e:
         frappe.throw(f"Error in invoice_line: {str(e)}")
