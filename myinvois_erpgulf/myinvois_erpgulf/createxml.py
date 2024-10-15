@@ -21,39 +21,39 @@ def create_invoice_with_extensions():
 def salesinvoice_data(invoice, sales_invoice_doc):
     try:
     
-        cbc_ID = ET.SubElement(invoice, "cbc:ID")
-        cbc_ID.text = str(sales_invoice_doc.name) 
+        cbc_ID1 = ET.SubElement(invoice, "cbc:ID")
+        cbc_ID1.text = str(sales_invoice_doc.name) 
         current_datetime_utc = datetime.now(timezone.utc)
         formatted_date = current_datetime_utc.strftime('%Y-%m-%d')
         formatted_time = current_datetime_utc.strftime('%H:%M:%SZ')
 
-        cbc_IssueDate = ET.SubElement(invoice, "cbc:IssueDate")
-        cbc_IssueDate.text = formatted_date 
-        cbc_IssueTime = ET.SubElement(invoice, "cbc:IssueTime")
-        cbc_IssueTime.text = formatted_time
+        cbc_IssueDate1 = ET.SubElement(invoice, "cbc:IssueDate")
+        cbc_IssueDate1.text = formatted_date 
+        cbc_IssueTime1 = ET.SubElement(invoice, "cbc:IssueTime")
+        cbc_IssueTime1.text = formatted_time
 
-        cbc_InvoiceTypeCode = ET.SubElement(invoice, "cbc:InvoiceTypeCode", listVersionID="1.0")
+        cbc_InvoiceTypeCode1 = ET.SubElement(invoice, "cbc:InvoiceTypeCode", listVersionID="1.0")
         if sales_invoice_doc.is_return == 0:
-                        cbc_InvoiceTypeCode.text = "01"
+                        cbc_InvoiceTypeCode1.text = "01"
         elif sales_invoice_doc.is_return == 1:     
-                        cbc_InvoiceTypeCode.text = "02"
+                        cbc_InvoiceTypeCode1.text = "02"
         
 
-        cbc_DocumentCurrencyCode = ET.SubElement(invoice, "cbc:DocumentCurrencyCode")
-        cbc_DocumentCurrencyCode.text =  "MYR"                  #sales_invoice_doc.currency
-        cbc_TaxCurrencyCode = ET.SubElement(invoice, "cbc:TaxCurrencyCode")
-        cbc_TaxCurrencyCode.text = "MYR"
+        cbc_DocumentCurrencyCode1 = ET.SubElement(invoice, "cbc:DocumentCurrencyCode")
+        cbc_DocumentCurrencyCode1.text =  "MYR"                  #sales_invoice_doc.currency
+        cbc_TaxCurrencyCode1 = ET.SubElement(invoice, "cbc:TaxCurrencyCode")
+        cbc_TaxCurrencyCode1.text = "MYR"
 
         cac_InvoicePeriod = ET.SubElement(invoice, "cac:InvoicePeriod")
 
-        cbc_StartDate = ET.SubElement(cac_InvoicePeriod, "cbc:StartDate")
-        cbc_StartDate.text = str(sales_invoice_doc.posting_date)
-        cbc_EndDate = ET.SubElement(cac_InvoicePeriod, "cbc:EndDate")
-        cbc_EndDate.text = str(sales_invoice_doc.due_date)
+        cbc_StartDate1 = ET.SubElement(cac_InvoicePeriod, "cbc:StartDate")
+        cbc_StartDate1.text = str(sales_invoice_doc.posting_date)
+        cbc_EndDate1 = ET.SubElement(cac_InvoicePeriod, "cbc:EndDate")
+        cbc_EndDate1.text = str(sales_invoice_doc.due_date)
 
 
-        cbc_Description = ET.SubElement(cac_InvoicePeriod, "cbc:Description")
-        cbc_Description.text = "Monthly"
+        cbc_Description1 = ET.SubElement(cac_InvoicePeriod, "cbc:Description")
+        cbc_Description1.text = "Monthly"
 
     except Exception as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
