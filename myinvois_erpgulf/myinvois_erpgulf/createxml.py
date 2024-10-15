@@ -21,16 +21,16 @@ def create_invoice_with_extensions():
 def salesinvoice_data(invoice, sales_invoice_doc):
     try:
     
-        cbc_ID1 = ET.SubElement(invoice, "cbc:ID")
-        cbc_ID1.text = str(sales_invoice_doc.name) 
+        cbID1 = ET.SubElement(invoice, "cbc:ID")
+        cbID1.text = str(sales_invoice_doc.name) 
         current_datetime_utc = datetime.now(timezone.utc)
         formatted_date = current_datetime_utc.strftime('%Y-%m-%d')
         formatted_time = current_datetime_utc.strftime('%H:%M:%SZ')
 
-        cbc_IssueDate1 = ET.SubElement(invoice, "cbc:IssueDate")
-        cbc_IssueDate1.text = formatted_date 
-        cbc_IssueTime1 = ET.SubElement(invoice, "cbc:IssueTime")
-        cbc_IssueTime1.text = formatted_time
+        Issue_Date1 = ET.SubElement(invoice, "cbc:IssueDate")
+        Issue_Date1.text = formatted_date 
+        Issue_Time1 = ET.SubElement(invoice, "cbc:IssueTime")
+        Issue_Time1.text = formatted_time
 
         cbc_InvoiceTypeCode1 = ET.SubElement(invoice, "cbc:InvoiceTypeCode", listVersionID="1.0")
         if sales_invoice_doc.is_return == 0:
@@ -39,8 +39,8 @@ def salesinvoice_data(invoice, sales_invoice_doc):
                         cbc_InvoiceTypeCode1.text = "02"
         
 
-        cbc_DocumentCurrencyCode1 = ET.SubElement(invoice, "cbc:DocumentCurrencyCode")
-        cbc_DocumentCurrencyCode1.text =  "MYR"                  #sales_invoice_doc.currency
+        Document_Currency_Code = ET.SubElement(invoice, "cbc:DocumentCurrencyCode")
+        Document_Currency_Code.text =  "MYR"                  #sales_invoice_doc.currency
         cbc_TaxCurrencyCode1 = ET.SubElement(invoice, "cbc:TaxCurrencyCode")
         cbc_TaxCurrencyCode1.text = "MYR"
 
