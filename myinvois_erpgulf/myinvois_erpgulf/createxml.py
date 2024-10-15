@@ -45,10 +45,10 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:DocumentCurrencyCode", "MYR")  # or sales_invoice_doc.currency
         create_element(invoice, "cbc:TaxCurrencyCode", "MYR")
 
-        cac_InvoicePeriod = create_element(invoice, "cac:InvoicePeriod")
-        create_element(cac_InvoicePeriod, "cbc:StartDate", str(sales_invoice_doc.posting_date))
-        create_element(cac_InvoicePeriod, "cbc:EndDate", str(sales_invoice_doc.due_date))
-        create_element(cac_InvoicePeriod, "cbc:Description", "Monthly")
+        invoice_Period = create_element(invoice, "cac:InvoicePeriod")
+        create_element(invoice_Period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
+        create_element(invoice_Period, "cbc:EndDate", str(sales_invoice_doc.due_date))
+        create_element(invoice_Period, "cbc:Description", "Monthly")
 
     except Exception as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
@@ -58,15 +58,15 @@ def company_data(invoice, sales_invoice_doc):
 
         settings = frappe.get_doc('LHDN Malaysia Setting')
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
-        cac_Party = ET.SubElement(account_supplier_party, "cac:Party")
-        cbc_IndClaCode = ET.SubElement(cac_Party, "cbc:IndustryClassificationCode", name="Other information technology service activities n.e.c.")
+        party_ = ET.SubElement(account_supplier_party, "cac:Party")
+        cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name="Other information technology service activities n.e.c.")
         cbc_IndClaCode.text = "62099" 
-        cac_PartyIdentification_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-        id_val_1 = ET.SubElement(cac_PartyIdentification_1, "cbc:ID", schemeID="TIN")
+        party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
+        id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
         id_val_1.text = str(settings.company_tin_number)
 
-        cac_PartyIdentification_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-        value_id = ET.SubElement(cac_PartyIdentification_2, "cbc:ID", schemeID=str(settings.company_id_type))
+        partyid_2 = ET.SubElement(party_, "cac:PartyIdentification")
+        value_id = ET.SubElement(partyid_2, "cbc:ID", schemeID=str(settings.company_id_type))
         value_id.text = str(settings.company_id_value)
         
         address_list = frappe.get_list(
@@ -80,7 +80,7 @@ def company_data(invoice, sales_invoice_doc):
 
         for address in address_list:
     
-            cac_PostalAddress = ET.SubElement(cac_Party, "cac:PostalAddress")
+            cac_PostalAddress = ET.SubElement(party_, "cac:PostalAddress")
             city_name = ET.SubElement(cac_PostalAddress, "cbc:CityName")
             city_name.text = address.city
 
@@ -111,11 +111,11 @@ def company_data(invoice, sales_invoice_doc):
             idntfn_cod = ET.SubElement(cac_Country, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1")
             idntfn_cod.text = "MYS"
 
-        party_legal_entity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
+        party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
         reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
         reg_name.text = sales_invoice_doc.company
 
-        cac_Contact = ET.SubElement(cac_Party, "cac:Contact")
+        cac_Contact = ET.SubElement(party_, "cac:Contact")
 
         if address.get("phone"):
             tele = ET.SubElement(cac_Contact, "cbc:Telephone")
