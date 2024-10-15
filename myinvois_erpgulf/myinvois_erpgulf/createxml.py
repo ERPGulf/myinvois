@@ -3,8 +3,7 @@ from xml.dom import minidom
 from datetime import datetime, timezone
 import frappe
 import json
-# frappe.init(site="myinvois.erpgulf.com")
-# frappe.connect()
+
 
 def create_invoice_with_extensions():
                 
