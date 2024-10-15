@@ -497,6 +497,8 @@ def xml_structuring(invoice,sales_invoice_doc):
                             "content": raw_xml,
                             "is_private": 1,})
                     fileXx.save()
+
+                    
     except Exception as e:
                     frappe.throw(frappe.get_traceback())
     return raw_xml
