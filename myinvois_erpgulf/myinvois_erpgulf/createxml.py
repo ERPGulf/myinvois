@@ -3,8 +3,23 @@ from xml.dom import minidom
 from datetime import datetime, timezone
 import frappe
 import json
+import re
 
-
+def get_icv_code(invoice_number):
+    """
+    Extracts the numeric part from the invoice number to generate the ICV code.
+    """
+    try:
+        icv_code = re.sub(
+            r"\D", "", invoice_number
+        )  # taking the number part only from doc name
+        return icv_code
+    except TypeError as e:
+        frappe.throw("Type error in getting ICV number: " + str(e))
+        return None
+    except re.error as e:
+        frappe.throw("Regex error in getting ICV number: " + str(e))
+        return None
 def create_invoice_with_extensions():
                 
             try:
@@ -23,7 +38,7 @@ def create_element(parent, tag, text=None, attributes=None):
     element = ET.SubElement(parent, tag, attributes or {})
     if text:
         element.text = text
-    return element
+    return element         
 
 def get_current_utc_datetime():
     current_datetime_utc = datetime.now(timezone.utc)
@@ -31,7 +46,21 @@ def get_current_utc_datetime():
     formatted_time = current_datetime_utc.strftime('%H:%M:%SZ')
     return formatted_date, formatted_time
 
-def salesinvoice_data(invoice, sales_invoice_doc):
+def add_billing_reference(invoice,invoice_number):
+    """Adds BillingReference with InvoiceDocumentReference to the invoice"""
+    invoice_id=get_icv_code(invoice_number)
+    billing_reference = create_element(invoice, "cac:BillingReference")
+    invoice_document_reference = create_element(billing_reference, "cac:InvoiceDocumentReference")
+    create_element(invoice_document_reference, "cbc:ID", invoice_id)
+    # create_element(invoice_document_reference, "cbc:UUID", uuid)
+
+def add_signature(invoice):
+    """Adds Signature to the invoice"""
+    signature = create_element(invoice, "cac:Signature")
+    create_element(signature, "cbc:ID", "urn:oasis:names:specification:ubl:signature:Invoice")
+    create_element(signature, "cbc:SignatureMethod", "urn:oasis:names:specification:ubl:dsig:enveloped:xades")
+
+def salesinvoice_data(invoice, sales_invoice_doc):     
     try:
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
 
@@ -40,6 +69,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:IssueTime", formatted_time)
 
         invoice_type_code = "01" if sales_invoice_doc.is_return == 0 else "02"
+        # invoice_type_code = sales_invoice_doc.custom_invoice_type_code if sales_invoice_doc.custom_invoice_type_code else "01"
         create_element(invoice, "cbc:InvoiceTypeCode", invoice_type_code, {"listVersionID": "1.0"})
 
         create_element(invoice, "cbc:DocumentCurrencyCode", "MYR")  # or sales_invoice_doc.currency
@@ -49,6 +79,8 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
         create_element(inv_period, "cbc:Description", "Monthly")
+        add_billing_reference(invoice,invoice_number=sales_invoice_doc.name)
+        add_signature(invoice)
 
     except Exception as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
@@ -57,10 +89,11 @@ def company_data(invoice, sales_invoice_doc):
     try:
 
         settings = frappe.get_doc('LHDN Malaysia Setting')
+        company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-        cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name="Other information technology service activities n.e.c.")
-        cbc_IndClaCode.text = "62099" 
+        cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
+        cbc_IndClaCode.text = company_doc.custom_msic_code_            #"62099" 
         party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
         id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
         id_val_1.text = str(settings.company_tin_number)
@@ -129,19 +162,6 @@ def company_data(invoice, sales_invoice_doc):
         frappe.throw(f"Error in company data generation: {str(e)}")
 
 
-# Create billing reference
-# def create_billing_reference(invoice):
-#             try:
-
-
-#                 cac_BillingReference = ET.SubElement(invoice, "cac:BillingReference")
-#                 cac_AdditionalDocumentReference = ET.SubElement(cac_BillingReference, "cac:AdditionalDocumentReference")
-#                 cbc_ID = ET.SubElement(cac_AdditionalDocumentReference, "cbc:ID")
-#                 cbc_ID.text = "IV0000010178689"
-
-#             except Exception as e:
-#                 frappe.msgprint(f"Error create billing: {str(e)}")
-
 
 
 
@@ -206,6 +226,39 @@ def customer_data(invoice,sales_invoice_doc):
             except Exception as e:
                 frappe.throw(f"Error customer data: {str(e)}")
 
+
+def payment_data(invoice,sales_invoice_doc):
+    """Adds PaymentMeans and PaymentTerms to the invoice based on the payment mode"""
+    try:
+        # Mapping payment mode to PaymentMeansCode
+        payment_mode_code_map = {
+            "Cash": "01",
+            "Cheque": "02",
+            "Bank Transfer": "03",
+            "Credit Card": "04",
+            "Debit Card": "05",
+            "E-wallet": "06"
+        }
+        payment_mode = sales_invoice_doc.custom_payment_mode
+        # Get the payment means code, default to "01" (Cash) if mode not found
+        payment_means_code = payment_mode_code_map.get(payment_mode, "01")
+
+        # Add PaymentMeans
+        payment_means = ET.SubElement(invoice, "cac:PaymentMeans")
+        payment_means_code_element = ET.SubElement(payment_means, "cbc:PaymentMeansCode")
+        payment_means_code_element.text = payment_means_code
+
+        payee_financial_account = ET.SubElement(payment_means, "cac:PayeeFinancialAccount")
+        payee_id = ET.SubElement(payee_financial_account, "cbc:ID")
+        payee_id.text = "L1"
+
+        # Add PaymentTerms
+        payment_terms = ET.SubElement(invoice, "cac:PaymentTerms")
+        payment_note = ET.SubElement(payment_terms, "cbc:Note")
+        payment_note.text = payment_mode  # Note is the payment mode name (Cash, Cheque, etc.)
+
+    except Exception as e:
+        frappe.throw(f"Error adding payment data: {str(e)}")
 
 
 def tax_total(invoice,sales_invoice_doc):

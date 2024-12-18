@@ -9,9 +9,11 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, BestAvailableEncryption, PrivateFormat
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
-from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template
+from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data
 import frappe       
 import requests
+import re 
+
 
 def xml_hash():
     try:
@@ -223,7 +225,9 @@ def ubl_extension_string(doc_hash,prop_cert_base64,signature,certificate_base64,
             frappe.throw(f"Error ubl extension string: {str(e)}")
 
 
-def submission_url():
+    
+
+def submission_url(sales_invoice_doc):
                 
             try:
 
@@ -236,12 +240,13 @@ def submission_url():
                 # print(sha256_hash)
                 encoded_xml = base64.b64encode(xml_data).decode('utf-8')
                 # print(encoded_xml)
+                invoice_number = sales_invoice_doc.name
                 json_payload = {
                     "documents": [
                         {
                             "format": "XML",
                             "documentHash": sha256_hash,
-                            "codeNumber": "INV 15",
+                            "codeNumber": get_icv_code(invoice_number),
                             "document": encoded_xml
                         }
                     ]
@@ -261,6 +266,7 @@ def submission_url():
                 # print("Response status code:", response.status_code)
                 frappe.msgprint(f"Response body: {response.text}")
 
+                sales_invoice_doc.db_set("custom_submit_response",response.text)
             except Exception as e:
                 frappe.z(f"Error in submission url: {str(e)}")
             
@@ -283,7 +289,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         
         company_data(invoice, sales_invoice_doc)
         customer_data(invoice, sales_invoice_doc)
-        
+        payment_data(invoice,sales_invoice_doc)
         # Call appropriate tax total function
         if not any_item_has_tax_template:
             tax_total(invoice, sales_invoice_doc)
@@ -308,7 +314,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         
         ubl_extension_string(doc_hash, prop_cert_base64, signature, certificate_base64, signing_time, cert_digest, formatted_issuer_name, x509_serial_number, line_xml)
         
-        submission_url()
+        submission_url(sales_invoice_doc)
 
     except Exception as e:
         frappe.throw(f"Error in submit document: {str(e)}")
