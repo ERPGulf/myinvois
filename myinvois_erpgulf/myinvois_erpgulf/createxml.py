@@ -79,7 +79,8 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
         create_element(inv_period, "cbc:Description", "Monthly")
-        add_billing_reference(invoice,invoice_number=sales_invoice_doc.name)
+        if sales_invoice_doc.is_return == 1:
+            add_billing_reference(invoice,invoice_number=sales_invoice_doc.name)
         add_signature(invoice)
 
     except Exception as e:
@@ -92,8 +93,22 @@ def company_data(invoice, sales_invoice_doc):
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-        cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
-        cbc_IndClaCode.text = company_doc.custom_msic_code_            #"62099" 
+    
+        msic_code_full = company_doc.custom_msic_code_  # e.g., "01111: Growing of maize"
+        if ":" in msic_code_full:
+            msic_code_code = msic_code_full.split(":")[0].strip()  # Extract the part before the colon (code)
+            msic_code_name = msic_code_full.split(":")[1].strip()  # Extract the part after the colon (name)
+        else:
+            msic_code_code = msic_code_full.strip()  # Use the full value if no colon is present
+            msic_code_name = ""  # No name available
+
+        # Create the cbc:IndustryClassificationCode element with the name attribute and code text
+        cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=msic_code_name)
+        cbc_IndClaCode.text = msic_code_code
+
+
+        # cbc_IndClaCode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
+        # cbc_IndClaCode.text = company_doc.custom_msic_code_            #"62099" 
         party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
         id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
         id_val_1.text = str(settings.company_tin_number)
@@ -531,25 +546,25 @@ def item_data_with_template(invoice,sales_invoice_doc):
 
 
 def xml_structuring(invoice,sales_invoice_doc):
-  
-    raw_xml = ET.tostring(invoice, encoding='utf-8', method='xml').decode('utf-8')
-    with open(frappe.local.site + "/private/files/create.xml", 'w') as file:
-        file.write(raw_xml)
     try:
-                    fileXx = frappe.get_doc(
-                        {   "doctype": "File",        
-                            "file_type": "xml",  
-                            "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
-                            "attached_to_doctype":sales_invoice_doc.doctype,
-                            "attached_to_name":sales_invoice_doc.name, 
-                            "content": raw_xml,
-                            "is_private": 1,})
-                    fileXx.save()
+        raw_xml = ET.tostring(invoice, encoding='utf-8', method='xml').decode('utf-8')
+        with open(frappe.local.site + "/private/files/create.xml", 'w') as file:
+            file.write(raw_xml)
+    # try:
+    #                 fileXx = frappe.get_doc(
+    #                     {   "doctype": "File",        
+    #                         "file_type": "xml",  
+    #                         "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
+    #                         "attached_to_doctype":sales_invoice_doc.doctype,
+    #                         "attached_to_name":sales_invoice_doc.name, 
+    #                         "content": raw_xml,
+    #                         "is_private": 1,})
+    #                 fileXx.save()
 
-
+    
+        return raw_xml
     except Exception as e:
-                    frappe.throw(frappe.get_traceback())
-    return raw_xml
-
+        frappe.throw(f"Error in xml structuring: {str(e)}")
+   
 
 

@@ -7,6 +7,7 @@
  "field_order": [
   "bearer_token",
   "taxpayer_login",
+  "integration_type",
   "column_break_idlw",
   "client_id",
   "client_secret",
@@ -93,12 +94,18 @@
    "fieldname": "certificate_file",
    "fieldtype": "Attach",
    "label": "Certificate File"
+  },
+  {
+   "fieldname": "integration_type",
+   "fieldtype": "Select",
+   "label": "Integration Type",
+   "options": "Sandbox\nProduction"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-10-09 13:22:00.185608",
+ "modified": "2024-12-19 13:49:59.450576",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",

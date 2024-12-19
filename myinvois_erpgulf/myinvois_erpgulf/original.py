@@ -13,6 +13,7 @@ from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_exte
 import frappe       
 import requests
 import re 
+import xml.dom.minidom as minidom
 
 
 def xml_hash():
@@ -233,8 +234,14 @@ def submission_url(sales_invoice_doc):
 
                 settings = frappe.get_doc('LHDN Malaysia Setting')
                 token = settings.bearer_token
-                with open(frappe.local.site + "/private/files/output.xml", 'rb') as f:
-                    xml_data = f.read()
+                
+                
+                if settings.integration_type == "Production":
+                    with open(frappe.local.site + "/private/files/output.xml", 'rb') as f:
+                      xml_data = f.read()
+                else:
+                    with open(frappe.local.site + "/private/files/create.xml", "rb") as file:
+                      xml_data = file.read()
 
                 sha256_hash = hashlib.sha256(xml_data).hexdigest()
                 # print(sha256_hash)
@@ -267,6 +274,22 @@ def submission_url(sales_invoice_doc):
                 frappe.msgprint(f"Response body: {response.text}")
 
                 sales_invoice_doc.db_set("custom_submit_response",response.text)
+                xml_dom = minidom.parseString(xml_data)
+                pretty_xml_string = xml_dom.toprettyxml(indent="  ")   # created xml into formatted xml form 
+                if settings.integration_type == "Production":
+                    file_name= "Submitted-" + sales_invoice_doc.name + ".xml"
+                else:
+                    file_name= "E-invoice" + sales_invoice_doc.name + ".xml"
+                fileXx = frappe.get_doc(
+                                {   "doctype": "File",        
+                                        "file_type": "xml",  
+                                        "file_name":  file_name,
+                                        "attached_to_doctype":sales_invoice_doc.doctype,
+                                        "attached_to_name":sales_invoice_doc.name, 
+                                        "content": pretty_xml_string,
+                                        "is_private": 1,})
+                fileXx.save()
+
             except Exception as e:
                 frappe.z(f"Error in submission url: {str(e)}")
             
@@ -305,16 +328,20 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             item_data_with_template(invoice, sales_invoice_doc)
         
         xml_output = xml_structuring(invoice, sales_invoice_doc)
+        
         line_xml, doc_hash = xml_hash()
+        settings = frappe.get_doc('LHDN Malaysia Setting')
+        if settings.integration_type == "Production":
+            certificate_base64, formatted_issuer_name, x509_serial_number, cert_digest, signing_time = certificate_data()
+            
+            signature = sign_data(line_xml)
+            prop_cert_base64 = signed_properties_hash(signing_time, cert_digest, formatted_issuer_name, x509_serial_number)
+            
+            ubl_extension_string(doc_hash, prop_cert_base64, signature, certificate_base64, signing_time, cert_digest, formatted_issuer_name, x509_serial_number, line_xml)
+            
+            submission_url(sales_invoice_doc)
+        else:
+            submission_url(sales_invoice_doc)
         
-        certificate_base64, formatted_issuer_name, x509_serial_number, cert_digest, signing_time = certificate_data()
-        
-        signature = sign_data(line_xml)
-        prop_cert_base64 = signed_properties_hash(signing_time, cert_digest, formatted_issuer_name, x509_serial_number)
-        
-        ubl_extension_string(doc_hash, prop_cert_base64, signature, certificate_base64, signing_time, cert_digest, formatted_issuer_name, x509_serial_number, line_xml)
-        
-        submission_url(sales_invoice_doc)
-
     except Exception as e:
         frappe.throw(f"Error in submit document: {str(e)}")
