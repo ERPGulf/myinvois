@@ -9,7 +9,7 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, BestAvailableEncryption, PrivateFormat
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
-from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data
+from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,delivery_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data,allowance_charge_data
 import frappe       
 import requests
 import re 
@@ -312,8 +312,10 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         
         company_data(invoice, sales_invoice_doc)
         customer_data(invoice, sales_invoice_doc)
+        delivery_data(invoice, sales_invoice_doc)
         payment_data(invoice,sales_invoice_doc)
         # Call appropriate tax total function
+        allowance_charge_data(invoice,sales_invoice_doc)
         if not any_item_has_tax_template:
             tax_total(invoice, sales_invoice_doc)
         else:

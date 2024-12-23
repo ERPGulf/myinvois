@@ -68,12 +68,12 @@
   {
    "fieldname": "company_id_type",
    "fieldtype": "Data",
-   "label": "Company ID Type"
+   "label": "Company Registration/IC/Passport Type"
   },
   {
    "fieldname": "company_id_value",
    "fieldtype": "Data",
-   "label": "Company ID value"
+   "label": "Company  Registration/IC/Passport Number"
   },
   {
    "fieldname": "customer_tin_number",
@@ -83,12 +83,12 @@
   {
    "fieldname": "customer_id_type",
    "fieldtype": "Data",
-   "label": "Customer ID type"
+   "label": "Customer Registration/IC/Passport Number"
   },
   {
    "fieldname": "customer_id_value",
    "fieldtype": "Data",
-   "label": "Customer ID value"
+   "label": "Customer  Registration/IC/Passport Number"
   },
   {
    "fieldname": "certificate_file",
@@ -105,7 +105,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-19 13:49:59.450576",
+ "modified": "2024-12-20 08:15:34.584109",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",
