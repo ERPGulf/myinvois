@@ -225,6 +225,7 @@ def customer_data(invoice,sales_invoice_doc):
                     value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
                     value_id3.text = str(customer_doc.custom_sst_number) if str(customer_doc.custom_sst_number)  else "NA"
 
+
                     partyid_4 = ET.SubElement(cac_Party, "cac:PartyIdentification")
                     value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
                     value_id4.text = str(customer_doc.custom_tourism_tax_number) if str(customer_doc.custom_tourism_tax_number) else "NA"
