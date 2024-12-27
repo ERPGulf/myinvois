@@ -12,15 +12,7 @@
   "client_id",
   "client_secret",
   "certificate_file",
-  "pfx_cert_password",
-  "section_break_fbuk",
-  "company_tin_number",
-  "company_id_type",
-  "company_id_value",
-  "column_break_deqt",
-  "customer_tin_number",
-  "customer_id_type",
-  "customer_id_value"
+  "pfx_cert_password"
  ],
  "fields": [
   {
@@ -53,44 +45,6 @@
    "label": "Taxpayer Login"
   },
   {
-   "fieldname": "section_break_fbuk",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "company_tin_number",
-   "fieldtype": "Data",
-   "label": "Company TIN Number"
-  },
-  {
-   "fieldname": "column_break_deqt",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "company_id_type",
-   "fieldtype": "Data",
-   "label": "Company Registration/IC/Passport Type"
-  },
-  {
-   "fieldname": "company_id_value",
-   "fieldtype": "Data",
-   "label": "Company  Registration/IC/Passport Number"
-  },
-  {
-   "fieldname": "customer_tin_number",
-   "fieldtype": "Data",
-   "label": "Customer TIN number"
-  },
-  {
-   "fieldname": "customer_id_type",
-   "fieldtype": "Data",
-   "label": "Customer Registration/IC/Passport Number"
-  },
-  {
-   "fieldname": "customer_id_value",
-   "fieldtype": "Data",
-   "label": "Customer  Registration/IC/Passport Number"
-  },
-  {
    "fieldname": "certificate_file",
    "fieldtype": "Attach",
    "label": "Certificate File"
@@ -105,7 +59,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-20 08:15:34.584109",
+ "modified": "2024-12-24 10:23:19.142085",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",

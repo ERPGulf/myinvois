@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import frappe
 import json
 import re
+import pyqrcode
+
 
 def get_icv_code(invoice_number):
     """
@@ -82,7 +84,9 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:IssueDate", formatted_date)
         create_element(invoice, "cbc:IssueTime", formatted_time)
 
-        invoice_type_code = sales_invoice_doc.custom_invoicetype_code
+        raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
+
+        invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
         settings = frappe.get_doc('LHDN Malaysia Setting')
         if settings.integration_type == "Production":
             create_element(invoice, "cbc:InvoiceTypeCode", invoice_type_code, {"listVersionID": "1.1"}) 
@@ -106,7 +110,6 @@ def salesinvoice_data(invoice, sales_invoice_doc):
 def company_data(invoice, sales_invoice_doc):
     try:
 
-        settings = frappe.get_doc('LHDN Malaysia Setting')
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
@@ -129,11 +132,11 @@ def company_data(invoice, sales_invoice_doc):
         # cbc_IndClaCode.text = company_doc.custom_msic_code_            #"62099" 
         party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
         id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
-        id_val_1.text = str(settings.company_tin_number) 
+        id_val_1.text = str(company_doc.custom_company_tin_number) 
 
         partyid_2 = ET.SubElement(party_, "cac:PartyIdentification")
-        value_id = ET.SubElement(partyid_2, "cbc:ID", schemeID=str(settings.company_id_type))
-        value_id.text = str(settings.company_id_value) 
+        value_id = ET.SubElement(partyid_2, "cbc:ID", schemeID=str(company_doc.custom_company_registrationicpassport_type))
+        value_id.text = str(company_doc.custom_company__registrationicpassport_number) 
 
         partyid_3 = ET.SubElement(party_, "cac:PartyIdentification")
         value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
@@ -208,29 +211,27 @@ def company_data(invoice, sales_invoice_doc):
 
 def customer_data(invoice,sales_invoice_doc):
             try:
-                    settings = frappe.get_doc('LHDN Malaysia Setting')
+                    
                     customer_doc= frappe.get_doc("Customer",sales_invoice_doc.customer)
                     accounting_customer_party = ET.SubElement(invoice, "cac:AccountingCustomerParty")
                     cac_Party = ET.SubElement(accounting_customer_party, "cac:Party")
 
                     party_id_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
                     prty_id = ET.SubElement(party_id_1, "cbc:ID", schemeID="TIN")
-                    prty_id.text = settings.customer_tin_number
+                    prty_id.text = str(customer_doc.custom_customer_tin_number)
 
                     party_Identifn_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
-                    id_party2 = ET.SubElement(party_Identifn_2, "cbc:ID", schemeID=settings.customer_id_type)
-                    id_party2.text = settings.customer_id_value #Buyer’s Registration / Identification Number / Passport Number	
+                    id_party2 = ET.SubElement(party_Identifn_2, "cbc:ID", schemeID=str(customer_doc.custom_customer__registrationicpassport_type))
+                    id_party2.text = str(customer_doc.custom_customer_registrationicpassport_number)#Buyer’s Registration / Identification Number / Passport Number	
 
                     partyid_3 = ET.SubElement(cac_Party, "cac:PartyIdentification")
                     value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
                     value_id3.text = str(customer_doc.custom_sst_number) if str(customer_doc.custom_sst_number)  else "NA"
 
-
                     partyid_4 = ET.SubElement(cac_Party, "cac:PartyIdentification")
                     value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
                     value_id4.text = str(customer_doc.custom_tourism_tax_number) if str(customer_doc.custom_tourism_tax_number) else "NA"
                     
-
                     if int(frappe.__version__.split('.')[0]) == 13:
                         address = frappe.get_doc("Address", sales_invoice_doc.customer_address)    
                     else:
@@ -286,12 +287,13 @@ def delivery_data(invoice, sales_invoice_doc):
         
         party_id_tin = ET.SubElement(delivery_party, "cac:PartyIdentification")
         tin_id = ET.SubElement(party_id_tin, "cbc:ID", schemeID="TIN")
-        tin_id.text = settings.customer_tin_number
+        tin_id.text =str(customer_doc.custom_customer_tin_number)
+
         
         
         party_id_brn = ET.SubElement(delivery_party, "cac:PartyIdentification")
-        brn_id = ET.SubElement(party_id_brn, "cbc:ID", schemeID="BRN")
-        brn_id.text =  settings.customer_id_value
+        brn_id = ET.SubElement(party_id_brn, "cbc:ID", schemeID=str(customer_doc.custom_customer__registrationicpassport_type))
+        brn_id.text =   str(customer_doc.custom_customer_registrationicpassport_number)
         
         if int(frappe.__version__.split('.')[0]) == 13:
                         address = frappe.get_doc("Address", sales_invoice_doc.customer_address)    
@@ -711,5 +713,55 @@ def xml_structuring(invoice,sales_invoice_doc):
     except Exception as e:
         frappe.throw(f"Error in xml structuring: {str(e)}")
    
+
+def generate_qr_code(sales_invoice_doc, status):
+    # Extract required fields
+    customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+    company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+    verification_url = "https://verify.hasil.gov.my/einvoice?ref=" + sales_invoice_doc.name
+    qr_data = {
+        "uin": sales_invoice_doc.name,  # Invoice number
+        "seller_tin": company_doc.custom_company_tin_number,
+        "buyer_tin": customer_doc.custom_customer_tin_number,
+        "date": sales_invoice_doc.posting_date.strftime('%Y-%m-%d'),
+        "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
+        "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
+        "status": status,  # Example status, modify as needed
+        "verification_url": verification_url
+    }
+    # frappe.throw(f"QR Code generated and saved at {qr_data}")
+    # Serialize to JSON
+    qr_code_payload = json.dumps(qr_data)
+
+    # Generate QR code
+    qr = pyqrcode.create(qr_code_payload)
+
+    # Save QR code image
+    qr_image_path = frappe.utils.get_site_path("public", "files", f"{sales_invoice_doc.name}_qr.png")
+    qr.png(qr_image_path, scale=6)  # Adjust scale as needed
+
+    return qr_image_path
+
+
+def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
+    # Read the file content
+    with open(qr_image_path, "rb") as qr_file:
+        qr_content = qr_file.read()
+
+    # Create a File document and attach it to the Sales Invoice
+    qr_file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": f"QR_{sales_invoice_doc.name}.png",
+        "attached_to_doctype": sales_invoice_doc.doctype,
+        "attached_to_name": sales_invoice_doc.name,
+        "content": qr_content,
+        "is_private": 1,
+    })
+    qr_file_doc.save(ignore_permissions=True)
+
+
+
+
+# print(f"QR Code generated and saved at {qr_image_path}")
 
 

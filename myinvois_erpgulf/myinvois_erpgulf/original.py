@@ -9,10 +9,11 @@ from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, BestAvailableEncryption, PrivateFormat
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
-from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,delivery_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data,allowance_charge_data
+from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,delivery_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data,allowance_charge_data,generate_qr_code,attach_qr_code_to_sales_invoice
 import frappe       
 import requests
-import re 
+# import qrcode
+import json
 import xml.dom.minidom as minidom
 
 
@@ -272,27 +273,38 @@ def submission_url(sales_invoice_doc):
                 )
                 # print("Response status code:", response.status_code)
                 frappe.msgprint(f"Response body: {response.text}")
-
-                sales_invoice_doc.db_set("custom_submit_response",response.text)
                 xml_dom = minidom.parseString(xml_data)
                 pretty_xml_string = xml_dom.toprettyxml(indent="  ")   # created xml into formatted xml form 
-                if settings.integration_type == "Production":
-                    file_name= "Submitted-" + sales_invoice_doc.name + ".xml"
-                else:
-                    file_name= "E-invoice" + sales_invoice_doc.name + ".xml"
-                fileXx = frappe.get_doc(
-                                {   "doctype": "File",        
-                                        "file_type": "xml",  
-                                        "file_name":  file_name,
-                                        "attached_to_doctype":sales_invoice_doc.doctype,
-                                        "attached_to_name":sales_invoice_doc.name, 
-                                        "content": pretty_xml_string,
-                                        "is_private": 1,})
-                fileXx.save()
+                response_data = response.json()
+                status = "Approved" if response_data.get("submissionUid") else "Rejected"
 
+                # Store the response
+                sales_invoice_doc.db_set("custom_submit_response", response.text)
+
+        # Format and save the XML
+                pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
+                file_name = f"Submitted-{sales_invoice_doc.name}.xml" if settings.integration_type == "Production" else f"E-invoice-{sales_invoice_doc.name}.xml"
+                xml_file = frappe.get_doc({
+                    "doctype": "File",
+                    "file_type": "xml",
+                    "file_name": file_name,
+                    "attached_to_doctype": sales_invoice_doc.doctype,
+                    "attached_to_name": sales_invoice_doc.name,
+                    "content": pretty_xml_string,
+                    "is_private": 1,
+                })
+                xml_file.save()
+
+                qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+            except FileNotFoundError as e:
+                frappe.throw(f"File not found: {e}")
+            except requests.RequestException as e:
+                frappe.throw(f"API request failed: {e}")
             except Exception as e:
-                frappe.z(f"Error in submission url: {str(e)}")
-            
+                frappe.throw(f"Error in submission URL: {str(e)}")    
+                    
+                    
 
 
 @frappe.whitelist(allow_guest=True)
@@ -341,9 +353,8 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             
             ubl_extension_string(doc_hash, prop_cert_base64, signature, certificate_base64, signing_time, cert_digest, formatted_issuer_name, x509_serial_number, line_xml)
             
-            submission_url(sales_invoice_doc)
-        else:
-            submission_url(sales_invoice_doc)
+        
+        submission_url(sales_invoice_doc)
         
     except Exception as e:
         frappe.throw(f"Error in submit document: {str(e)}")
