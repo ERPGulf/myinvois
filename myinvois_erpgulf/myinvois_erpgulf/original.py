@@ -356,5 +356,6 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         
         submission_url(sales_invoice_doc)
         
+        
     except Exception as e:
         frappe.throw(f"Error in submit document: {str(e)}")
