@@ -15,7 +15,7 @@ def get_access_token():
     try:
         response = requests.post(url, headers=headers, data=payload)
         response.raise_for_status()
-        frappe.msgprint(f"Access token response: {response.text}")
+        # frappe.msgprint(f"Access token response: {response.text}")
         token_response = response.json()
         access_token = token_response.get("access_token")
         

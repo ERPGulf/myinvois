@@ -10,6 +10,8 @@ from cryptography.hazmat.primitives.serialization import pkcs12, Encoding, BestA
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from myinvois_erpgulf.myinvois_erpgulf.createxml import create_invoice_with_extensions,salesinvoice_data,company_data,customer_data,delivery_data,tax_total,legal_monetary_total,xml_structuring,invoice_line_item,item_data_with_template,tax_total_with_template,get_icv_code,payment_data,allowance_charge_data,generate_qr_code,attach_qr_code_to_sales_invoice
+from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
+
 import frappe       
 import requests
 # import qrcode
@@ -227,82 +229,94 @@ def ubl_extension_string(doc_hash,prop_cert_base64,signature,certificate_base64,
             frappe.throw(f"Error ubl extension string: {str(e)}")
 
 
-    
-
 def submission_url(sales_invoice_doc):
-                
-            try:
+    try:
+        settings = frappe.get_doc('LHDN Malaysia Setting')
+        token = settings.bearer_token  # Fetch token from settings
+        
+        # Determine the file path based on integration type
+        file_path = "/private/files/output.xml" if settings.integration_type == "Production" else "/private/files/create.xml"
+        xml_path = frappe.local.site + file_path
+        
+        # Read XML data
+        with open(xml_path, 'rb') as file:
+            xml_data = file.read()
 
-                settings = frappe.get_doc('LHDN Malaysia Setting')
-                token = settings.bearer_token
-                
-                
-                if settings.integration_type == "Production":
-                    with open(frappe.local.site + "/private/files/output.xml", 'rb') as f:
-                      xml_data = f.read()
-                else:
-                    with open(frappe.local.site + "/private/files/create.xml", "rb") as file:
-                      xml_data = file.read()
-
-                sha256_hash = hashlib.sha256(xml_data).hexdigest()
-                # print(sha256_hash)
-                encoded_xml = base64.b64encode(xml_data).decode('utf-8')
-                # print(encoded_xml)
-                invoice_number = sales_invoice_doc.name
-                json_payload = {
-                    "documents": [
-                        {
-                            "format": "XML",
-                            "documentHash": sha256_hash,
-                            "codeNumber": get_icv_code(invoice_number),
-                            "document": encoded_xml
-                        }
-                    ]
+        # Calculate hash and encode XML
+        sha256_hash = hashlib.sha256(xml_data).hexdigest()
+        encoded_xml = base64.b64encode(xml_data).decode('utf-8')
+        invoice_number = sales_invoice_doc.name
+        
+        json_payload = {
+            "documents": [
+                {
+                    "format": "XML",
+                    "documentHash": sha256_hash,
+                    "codeNumber": get_icv_code(invoice_number),
+                    "document": encoded_xml
                 }
+            ]
+        }
 
-                headers = {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                }
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
 
-                # Send the POST request
-                response = requests.post(
-                    'https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documentsubmissions',
-                    headers=headers,
-                    json=json_payload
-                )
-                # print("Response status code:", response.status_code)
-                frappe.msgprint(f"Response body: {response.text}")
-                xml_dom = minidom.parseString(xml_data)
-                pretty_xml_string = xml_dom.toprettyxml(indent="  ")   # created xml into formatted xml form 
-                response_data = response.json()
-                status = "Approved" if response_data.get("submissionUid") else "Rejected"
+        # Function to send the submission request
+        def submit_request():
+            return requests.post(
+                'https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documentsubmissions',
+                headers=headers,
+                json=json_payload
+            )
 
-                # Store the response
-                sales_invoice_doc.db_set("custom_submit_response", response.text)
+        # Initial submission
+        response = submit_request()
+
+        # If unauthorized, refresh token and retry
+        if response.status_code == 401:
+            # frappe.msgprint("Unauthorized: Refreshing access token...")
+            get_access_token()  # Refresh the token and save it in settings
+            settings.reload()  # Reload settings to get the new token
+            token = settings.bearer_token  # Fetch updated token
+            headers['Authorization'] = f'Bearer {token}'
+            response = submit_request()
+
+        # Handle response
+        # if response.status_code != 200:
+        #     frappe.throw(f"Submission failed: {response.text}")
+        frappe.msgprint(f"Response body: {response.text}")
+        response_data = response.json()
+        status = "Approved" if response_data.get("submissionUid") else "Rejected"
+        sales_invoice_doc.db_set("custom_submit_response", response.text)
 
         # Format and save the XML
-                pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
-                file_name = f"Submitted-{sales_invoice_doc.name}.xml" if settings.integration_type == "Production" else f"E-invoice-{sales_invoice_doc.name}.xml"
-                xml_file = frappe.get_doc({
-                    "doctype": "File",
-                    "file_type": "xml",
-                    "file_name": file_name,
-                    "attached_to_doctype": sales_invoice_doc.doctype,
-                    "attached_to_name": sales_invoice_doc.name,
-                    "content": pretty_xml_string,
-                    "is_private": 1,
-                })
-                xml_file.save()
+        pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
+        file_name = f"Submitted-{sales_invoice_doc.name}.xml" if settings.integration_type == "Production" else f"E-invoice-{sales_invoice_doc.name}.xml"
 
-                qr_image_path = generate_qr_code(sales_invoice_doc, status)
-                attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
-            except FileNotFoundError as e:
-                frappe.throw(f"File not found: {e}")
-            except requests.RequestException as e:
-                frappe.throw(f"API request failed: {e}")
-            except Exception as e:
-                frappe.throw(f"Error in submission URL: {str(e)}")    
+        xml_file = frappe.get_doc({
+            "doctype": "File",
+            "file_type": "xml",
+            "file_name": file_name,
+            "attached_to_doctype": sales_invoice_doc.doctype,
+            "attached_to_name": sales_invoice_doc.name,
+            "content": pretty_xml_string,
+            "is_private": 1,
+        })
+        xml_file.save()
+
+        # Generate and attach QR code
+        qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+
+    except FileNotFoundError as e:
+        frappe.throw(f"File not found: {e}")
+    except requests.RequestException as e:
+        frappe.throw(f"API request failed: {e}")
+    except Exception as e:
+        frappe.throw(f"Error in submission URL: {str(e)}")
+
                     
                     
 
