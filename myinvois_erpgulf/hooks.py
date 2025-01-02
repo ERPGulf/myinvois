@@ -251,6 +251,8 @@ app_license = "mit"
 doctype_js = {
     "Sales Invoice" : "public/js/sales_invoice.js" ,
     "LHDN Setting" : "myinvois_erpgulf/public/js/LHDN_setting.js",
+    "Company": "public/js/company.js",
+    "Customer": "public/js/customer.js",
     }
 
 
