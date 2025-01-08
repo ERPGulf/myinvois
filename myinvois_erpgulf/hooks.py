@@ -243,17 +243,15 @@ app_license = "mit"
 # }
 
 
-
-
-
 # hooks.py
 
+
 doctype_js = {
-    "Sales Invoice" : "public/js/sales_invoice.js" ,
-    "LHDN Setting" : "myinvois_erpgulf/public/js/LHDN_setting.js",
+    "Sales Invoice": "public/js/sales_invoice.js",
+    "LHDN Setting": "myinvois_erpgulf/public/js/LHDN_setting.js",
     "Company": "public/js/company.js",
     "Customer": "public/js/customer.js",
-    }
+}
 
 
-fixtures = [ {"dt": "Custom Field","filters": [["module", "=", "Myinvois Erpgulf"]] }]
+fixtures = [{"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]}]
