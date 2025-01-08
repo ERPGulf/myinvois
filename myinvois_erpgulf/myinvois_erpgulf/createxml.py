@@ -124,20 +124,20 @@ def salesinvoice_data(invoice, sales_invoice_doc):
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
         settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.integration_type == "Production":
-            create_element(
-                invoice,
-                "cbc:InvoiceTypeCode",
-                invoice_type_code,
-                {"listVersionID": "1.0"},
-            )
-        else:
-            create_element(
-                invoice,
-                "cbc:InvoiceTypeCode",
-                invoice_type_code,
-                {"listVersionID": "1.0"},
-            )
+        # if settings.integration_type == "Production":
+        #     create_element(
+        #         invoice,
+        #         "cbc:InvoiceTypeCode",
+        #         invoice_type_code,
+        #         {"listVersionID": "1.0"},
+        #     )
+        # else:
+        create_element(
+            invoice,
+            "cbc:InvoiceTypeCode",
+            invoice_type_code,
+            {"listVersionID": "1.0"},
+        )
 
         create_element(
             invoice, "cbc:DocumentCurrencyCode", "MYR"
