@@ -402,10 +402,6 @@ def submission_url(sales_invoice_doc):
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
 
-    except FileNotFoundError as e:
-        frappe.throw(f"File not found: {e}")
-    except requests.RequestException as e:
-        frappe.throw(f"API request failed: {e}")
     except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
         frappe.throw(f"Error in submission URL: {str(e)}")
 

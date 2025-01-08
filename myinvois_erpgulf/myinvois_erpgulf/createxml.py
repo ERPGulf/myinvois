@@ -123,7 +123,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
-        settings = frappe.get_doc("LHDN Malaysia Setting")
+        # settings = frappe.get_doc("LHDN Malaysia Setting")
         # if settings.integration_type == "Production":
         #     create_element(
         #         invoice,
