@@ -8,7 +8,10 @@
   "bearer_token",
   "taxpayer_login",
   "integration_type",
+  "custom_sandbox_url",
+  "custom_production_url",
   "column_break_idlw",
+  "version",
   "client_id",
   "client_secret",
   "certificate_file",
@@ -54,12 +57,32 @@
    "fieldtype": "Select",
    "label": "Integration Type",
    "options": "Sandbox\nProduction"
+  },
+  {
+   "default": "https://preprod-api.myinvois.hasil.gov.my",
+   "fieldname": "custom_sandbox_url",
+   "fieldtype": "Data",
+   "label": "Sandbox url",
+   "translatable": 1
+  },
+  {
+   "default": "https://api.myinvois.hasil.gov.my",
+   "fieldname": "custom_production_url",
+   "fieldtype": "Data",
+   "label": "Production Url",
+   "translatable": 1
+  },
+  {
+   "fieldname": "version",
+   "fieldtype": "Select",
+   "label": "Version",
+   "options": "1.0\n1.1"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2024-12-24 10:23:19.142085",
+ "modified": "2025-01-09 14:24:55.128863",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",

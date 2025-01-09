@@ -5,6 +5,11 @@ app_description = "MyInvoice - E-Invoice for Malaysia"
 app_email = "support@erpgulf.com"
 app_license = "mit"
 
+
+from frappe import _
+
+from . import __version__ as app_version
+
 # Apps
 # ------------------
 

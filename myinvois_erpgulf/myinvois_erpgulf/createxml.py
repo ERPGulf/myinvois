@@ -123,21 +123,21 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
-        # settings = frappe.get_doc("LHDN Malaysia Setting")
-        # if settings.integration_type == "Production":
-        #     create_element(
-        #         invoice,
-        #         "cbc:InvoiceTypeCode",
-        #         invoice_type_code,
-        #         {"listVersionID": "1.0"},
-        #     )
-        # else:
-        create_element(
-            invoice,
-            "cbc:InvoiceTypeCode",
-            invoice_type_code,
-            {"listVersionID": "1.0"},
-        )
+        settings = frappe.get_doc("LHDN Malaysia Setting")
+        if settings.certificate_file and settings.version == "1.1":
+            create_element(
+                invoice,
+                "cbc:InvoiceTypeCode",
+                invoice_type_code,
+                {"listVersionID": "1.1"},
+            )
+        else:
+            create_element(
+                invoice,
+                "cbc:InvoiceTypeCode",
+                invoice_type_code,
+                {"listVersionID": "1.0"},
+            )
 
         create_element(
             invoice, "cbc:DocumentCurrencyCode", "MYR"
@@ -148,9 +148,9 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
         create_element(inv_period, "cbc:Description", "Monthly")
-        # if sales_invoice_doc.is_return == 1:
+        # if sales_invoice_doc.custom_invoicetype_code != "02 : Credit Note":
         add_billing_reference(invoice, invoice_number=sales_invoice_doc.name)
-        add_signature(invoice)
+        # add_signature(invoice)
 
     except (
         frappe.DoesNotExistError,
@@ -276,7 +276,10 @@ def company_data(invoice, sales_invoice_doc):
 
             cntry = ET.SubElement(post_add, "cac:Country")
             idntfn_cod = ET.SubElement(
-                cntry, "cbc:IdentificationCode", listAgencyID="6", listID="ISO3166-1"
+                cntry,
+                "cbc:IdentificationCode",
+                listAgencyID="6",
+                listID="ISO3166-1",
             )
             idntfn_cod.text = "MYS"
 
@@ -454,7 +457,10 @@ def delivery_data(invoice, sales_invoice_doc):
 
         country = ET.SubElement(postal_address, "cac:Country")
         country_id_code = ET.SubElement(
-            country, "cbc:IdentificationCode", listID="ISO3166-1", listAgencyID="6"
+            country,
+            "cbc:IdentificationCode",
+            listAgencyID="6",
+            listID="ISO3166-1",
         )
         country_id_code.text = "MYS"
 
@@ -773,7 +779,31 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID="MYR")
                 amnt.text = str(discount_amount)
 
-            tax_total = ET.SubElement(invoice_line, "cac:TaxTotal")
+                allowance_charge = ET.SubElement(invoice, "cac:AllowanceCharge")
+
+                # Add cbc:ChargeIndicator element
+                charge_indicator = ET.SubElement(
+                    allowance_charge, "cbc:ChargeIndicator"
+                )
+                charge_indicator.text = "true"
+
+                # Add cbc:AllowanceChargeReason element
+                allowance_charge_reason = ET.SubElement(
+                    allowance_charge, "cbc:AllowanceChargeReason"
+                )
+                allowance_charge_reason.text = "dIscount of item"
+
+                # Add cbc:MultiplierFactorNumeric element
+                multiplier_factor_numeric = ET.SubElement(
+                    allowance_charge, "cbc:MultiplierFactorNumeric"
+                )
+                multiplier_factor_numeric.text = "0.10"
+
+                # Add cbc:Amount element with attribute
+                amount = ET.SubElement(allowance_charge, "cbc:Amount", currencyID="MYR")
+                amount.text = str(discount_amount)
+
+            tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
             tax_amount_item = ET.SubElement(
                 tax_total, "cbc:TaxAmount", currencyID="MYR"
             )
@@ -968,7 +998,7 @@ def xml_structuring(invoice, sales_invoice_doc):
     """status_submit_success_log"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
-        with open(frappe.local.site + "/private/files/create.xml", "w") as file:
+        with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
         # try:
         #                 fileXx = frappe.get_doc(

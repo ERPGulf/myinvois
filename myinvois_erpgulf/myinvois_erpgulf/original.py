@@ -43,7 +43,7 @@ from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 def xml_hash():
     """defining the xml hash"""
     try:
-        with open(frappe.local.site + "/private/files/create.xml", "rb") as file:
+        with open(frappe.local.site + "/private/files/beforesubmit1.xml", "rb") as file:
             xml_content = file.read()
         root = etree.fromstring(xml_content)
         line_xml = etree.tostring(root, pretty_print=False, encoding="UTF-8")
@@ -261,13 +261,13 @@ def ubl_extension_string(
                             </ext:ExtensionContent>
                         </ext:UBLExtension>
                     </ext:UBLExtensions>"""
-        inv_xml_string_single_line = (
-            inv_xml_string.replace("\n", "").replace("  ", "").replace("> <", "><")
-        )
+        inv_xml_string_single_line = " ".join(inv_xml_string.split())
+
+        # Decode the input line XML
         string = line_xml.decode()
         result = ""
         if isinstance(string, str) and isinstance(inv_xml_string_single_line, str):
-
+            # Insert the UBL extension string into the main XML
             insert_position = string.find(">") + 1
             result = (
                 string[:insert_position]
@@ -275,26 +275,40 @@ def ubl_extension_string(
                 + string[insert_position:]
             )
 
+        # Add the Signature block
         signature_string = """<cac:Signature><cbc:ID>urn:oasis:names:specification:ubl:signature:Invoice</cbc:ID><cbc:SignatureMethod>urn:oasis:names:specification:ubl:dsig:enveloped:xades</cbc:SignatureMethod></cac:Signature>"""
         insert_position = result.find("<cac:AccountingSupplierParty>")
         if insert_position != -1:
-
             result_final = (
                 result[:insert_position] + signature_string + result[insert_position:]
             )
-            # print(result_final)
 
-            output_path = frappe.local.site + "/private/files/output.xml"
+            # Save the final result
+            output_path = frappe.local.site + "/private/files/aftersignforsubmit.xml"
             with open(output_path, "w", encoding="utf-8") as file:
                 file.write(result_final)
-
-            # frappe.throw("The modified XML has been saved to 'signedxml_for_submit.xml'.")
         else:
             frappe.throw(
                 "The element <cac:AccountingSupplierParty> was not found in the XML string."
             )
     except (ValueError, TypeError, OSError) as e:
-        frappe.throw(f"Error ubl extension string: {str(e)}")
+        frappe.throw(f"Error in UBL extension string: {str(e)}")
+
+
+def get_api_url(base_url):
+    """There are many api susing in zatca which can be defined by a feild in settings"""
+    try:
+        settings = frappe.get_doc("LHDN Malaysia Setting")
+        if settings.integration_type == "Sandbox":
+            url = settings.custom_sandbox_url + base_url
+        else:
+            url = settings.custom_production_url + base_url
+
+        return url
+
+    except (ValueError, TypeError, KeyError) as e:
+        frappe.throw(("get api url" f"error: {str(e)}"))
+        return None
 
 
 def submission_url(sales_invoice_doc):
@@ -304,17 +318,19 @@ def submission_url(sales_invoice_doc):
         token = settings.bearer_token  # Fetch token from settings
 
         # Determine the file path based on integration type
-        file_path = (
-            "/private/files/output.xml"
-            if settings.integration_type == "Production"
-            else "/private/files/create.xml"
-        )
+        file_path = "/private/files/aftersignforsubmit.xml"
         xml_path = frappe.local.site + file_path
 
         # Read XML data
         with open(xml_path, "rb") as file:
             xml_data = file.read()
-
+        pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
+        # file_path1 = "/private/files/signedxmlfile.xml"  # You can specify your desired file path here
+        # xml_dat_path = frappe.local.site + file_path1
+        # with open(xml_dat_path, "w", encoding="utf-8") as file:
+        #     file.write(pretty_xml_string)
+        # with open(xml_dat_path, "rb") as file:
+        #     xml_data2 = file.read()
         # Calculate hash and encode XML
         sha256_hash = hashlib.sha256(xml_data).hexdigest()
         encoded_xml = base64.b64encode(xml_data).decode("utf-8")
@@ -339,27 +355,20 @@ def submission_url(sales_invoice_doc):
         # Function to send the submission request
         def submit_request():
             return requests.post(
-                "https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documentsubmissions",
+                url=get_api_url(base_url="api/v1.0/documentsubmissions"),
                 headers=headers,
                 json=json_payload,
                 timeout=30,
             )
 
-        # Initial submission
         response = submit_request()
 
-        # If unauthorized, refresh token and retry
         if response.status_code == 401:
-            # frappe.msgprint("Unauthorized: Refreshing access token...")
             get_access_token()  # Refresh the token and save it in settings
             settings.reload()  # Reload settings to get the new token
             token = settings.bearer_token  # Fetch updated token
             headers["Authorization"] = f"Bearer {token}"
             response = submit_request()
-
-        # Handle response
-        # if response.status_code != 200:
-        #     frappe.throw(f"Submission failed: {response.text}")
         frappe.msgprint(f"Response body: {response.text}")
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
@@ -378,12 +387,8 @@ def submission_url(sales_invoice_doc):
             ):  # Check if XML or QR file
                 frappe.delete_doc("File", file["name"], ignore_permissions=True)
         # Format and save the XML
-        pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
-        file_name = (
-            f"Submitted-{sales_invoice_doc.name}.xml"
-            if settings.integration_type == "Production"
-            else f"E-invoice-{sales_invoice_doc.name}.xml"
-        )
+        # pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
+        file_name = f"Submitted-{sales_invoice_doc.name}.xml"
 
         xml_file = frappe.get_doc(
             {
@@ -504,8 +509,8 @@ def status_submission(invoice_number, sales_invoice_doc):
         if not submission_uid:
             frappe.throw("Submission UID not found in the response.")
 
-        # Format the URL correctly
-        url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documentsubmissions/{submission_uid}"
+        url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
+
         headers = {"Authorization": f"Bearer {token}"}
 
         response = requests.get(url, headers=headers, timeout=30)
@@ -544,8 +549,7 @@ def status_submit_success_log(doc):
         submission_uid = doc.get("submission_uuid")
         if not submission_uid:
             frappe.throw("Submission UID is missing from the document.")
-
-        url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documentsubmissions/{submission_uid}"
+        url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
 
         headers = {"Authorization": f"Bearer {token}"}  # Authorization header
 
@@ -633,32 +637,31 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         xml_structuring(invoice, sales_invoice_doc)
 
         line_xml, doc_hash = xml_hash()
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.integration_type == "Production":
-            (
-                certificate_base64,
-                formatted_issuer_name,
-                x509_serial_number,
-                cert_digest,
-                signing_time,
-            ) = certificate_data()
 
-            signature = sign_data(line_xml)
-            prop_cert_base64 = signed_properties_hash(
-                signing_time, cert_digest, formatted_issuer_name, x509_serial_number
-            )
+        (
+            certificate_base64,
+            formatted_issuer_name,
+            x509_serial_number,
+            cert_digest,
+            signing_time,
+        ) = certificate_data()
 
-            ubl_extension_string(
-                doc_hash,
-                prop_cert_base64,
-                signature,
-                certificate_base64,
-                signing_time,
-                cert_digest,
-                formatted_issuer_name,
-                x509_serial_number,
-                line_xml,
-            )
+        signature = sign_data(line_xml)
+        prop_cert_base64 = signed_properties_hash(
+            signing_time, cert_digest, formatted_issuer_name, x509_serial_number
+        )
+
+        ubl_extension_string(
+            doc_hash,
+            prop_cert_base64,
+            signature,
+            certificate_base64,
+            signing_time,
+            cert_digest,
+            formatted_issuer_name,
+            x509_serial_number,
+            line_xml,
+        )
 
         submission_url(sales_invoice_doc)
         status_submission(invoice_number, sales_invoice_doc)
