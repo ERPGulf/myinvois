@@ -553,7 +553,8 @@ def status_submit_success_log(doc):
 
         headers = {"Authorization": f"Bearer {token}"}  # Authorization header
 
-        response = requests.get(url, headers=headers, timeout=30)  # Send the request
+        response = requests.get(url, headers=headers, timeout=30)
+        # Send the request
         if response.status_code == 401:
             get_access_token()  # Assuming this function refreshes the token
             settings.reload()  # Reload settings to get the updated token
