@@ -561,6 +561,7 @@ def status_submit_success_log(doc):
             headers["Authorization"] = f"Bearer {token}"
 
             # Retry the request with the new token
+
             response = requests.get(url, headers=headers, timeout=30)
 
         if response.status_code == 200:
