@@ -803,9 +803,13 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 amount = ET.SubElement(allowance_charge, "cbc:Amount", currencyID="MYR")
                 amount.text = str(discount_amount)
 
+            # tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
+            # tax_amount_item = ET.SubElement(
+            #     tax_total, "cbc:TaxAmount", currencyID="MYR"
+            # )
             tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
             tax_amount_item = ET.SubElement(
-                tax_total, "cbc:TaxAmount", currencyID="MYR"
+                tax_total_item, "cbc:TaxAmount", currencyID="MYR"
             )
             tax_amount_item.text = str(
                 abs(
