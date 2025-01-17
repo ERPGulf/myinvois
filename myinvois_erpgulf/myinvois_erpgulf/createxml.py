@@ -751,6 +751,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
     """Adds InvoiceLine elements to the invoice"""
     try:
         frappe.throw(str(sales_invoice_doc.items))
+
         for single_item in sales_invoice_doc.items:
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
             item_id = ET.SubElement(invoice_line, "cbc:ID")
