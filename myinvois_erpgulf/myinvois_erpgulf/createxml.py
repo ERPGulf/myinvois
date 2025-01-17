@@ -750,7 +750,6 @@ def get_Tax_for_Item(full_string, item):
 def invoice_line_item(invoice, sales_invoice_doc):
     """Adds InvoiceLine elements to the invoice"""
     try:
-        frappe.throw(str(sales_invoice_doc.items))
 
         for single_item in sales_invoice_doc.items:
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
@@ -877,6 +876,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
             item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID="MYR")
             item_val_amnt.text = str(abs(single_item.base_amount))
+            frappe.throw("the item amount is " + str(single_item.base_amount))
 
     except Exception as e:
         frappe.throw(f"Error in invoice_line: {str(e)}")
