@@ -615,26 +615,26 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             )
 
         invoice = create_invoice_with_extensions()
-        salesinvoice_data(invoice, sales_invoice_doc)
+        invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
-        company_data(invoice, sales_invoice_doc)
-        customer_data(invoice, sales_invoice_doc)
-        delivery_data(invoice, sales_invoice_doc)
-        payment_data(invoice, sales_invoice_doc)
+        invoice = company_data(invoice, sales_invoice_doc)
+        invoice = customer_data(invoice, sales_invoice_doc)
+        invoice = delivery_data(invoice, sales_invoice_doc)
+        invoice = payment_data(invoice, sales_invoice_doc)
         # Call appropriate tax total function
-        allowance_charge_data(invoice, sales_invoice_doc)
+        invoice = allowance_charge_data(invoice, sales_invoice_doc)
         if not any_item_has_tax_template:
-            tax_total(invoice, sales_invoice_doc)
+            invoice = tax_total(invoice, sales_invoice_doc)
         else:
-            tax_total_with_template(invoice, sales_invoice_doc)
+            invoice = tax_total_with_template(invoice, sales_invoice_doc)
 
-        legal_monetary_total(invoice, sales_invoice_doc)
+        invoice = legal_monetary_total(invoice, sales_invoice_doc)
 
         # Call appropriate item data function
         if not any_item_has_tax_template:
-            invoice_line_item(invoice, sales_invoice_doc)
+            invoice = invoice_line_item(invoice, sales_invoice_doc)
         else:
-            item_data_with_template(invoice, sales_invoice_doc)
+            invoice = item_data_with_template(invoice, sales_invoice_doc)
 
         xml_structuring(invoice, sales_invoice_doc)
 

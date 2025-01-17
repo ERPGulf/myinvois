@@ -151,6 +151,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         # if sales_invoice_doc.custom_invoicetype_code != "02 : Credit Note":
         add_billing_reference(invoice, invoice_number=sales_invoice_doc.name)
         # add_signature(invoice)
+        return invoice
 
     except (
         frappe.DoesNotExistError,
@@ -159,6 +160,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         KeyError,
     ) as e:
         frappe.msgprint(f"Error sales invoice data: {str(e)}")
+        return None
 
 
 def company_data(invoice, sales_invoice_doc):
@@ -297,6 +299,8 @@ def company_data(invoice, sales_invoice_doc):
             mail = ET.SubElement(cont_ct, "cbc:ElectronicMail")
             mail.text = address.email_id
 
+        return invoice
+
     except (
         frappe.DoesNotExistError,
         frappe.ValidationError,
@@ -304,6 +308,7 @@ def company_data(invoice, sales_invoice_doc):
         KeyError,
     ) as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
+        return None
 
 
 def customer_data(invoice, sales_invoice_doc):
@@ -395,9 +400,10 @@ def customer_data(invoice, sales_invoice_doc):
 
         mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
         mail_party.text = str(address.email_id)
-
+        return invoice
     except Exception as e:
         frappe.throw(f"Error customer data: {str(e)}")
+        return None
 
 
 def delivery_data(invoice, sales_invoice_doc):
@@ -467,8 +473,10 @@ def delivery_data(invoice, sales_invoice_doc):
         party_legal_entity = ET.SubElement(delivery_party, "cac:PartyLegalEntity")
         registration_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
         registration_name.text = sales_invoice_doc.customer
+        return invoice
     except Exception as e:
         frappe.throw(f"Error in customer_data: {str(e)}")
+        return None
 
 
 def payment_data(invoice, sales_invoice_doc):
@@ -514,9 +522,10 @@ def payment_data(invoice, sales_invoice_doc):
 
         # paid_time = ET.SubElement(prepaid_payment, "cbc:PaidTime")
         # paid_time.text = "00:30:00Z"
-
+        return invoice
     except Exception as e:
         frappe.throw(f"Error adding payment data: {str(e)}")
+        return None
 
 
 def allowance_charge_data(invoice, sales_invoice_doc):
@@ -551,9 +560,10 @@ def allowance_charge_data(invoice, sales_invoice_doc):
 
                 # amount_2 = ET.SubElement(allowance_charge_2, "cbc:Amount", currencyID="MYR")
                 # amount_2.text = "100"
-
+            return invoice
     except Exception as e:
         frappe.throw(f"Error adding allowance charge data: {str(e)}")
+        return None
 
 
 def tax_total(invoice, sales_invoice_doc):
@@ -596,8 +606,10 @@ def tax_total(invoice, sales_invoice_doc):
             cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
         )
         taxscheme_id.text = "OTH"
+        return invoice
     except Exception as e:
         frappe.throw(f"Error tax total: {str(e)}")
+        return None
 
 
 def tax_total_with_template(invoice, sales_invoice_doc):
@@ -686,9 +698,10 @@ def tax_total_with_template(invoice, sales_invoice_doc):
                 cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
             )
             cbc_TaxScheme_ID.text = "OTH"
-
+        return invoice
     except Exception as e:
         frappe.throw(f"Error in tax total calculation: {str(e)}")
+        return None
 
 
 def legal_monetary_total(invoice, sales_invoice_doc):
@@ -731,9 +744,10 @@ def legal_monetary_total(invoice, sales_invoice_doc):
             abs(sales_invoice_doc.total - sales_invoice_doc.get("discount_amount", 0.0))
             + abs(round(tax_amount_without_retention, 2))
         )
-
+        return invoice
     except Exception as e:
         frappe.throw(f"Error legal monetary: {str(e)}")
+        return None
 
 
 def get_Tax_for_Item(full_string, item):
@@ -750,10 +764,16 @@ def get_Tax_for_Item(full_string, item):
 def invoice_line_item(invoice, sales_invoice_doc):
     """Adds InvoiceLine elements to the invoice"""
     try:
+        # frappe.msgprint("Entering invoice_line_item function")
         for single_item in sales_invoice_doc.items:
+            # frappe.msgprint(f"Processing item: {single_item.item_code}")
+
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
+            # frappe.msgprint(f"Created InvoiceLine element: {invoice_line}")
+
             item_id = ET.SubElement(invoice_line, "cbc:ID")
             item_id.text = str(single_item.idx)
+            # frappe.msgprint(f"Set item ID: {item_id.text}")
 
             item_qty = ET.SubElement(
                 invoice_line,
@@ -761,14 +781,19 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 unitCode=str(single_item.item_code),
             )
             item_qty.text = str(abs(single_item.qty))
+            # frappe.msgprint(f"Set item quantity: {item_qty.text}")
 
             item_line_exte_amnt = ET.SubElement(
                 invoice_line, "cbc:LineExtensionAmount", currencyID="MYR"
             )
             item_line_exte_amnt.text = str(abs(single_item.amount))
+            # frappe.msgprint(f"Set LineExtensionAmount: {item_line_exte_amnt.text}")
 
             discount_amount = abs(single_item.get("discount_amount", 0.0))
+            # frappe.msgprint(f"Discount amount: {discount_amount}")
+
             if discount_amount > 0:
+                # frappe.msgprint("Adding discount elements")
                 allw_chrge = ET.SubElement(invoice_line, "cac:AllowanceCharge")
                 chrg_indic = ET.SubElement(allw_chrge, "cbc:ChargeIndicator")
                 chrg_indic.text = "false"
@@ -780,6 +805,9 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 multi_fac.text = "1"
                 amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID="MYR")
                 amnt.text = str(discount_amount)
+                # frappe.msgprint(
+                #     f"Added discount elements for item: {single_item.item_code}"
+                # # )
 
             tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
             tax_amount_item = ET.SubElement(
@@ -792,6 +820,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
+            # frappe.msgprint(f"Set tax amount: {tax_amount_item.text}")
 
             tax_subtot_item = ET.SubElement(tax_total_item, "cac:TaxSubtotal")
             taxable_amnt_item = ET.SubElement(
@@ -806,12 +835,18 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
+            # frappe.msgprint(
+            # f"Set tax subtotal: TaxableAmount={taxable_amnt_item.text}, TaxAmount={tax_amnt.text}"
+            # )
 
             tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
             cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
+            # frappe.msgprint(
+            #     f"Set tax category: ID={cat_item_id.text}, Percent={item_prct.text}"
+            # # )
 
             tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
             tax_id_scheme_item = ET.SubElement(
@@ -822,17 +857,18 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_data = ET.SubElement(invoice_line, "cac:Item")
             descp_item = ET.SubElement(item_data, "cbc:Description")
             descp_item.text = str(single_item.description)
+            # frappe.msgprint(f"Set item description: {descp_item.text}")
 
             comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
             )
-
             item_doc = frappe.get_doc("Item", single_item.item_code)
             classification_code = str(item_doc.custom_item_classification_code).split(
                 ":"
             )[0]
             item_class_cod.text = classification_code
+            # frappe.msgprint(f"Set classification code: {item_class_cod.text}")
 
             price_item = ET.SubElement(invoice_line, "cac:Price")
             pri_amnt_item = ET.SubElement(
@@ -841,148 +877,17 @@ def invoice_line_item(invoice, sales_invoice_doc):
             pri_amnt_item.text = str(
                 abs(single_item.base_price_list_rate) - discount_amount
             )
+            # frappe.msgprint(f"Set price amount: {pri_amnt_item.text}")
 
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
             item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID="MYR")
             item_val_amnt.text = str(abs(single_item.base_amount))
+            # frappe.msgprint(f"Set item price extension: {item_val_amnt.text}")
 
+        # frappe.msgprint("Completed processing all items")
+        return invoice
     except Exception as e:
-        frappe.throw(f"Error in invoice_line: {str(e)}")
-
-
-# def invoice_line_item(invoice, sales_invoice_doc):
-#     """Adds InvoiceLine elements to the invoice"""
-#     try:
-
-#         for single_item in sales_invoice_doc.items:
-#             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
-#             item_id = ET.SubElement(invoice_line, "cbc:ID")
-#             item_id.text = str(single_item.idx)
-#             item_qty = ET.SubElement(
-#                 invoice_line,
-#                 "cbc:InvoicedQuantity",
-#                 unitCode=str(single_item.item_code),
-#             )
-#             item_qty.text = str(abs(single_item.qty))
-#             item_line_exte_amnt = ET.SubElement(
-#                 invoice_line, "cbc:LineExtensionAmount", currencyID="MYR"
-#             )
-#             item_line_exte_amnt.text = str(abs(single_item.amount))
-
-#             discount_amount = abs(single_item.get("discount_amount", 0.0))
-#             if discount_amount > 0:
-#                 allw_chrge = ET.SubElement(invoice_line, "cac:AllowanceCharge")
-#                 chrg_indic = ET.SubElement(allw_chrge, "cbc:ChargeIndicator")
-#                 chrg_indic.text = "false"
-#                 allwa_chrge_reson = ET.SubElement(
-#                     allw_chrge, "cbc:AllowanceChargeReason"
-#                 )
-#                 allwa_chrge_reson.text = "Item Discount"
-#                 multi_fac = ET.SubElement(allw_chrge, "cbc:MultiplierFactorNumeric")
-#                 multi_fac.text = "1"
-#                 amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID="MYR")
-#                 amnt.text = str(discount_amount)
-
-#                 allowance_charge = ET.SubElement(invoice, "cac:AllowanceCharge")
-
-#                 # Add cbc:ChargeIndicator element
-#                 charge_indicator = ET.SubElement(
-#                     allowance_charge, "cbc:ChargeIndicator"
-#                 )
-#                 charge_indicator.text = "true"
-
-#                 # Add cbc:AllowanceChargeReason element
-#                 allowance_charge_reason = ET.SubElement(
-#                     allowance_charge, "cbc:AllowanceChargeReason"
-#                 )
-#                 allowance_charge_reason.text = "dIscount of item"
-
-#                 # Add cbc:MultiplierFactorNumeric element
-#                 multiplier_factor_numeric = ET.SubElement(
-#                     allowance_charge, "cbc:MultiplierFactorNumeric"
-#                 )
-#                 multiplier_factor_numeric.text = "0.10"
-
-#                 # Add cbc:Amount element with attribute
-#                 amount = ET.SubElement(allowance_charge, "cbc:Amount", currencyID="MYR")
-#                 amount.text = str(discount_amount)
-
-#             # tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
-#             # tax_amount_item = ET.SubElement(
-#             #     tax_total, "cbc:TaxAmount", currencyID="MYR"
-#             # )
-#             tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
-#             tax_amount_item = ET.SubElement(
-#                 tax_total_item, "cbc:TaxAmount", currencyID="MYR"
-#             )
-#             tax_amount_item.text = str(
-#                 abs(
-#                     round(
-#                         (sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2
-#                     )
-#                 )
-#             )
-
-#             tax_subtot_item = ET.SubElement(tax_total, "cac:TaxSubtotal")
-#             taxable_amnt_item = ET.SubElement(
-#                 tax_subtot_item, "cbc:TaxableAmount", currencyID="MYR"
-#             )
-#             taxable_amnt_item.text = str(abs(single_item.amount - discount_amount))
-#             tax_amnt = ET.SubElement(tax_subtot_item, "cbc:TaxAmount", currencyID="MYR")
-#             tax_amnt.text = str(
-#                 abs(
-#                     round(
-#                         (sales_invoice_doc.taxes[0].rate) * single_item.amount / 100, 2
-#                     )
-#                 )
-#             )
-
-#             tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
-#             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
-#             cat_item_id.text = str(
-#                 sales_invoice_doc.custom_zatca_tax_category
-#             )  # number of category need
-#             # <cbc:Percent>0.00</cbc:Percent>
-#             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
-#             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
-#             tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
-#             tax_id_scheme_item = ET.SubElement(
-#                 tax_scheme_item, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
-#             )  # instedof 6 ive the data
-#             tax_id_scheme_item.text = "OTH"
-
-#             item_data = ET.SubElement(invoice_line, "cac:Item")
-#             descp_item = ET.SubElement(item_data, "cbc:Description")
-#             descp_item.text = str(single_item.description)
-
-#             comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
-
-#             item_class_cod = ET.SubElement(
-#                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
-#             )
-#             item_doc = frappe.get_doc(
-#                 "Item", single_item.item_code
-#             )  # Example for Frappe framework
-#             classification_code = str(item_doc.custom_item_classification_code).split(
-#                 ":"
-#             )[0]
-#             item_class_cod.text = classification_code
-
-#             price_item = ET.SubElement(invoice_line, "cac:Price")
-#             pri_amnt_item = ET.SubElement(
-#                 price_item, "cbc:PriceAmount", currencyID="MYR"
-#             )
-#             pri_amnt_item.text = str(
-#                 abs(single_item.base_price_list_rate) - discount_amount
-#             )
-
-#             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
-#             item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID="MYR")
-#             item_val_amnt.text = str(abs(single_item.base_amount))
-#             frappe.throw("the item amount is " + str(single_item.base_amount))
-
-#     except Exception as e:
-#         frappe.throw(f"Error in invoice_line: {str(e)}")
+        frappe.throw(f"Error in invoice_line_item: {str(e)}")
 
 
 def item_data_with_template(invoice, sales_invoice_doc):
@@ -1098,9 +1003,10 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 cac_ItemPriceExtension, "cbc:Amount", currencyID="MYR"
             )
             cbc_Amount.text = str(abs(single_item.base_amount))
-
+        return invoice
     except Exception as e:
         frappe.throw(f"Error in invoice_line item template: {str(e)}")
+        return None
 
 
 def xml_structuring(invoice, sales_invoice_doc):
