@@ -750,13 +750,11 @@ def get_Tax_for_Item(full_string, item):
 def invoice_line_item(invoice, sales_invoice_doc):
     """Adds InvoiceLine elements to the invoice"""
     try:
-        frappe.msgprint("invoice_line_item1")
+        frappe.throw(str(sales_invoice_doc.items))
         for single_item in sales_invoice_doc.items:
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
-            frappe.msgprint(invoice_line)
             item_id = ET.SubElement(invoice_line, "cbc:ID")
             item_id.text = str(single_item.idx)
-            frappe.msgprint(f"item invoice: item_id.text {item_id.text}")
             item_qty = ET.SubElement(
                 invoice_line,
                 "cbc:InvoicedQuantity",
@@ -814,7 +812,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             tax_amount_item = ET.SubElement(
                 tax_total_item, "cbc:TaxAmount", currencyID="MYR"
             )
-            frappe.msgprint(f"tax_amount_item {tax_amount_item}")
             tax_amount_item.text = str(
                 abs(
                     round(
@@ -822,7 +819,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
-            frappe.msgprint(f"item invoice: item_id.text {tax_amount_item.text}")
+
             tax_subtot_item = ET.SubElement(tax_total, "cac:TaxSubtotal")
             taxable_amnt_item = ET.SubElement(
                 tax_subtot_item, "cbc:TaxableAmount", currencyID="MYR"
@@ -860,7 +857,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
             )
-
             item_doc = frappe.get_doc(
                 "Item", single_item.item_code
             )  # Example for Frappe framework
@@ -876,7 +872,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
             pri_amnt_item.text = str(
                 abs(single_item.base_price_list_rate) - discount_amount
             )
-            
+
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
             item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID="MYR")
             item_val_amnt.text = str(abs(single_item.base_amount))
