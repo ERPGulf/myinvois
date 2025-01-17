@@ -590,8 +590,10 @@ def tax_total(invoice, sales_invoice_doc):
         )
 
         cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
+        raw_item_id_code = sales_invoice_doc.custom_zatca_tax_category
         cat_id_val = ET.SubElement(cac_TaxCategory, "cbc:ID")
-        cat_id_val.text = str(sales_invoice_doc.custom_zatca_tax_category)
+        # cat_id_val.text = str(sales_invoice_doc.custom_zatca_tax_category)
+        cat_id_val.text = raw_item_id_code.split(":")[0].strip()
         # <cbc:Percent>0.00</cbc:Percent><cbc:TaxExemptionReason>NA</cbc:TaxExemptionReason>
         prct = ET.SubElement(cac_TaxCategory, "cbc:Percent")
         prct.text = str(sales_invoice_doc.taxes[0].rate)
@@ -778,7 +780,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_qty = ET.SubElement(
                 invoice_line,
                 "cbc:InvoicedQuantity",
-                unitCode=str(single_item.item_code),
+                unitCode="H87",
             )
             item_qty.text = str(abs(single_item.qty))
             # frappe.msgprint(f"Set item quantity: {item_qty.text}")
@@ -841,7 +843,10 @@ def invoice_line_item(invoice, sales_invoice_doc):
 
             tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
-            cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
+            raw_invoice_type_code = sales_invoice_doc.custom_zatca_tax_category
+
+            cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
+            # cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
             # frappe.msgprint(
