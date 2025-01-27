@@ -58,15 +58,57 @@ def get_current_utc_datetime():
     return formatted_date, formatted_time
 
 
-def add_billing_reference(invoice, invoice_number):
+def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
     """Adds BillingReference with InvoiceDocumentReference to the invoice"""
-    invoice_id = get_icv_code(invoice_number)
+
     billing_reference = create_element(invoice, "cac:BillingReference")
     invoice_document_reference = create_element(
         billing_reference, "cac:InvoiceDocumentReference"
     )
+    if sales_invoice_doc.custom_invoicetype_code in [
+        "02 : Credit Note",
+        "03 :  Debit Note",
+        "04 :  Refund Note",
+    ]:
+        invoice_id = sales_invoice_doc.return_against
+    else:
+
+        invoice_id = get_icv_code(invoice_number)
+
     create_element(invoice_document_reference, "cbc:ID", invoice_id)
-    # create_element(invoice_document_reference, "cbc:UUID", uuid)
+    if sales_invoice_doc.custom_invoicetype_code in [
+        "02 : Credit Note",
+        "03 :  Debit Note",
+        "04 :  Refund Note",
+    ]:
+        doc_id = sales_invoice_doc.return_against
+        if not doc_id:
+            frappe.throw("No document found in return_against.")
+
+        # Fetch the full document using Frappe's API
+        doc = frappe.get_doc("Sales Invoice", doc_id)
+
+        # Check if `custom_submit_response` exists and is valid
+        if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
+            try:
+                # Parse the JSON data
+                custom_submit_response = json.loads(doc.custom_submit_response)
+
+                # Extract the `uuid` from `acceptedDocuments`
+                accepted_documents = custom_submit_response.get("acceptedDocuments", [])
+                if accepted_documents:
+                    uuid = accepted_documents[0].get("uuid")
+                    create_element(invoice_document_reference, "cbc:UUID", uuid)
+                else:
+                    frappe.throw(
+                        "No accepted documents found in custom_submit_response."
+                    )
+            except json.JSONDecodeError:
+                frappe.throw("Invalid JSON format in custom_submit_response.")
+        else:
+            frappe.throw("custom_submit_response is missing or empty.")
+
+            # Use the `uuid` to create the element
 
 
 def add_additional_document_reference(invoice, document_references):
@@ -149,7 +191,8 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
         create_element(inv_period, "cbc:Description", "Monthly")
         # if sales_invoice_doc.custom_invoicetype_code != "02 : Credit Note":
-        add_billing_reference(invoice, invoice_number=sales_invoice_doc.name)
+        invoice_number = sales_invoice_doc.name
+        add_billing_reference(invoice, invoice_number, sales_invoice_doc)
         # add_signature(invoice)
         return invoice
 
