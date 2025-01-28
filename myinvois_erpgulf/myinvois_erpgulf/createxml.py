@@ -69,6 +69,9 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         "02 : Credit Note",
         "03 :  Debit Note",
         "04 :  Refund Note",
+        "12 : Self-billed Credit Note",
+        "13 : Self-billed Debit Note",
+        "14 : Self-billed Refund Note",
     ]:
         invoice_id = sales_invoice_doc.return_against
     else:
@@ -80,6 +83,9 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         "02 : Credit Note",
         "03 :  Debit Note",
         "04 :  Refund Note",
+        "12 : Self-billed Credit Note",
+        "13 : Self-billed Debit Note",
+        "14 : Self-billed Refund Note",
     ]:
         doc_id = sales_invoice_doc.return_against
         if not doc_id:
@@ -155,8 +161,14 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:IssueTime", formatted_time)
         if sales_invoice_doc.is_return == 1:
             # Check if the field is already set to "02 : Credit Note"
-            if sales_invoice_doc.custom_invoicetype_code != "02 : Credit Note":
-                frappe.throw("Choose the invoice type code as '02 : Credit Note'")
+            if sales_invoice_doc.custom_invoicetype_code not in [
+                "02 : Credit Note",
+                "04 :  Refund Note",
+            ]:
+                frappe.throw(
+                    "Choose the invoice type code as '02 : Credit Note' and"
+                    " '04 :  Refund Note'"
+                )
         if sales_invoice_doc.is_debit_note == 1:
             # Check if the field is already set to "03 : Debit Note"
             if sales_invoice_doc.custom_invoicetype_code != "03 :  Debit Note":
