@@ -259,4 +259,9 @@ doctype_js = {
 }
 
 
+doc_events = {
+    "Sales Invoice": {
+        "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
+    }
+}
 fixtures = [{"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]}]

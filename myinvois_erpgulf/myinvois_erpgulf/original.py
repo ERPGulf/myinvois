@@ -377,6 +377,8 @@ def submission_url(sales_invoice_doc):
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
         sales_invoice_doc.db_set("custom_submit_response", response.text)
+        sales_invoice_doc.save(ignore_permissions=True)
+        frappe.db.commit()
         existing_files = frappe.get_all(
             "File",
             filters={
@@ -604,7 +606,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
-
+        # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
@@ -713,3 +715,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         frappe.ValidationError,
     ) as e:
         frappe.throw(f"Error in submit document: {str(e)}")
+
+
+def submit_document_wrapper(doc, method=None):
+    """submit_document_wrapper"""
+    # frappe.throw(f"Triggered submit_document for {doc.name}")
+    submit_document(doc.name)
