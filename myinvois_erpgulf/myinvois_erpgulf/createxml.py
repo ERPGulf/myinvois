@@ -39,7 +39,7 @@ def create_invoice_with_extensions():
         return invoice
     except (ET.ParseError, TypeError, ValueError) as e:
         frappe.msgprint(f"Error creating invoice extensions: {str(e)}")
-        return None
+        return ET.Element("Error")
 
 
 def create_element(parent, tag, text=None, attributes=None):
@@ -60,95 +60,123 @@ def get_current_utc_datetime():
 
 def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
     """Adds BillingReference with InvoiceDocumentReference to the invoice"""
-
-    billing_reference = create_element(invoice, "cac:BillingReference")
-    invoice_document_reference = create_element(
-        billing_reference, "cac:InvoiceDocumentReference"
-    )
-    if sales_invoice_doc.custom_invoicetype_code in [
-        "02 : Credit Note",
-        "03 :  Debit Note",
-        "04 :  Refund Note",
-        "12 : Self-billed Credit Note",
-        "13 : Self-billed Debit Note",
-        "14 : Self-billed Refund Note",
-    ]:
-        invoice_id = sales_invoice_doc.return_against
-    else:
-
-        invoice_id = get_icv_code(invoice_number)
-
-    create_element(invoice_document_reference, "cbc:ID", invoice_id)
-    if sales_invoice_doc.custom_invoicetype_code in [
-        "02 : Credit Note",
-        "03 :  Debit Note",
-        "04 :  Refund Note",
-        "12 : Self-billed Credit Note",
-        "13 : Self-billed Debit Note",
-        "14 : Self-billed Refund Note",
-    ]:
-        doc_id = sales_invoice_doc.return_against
-        if not doc_id:
-            frappe.throw("No document found in return_against.")
-
-        # Fetch the full document using Frappe's API
-        doc = frappe.get_doc("Sales Invoice", doc_id)
-
-        # Check if `custom_submit_response` exists and is valid
-        if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
-            try:
-                # Parse the JSON data
-                custom_submit_response = json.loads(doc.custom_submit_response)
-
-                # Extract the `uuid` from `acceptedDocuments`
-                accepted_documents = custom_submit_response.get("acceptedDocuments", [])
-                if accepted_documents:
-                    uuid = accepted_documents[0].get("uuid")
-                    create_element(invoice_document_reference, "cbc:UUID", uuid)
-                else:
-                    frappe.throw(
-                        "No accepted documents found in custom_submit_response."
-                    )
-            except json.JSONDecodeError:
-                frappe.throw("Invalid JSON format in custom_submit_response.")
+    try:
+        billing_reference = create_element(invoice, "cac:BillingReference")
+        invoice_document_reference = create_element(
+            billing_reference, "cac:InvoiceDocumentReference"
+        )
+        if sales_invoice_doc.custom_invoicetype_code in [
+            "02 : Credit Note",
+            "03 :  Debit Note",
+            "04 :  Refund Note",
+            "12 : Self-billed Credit Note",
+            "13 : Self-billed Debit Note",
+            "14 : Self-billed Refund Note",
+        ]:
+            invoice_id = sales_invoice_doc.return_against
         else:
-            frappe.throw("custom_submit_response is missing or empty.")
 
-            # Use the `uuid` to create the element
+            invoice_id = get_icv_code(invoice_number)
+
+        create_element(invoice_document_reference, "cbc:ID", invoice_id)
+        if sales_invoice_doc.custom_invoicetype_code in [
+            "02 : Credit Note",
+            "03 :  Debit Note",
+            "04 :  Refund Note",
+            "12 : Self-billed Credit Note",
+            "13 : Self-billed Debit Note",
+            "14 : Self-billed Refund Note",
+        ]:
+            doc_id = sales_invoice_doc.return_against
+            if not doc_id:
+                frappe.throw("No document found in return_against.")
+
+            # Fetch the full document using Frappe's API
+            doc = frappe.get_doc("Sales Invoice", doc_id)
+
+            # Check if `custom_submit_response` exists and is valid
+            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
+                try:
+                    # Parse the JSON data
+                    custom_submit_response = json.loads(doc.custom_submit_response)
+
+                    # Extract the `uuid` from `acceptedDocuments`
+                    accepted_documents = custom_submit_response.get(
+                        "acceptedDocuments", []
+                    )
+                    if accepted_documents:
+                        uuid = accepted_documents[0].get("uuid")
+                        create_element(invoice_document_reference, "cbc:UUID", uuid)
+                    else:
+                        frappe.throw(
+                            "No accepted documents found in custom_submit_response."
+                        )
+                except json.JSONDecodeError:
+                    frappe.throw("Invalid JSON format in custom_submit_response.")
+            else:
+                frappe.throw("custom_submit_response is missing or empty.")
+    except (
+        frappe.DoesNotExistError,
+        frappe.ValidationError,
+        AttributeError,
+        KeyError,
+    ) as e:
+        frappe.msgprint(f"Error in add billing reference: {str(e)}")
+        return None
+
+        # Use the `uuid` to create the element
 
 
 def add_additional_document_reference(invoice, document_references):
     """
     Adds multiple AdditionalDocumentReference elements to the given invoice.
     """
-    for ref in document_references:
-        additional_doc_reference = create_element(
-            invoice, "cac:AdditionalDocumentReference"
-        )
-        create_element(additional_doc_reference, "cbc:ID", ref.get("ID", ""))
-        if "DocumentType" in ref:
-            create_element(
-                additional_doc_reference, "cbc:DocumentType", ref["DocumentType"]
+    try:
+        for ref in document_references:
+            additional_doc_reference = create_element(
+                invoice, "cac:AdditionalDocumentReference"
             )
-        if "DocumentDescription" in ref:
-            create_element(
-                additional_doc_reference,
-                "cbc:DocumentDescription",
-                ref["DocumentDescription"],
-            )
+            create_element(additional_doc_reference, "cbc:ID", ref.get("ID", ""))
+            if "DocumentType" in ref:
+                create_element(
+                    additional_doc_reference, "cbc:DocumentType", ref["DocumentType"]
+                )
+            if "DocumentDescription" in ref:
+                create_element(
+                    additional_doc_reference,
+                    "cbc:DocumentDescription",
+                    ref["DocumentDescription"],
+                )
+    except (
+        frappe.DoesNotExistError,
+        frappe.ValidationError,
+        AttributeError,
+        KeyError,
+    ) as e:
+        frappe.msgprint(f"Error add aditional daata: {str(e)}")
+        return None
 
 
 def add_signature(invoice):
     """Adds Signature to the invoice"""
-    signature = create_element(invoice, "cac:Signature")
-    create_element(
-        signature, "cbc:ID", "urn:oasis:names:specification:ubl:signature:Invoice"
-    )
-    create_element(
-        signature,
-        "cbc:SignatureMethod",
-        "urn:oasis:names:specification:ubl:dsig:enveloped:xades",
-    )
+    try:
+        signature = create_element(invoice, "cac:Signature")
+        create_element(
+            signature, "cbc:ID", "urn:oasis:names:specification:ubl:signature:Invoice"
+        )
+        create_element(
+            signature,
+            "cbc:SignatureMethod",
+            "urn:oasis:names:specification:ubl:dsig:enveloped:xades",
+        )
+    except (
+        frappe.DoesNotExistError,
+        frappe.ValidationError,
+        AttributeError,
+        KeyError,
+    ) as e:
+        frappe.msgprint(f"Error signature data: {str(e)}")
+        return None
 
 
 def salesinvoice_data(invoice, sales_invoice_doc):
@@ -159,6 +187,9 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         formatted_date, formatted_time = get_current_utc_datetime()
         create_element(invoice, "cbc:IssueDate", formatted_date)
         create_element(invoice, "cbc:IssueTime", formatted_time)
+        if not sales_invoice_doc.custom_invoicetype_code:
+            frappe.throw("Custom Invoice Type Code is missing! ")
+
         if sales_invoice_doc.is_return == 1:
             # Check if the field is already set to "02 : Credit Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
@@ -173,7 +204,6 @@ def salesinvoice_data(invoice, sales_invoice_doc):
             # Check if the field is already set to "03 : Debit Note"
             if sales_invoice_doc.custom_invoicetype_code != "03 :  Debit Note":
                 frappe.throw("Choose the invoice type code as '03 : Debit Note'")
-
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
