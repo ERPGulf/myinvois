@@ -252,15 +252,19 @@ from . import __version__ as app_version
 
 
 doctype_js = {
-    "Sales Invoice": "public/js/sales_invoice.js",
     "LHDN Setting": "myinvois_erpgulf/public/js/LHDN_setting.js",
     "Company": "public/js/company.js",
     "Customer": "public/js/customer.js",
 }
 
+doctype_list_js = {
+    "Sales Invoice": "public/js/sales_invoice.js",
+}
+
 
 doc_events = {
     "Sales Invoice": {
+        "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
     }
 }

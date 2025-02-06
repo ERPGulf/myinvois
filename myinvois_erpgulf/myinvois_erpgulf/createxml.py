@@ -251,68 +251,44 @@ def salesinvoice_data(invoice, sales_invoice_doc):
 def company_data(invoice, sales_invoice_doc):
     """Adds the Company data to the invoice"""
     try:
-
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-        # additional_account_id = ET.SubElement(party_, "cbc:AdditionalAccountID", schemeAgencyName="CertEX")
-        # additional_account_id.text = "CPT-CCN-W-211111-KL-000002"
+
+        # Extract MSIC code and name
         msic_code_full = (
             company_doc.custom_msic_code_
         )  # e.g., "01111: Growing of maize"
         if ":" in msic_code_full:
-            msic_code_code = msic_code_full.split(":")[
-                0
-            ].strip()  # Extract the part before the colon (code)
-            msic_code_name = msic_code_full.split(":")[
-                1
-            ].strip()  # Extract the part after the colon (name)
+            msic_code_code, msic_code_name = [
+                s.strip() for s in msic_code_full.split(":", 1)
+            ]
         else:
-            msic_code_code = (
-                msic_code_full.strip()
-            )  # Use the full value if no colon is present
-            msic_code_name = ""  # No name available
+            msic_code_code, msic_code_name = msic_code_full.strip(), ""
 
-        # Create the cbc:IndustryClassificationCode element with the name attribute and code text
+        # Create the cbc:IndustryClassificationCode element
         cbc_indclacode = ET.SubElement(
             party_, "cbc:IndustryClassificationCode", name=msic_code_name
         )
         cbc_indclacode.text = msic_code_code
 
-        # cbc_indclacode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
-        # cbc_indclacode.text = company_doc.custom_msic_code_            #"62099"
-        party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
-        id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
-        id_val_1.text = str(company_doc.custom_company_tin_number)
+        # Company Identifications
+        identifiers = [
+            ("TIN", company_doc.custom_company_tin_number),
+            (
+                company_doc.custom_company_registrationicpassport_type,
+                company_doc.custom_company__registrationicpassport_number,
+            ),
+            ("SST", getattr(company_doc, "custom_sst_number", "NA") or "NA"),
+            ("TTX", getattr(company_doc, "custom_tourism_tax_number", "NA") or "NA"),
+        ]
 
-        partyid_2 = ET.SubElement(party_, "cac:PartyIdentification")
-        value_id = ET.SubElement(
-            partyid_2,
-            "cbc:ID",
-            schemeID=str(company_doc.custom_company_registrationicpassport_type),
-        )
-        value_id.text = str(company_doc.custom_company__registrationicpassport_number)
+        for scheme_id, value in identifiers:
+            party_id = ET.SubElement(party_, "cac:PartyIdentification")
+            id_element = ET.SubElement(party_id, "cbc:ID", schemeID=scheme_id)
+            id_element.text = str(value) if value else "NA"
 
-        partyid_3 = ET.SubElement(party_, "cac:PartyIdentification")
-        value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
-        company_doc.custom_sst_number = (
-            getattr(company_doc, "custom_sst_number", "NA") or "NA"
-        )
-
-        value_id3.text = (
-            str(company_doc.custom_sst_number)
-            if str(company_doc.custom_sst_number)
-            else "NA"
-        )
-
-        partyid_4 = ET.SubElement(party_, "cac:PartyIdentification")
-        value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
-        value_id4.text = (
-            str(company_doc.custom_tourism_tax_number)
-            if str(company_doc.custom_tourism_tax_number)
-            else "NA"
-        )
-
+        # Retrieve the first valid company address
         address_list = frappe.get_list(
             "Address",
             filters={"is_your_company_address": "1"},
@@ -326,63 +302,60 @@ def company_data(invoice, sales_invoice_doc):
                 "phone",
                 "email_id",
             ],
+            order_by="creation asc",  # Ensures a consistent selection
         )
 
-        if len(address_list) == 0:
+        if not address_list:
             frappe.throw(
                 "Invoice requires a proper address. Please add your company address in the Address field."
             )
 
-        for address in address_list:
+        address = address_list[0]  # Select the first address only
 
-            post_add = ET.SubElement(party_, "cac:PostalAddress")
-            city_name = ET.SubElement(post_add, "cbc:CityName")
-            city_name.text = address.city
+        # Create PostalAddress Element
+        post_add = ET.SubElement(party_, "cac:PostalAddress")
+        ET.SubElement(post_add, "cbc:CityName").text = address.city
+        ET.SubElement(post_add, "cbc:PostalZone").text = address.pincode
+        ET.SubElement(post_add, "cbc:CountrySubentityCode").text = (
+            address.custom_state_code
+        ).split(":")[0]
 
-            postal_zone = ET.SubElement(post_add, "cbc:PostalZone")
-            postal_zone.text = address.pincode
+        # Address lines
+        if address.address_line1:
+            add_line1 = ET.SubElement(post_add, "cac:AddressLine")
+            ET.SubElement(add_line1, "cbc:Line").text = address.address_line1
 
-            cntry_subentity_cod = ET.SubElement(post_add, "cbc:CountrySubentityCode")
-            statecode = (address.custom_state_code).split(":")[0]
-            cntry_subentity_cod.text = statecode
+        if address.address_line2:
+            add_line2 = ET.SubElement(post_add, "cac:AddressLine")
+            ET.SubElement(add_line2, "cbc:Line").text = address.address_line2
 
-            if address.address_line1:
-                add_line1 = ET.SubElement(post_add, "cac:AddressLine")
-                line_val = ET.SubElement(add_line1, "cbc:Line")
-                line_val.text = address.address_line1
+        # Combined city and postal code
+        combined_city_pincode = f"{address.city}, {address.pincode}"
+        add_line3 = ET.SubElement(post_add, "cac:AddressLine")
+        ET.SubElement(add_line3, "cbc:Line").text = combined_city_pincode
 
-            if address.address_line2:
-                add_line2 = ET.SubElement(post_add, "cac:AddressLine")
-                line2_val = ET.SubElement(add_line2, "cbc:Line")
-                line2_val.text = address.address_line2
+        # Country
+        cntry = ET.SubElement(post_add, "cac:Country")
+        idntfn_cod = ET.SubElement(
+            cntry,
+            "cbc:IdentificationCode",
+            listAgencyID="6",
+            listID="ISO3166-1",
+        )
+        idntfn_cod.text = "MYS"
 
-            combined_city_pincode = f"{address.city}, {address.pincode}"
-            add_line3 = ET.SubElement(post_add, "cac:AddressLine")
-            line_3_val = ET.SubElement(add_line3, "cbc:Line")
-            line_3_val.text = combined_city_pincode
-
-            cntry = ET.SubElement(post_add, "cac:Country")
-            idntfn_cod = ET.SubElement(
-                cntry,
-                "cbc:IdentificationCode",
-                listAgencyID="6",
-                listID="ISO3166-1",
-            )
-            idntfn_cod.text = "MYS"
-
+        # PartyLegalEntity
         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
-        reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
-        reg_name.text = sales_invoice_doc.company
+        ET.SubElement(party_legal_entity, "cbc:RegistrationName").text = (
+            sales_invoice_doc.company
+        )
 
+        # Contact Information
         cont_ct = ET.SubElement(party_, "cac:Contact")
-
         if address.get("phone"):
-            tele = ET.SubElement(cont_ct, "cbc:Telephone")
-            tele.text = address.phone
-
+            ET.SubElement(cont_ct, "cbc:Telephone").text = address.phone
         if address.get("email_id"):
-            mail = ET.SubElement(cont_ct, "cbc:ElectronicMail")
-            mail.text = address.email_id
+            ET.SubElement(cont_ct, "cbc:ElectronicMail").text = address.email_id
 
         return invoice
 
@@ -394,6 +367,154 @@ def company_data(invoice, sales_invoice_doc):
     ) as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
         return None
+
+
+# def company_data(invoice, sales_invoice_doc):
+#     """Adds the Company data to the invoice"""
+#     try:
+
+#         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+#         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
+#         party_ = ET.SubElement(account_supplier_party, "cac:Party")
+#         # additional_account_id = ET.SubElement(party_, "cbc:AdditionalAccountID", schemeAgencyName="CertEX")
+#         # additional_account_id.text = "CPT-CCN-W-211111-KL-000002"
+#         msic_code_full = (
+#             company_doc.custom_msic_code_
+#         )  # e.g., "01111: Growing of maize"
+#         if ":" in msic_code_full:
+#             msic_code_code = msic_code_full.split(":")[
+#                 0
+#             ].strip()  # Extract the part before the colon (code)
+#             msic_code_name = msic_code_full.split(":")[
+#                 1
+#             ].strip()  # Extract the part after the colon (name)
+#         else:
+#             msic_code_code = (
+#                 msic_code_full.strip()
+#             )  # Use the full value if no colon is present
+#             msic_code_name = ""  # No name available
+
+#         # Create the cbc:IndustryClassificationCode element with the name attribute and code text
+#         cbc_indclacode = ET.SubElement(
+#             party_, "cbc:IndustryClassificationCode", name=msic_code_name
+#         )
+#         cbc_indclacode.text = msic_code_code
+
+#         # cbc_indclacode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
+#         # cbc_indclacode.text = company_doc.custom_msic_code_            #"62099"
+#         party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
+#         id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
+#         id_val_1.text = str(company_doc.custom_company_tin_number)
+
+#         partyid_2 = ET.SubElement(party_, "cac:PartyIdentification")
+#         value_id = ET.SubElement(
+#             partyid_2,
+#             "cbc:ID",
+#             schemeID=str(company_doc.custom_company_registrationicpassport_type),
+#         )
+#         value_id.text = str(company_doc.custom_company__registrationicpassport_number)
+
+#         partyid_3 = ET.SubElement(party_, "cac:PartyIdentification")
+#         value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
+#         company_doc.custom_sst_number = (
+#             getattr(company_doc, "custom_sst_number", "NA") or "NA"
+#         )
+
+#         value_id3.text = (
+#             str(company_doc.custom_sst_number)
+#             if str(company_doc.custom_sst_number)
+#             else "NA"
+#         )
+
+#         partyid_4 = ET.SubElement(party_, "cac:PartyIdentification")
+#         value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
+#         value_id4.text = (
+#             str(company_doc.custom_tourism_tax_number)
+#             if str(company_doc.custom_tourism_tax_number)
+#             else "NA"
+#         )
+
+#         address_list = frappe.get_list(
+#             "Address",
+#             filters={"is_your_company_address": "1"},
+#             fields=[
+#                 "address_line1",
+#                 "address_line2",
+#                 "city",
+#                 "pincode",
+#                 "state",
+#                 "custom_state_code",
+#                 "phone",
+#                 "email_id",
+#             ],
+#         )
+
+#         if len(address_list) == 0:
+#             frappe.throw(
+#                 "Invoice requires a proper address. Please add your company address in the Address field."
+#             )
+
+#         for address in address_list:
+
+#             post_add = ET.SubElement(party_, "cac:PostalAddress")
+#             city_name = ET.SubElement(post_add, "cbc:CityName")
+#             city_name.text = address.city
+
+#             postal_zone = ET.SubElement(post_add, "cbc:PostalZone")
+#             postal_zone.text = address.pincode
+
+#             cntry_subentity_cod = ET.SubElement(post_add, "cbc:CountrySubentityCode")
+#             statecode = (address.custom_state_code).split(":")[0]
+#             cntry_subentity_cod.text = statecode
+
+#             if address.address_line1:
+#                 add_line1 = ET.SubElement(post_add, "cac:AddressLine")
+#                 line_val = ET.SubElement(add_line1, "cbc:Line")
+#                 line_val.text = address.address_line1
+
+#             if address.address_line2:
+#                 add_line2 = ET.SubElement(post_add, "cac:AddressLine")
+#                 line2_val = ET.SubElement(add_line2, "cbc:Line")
+#                 line2_val.text = address.address_line2
+
+#             combined_city_pincode = f"{address.city}, {address.pincode}"
+#             add_line3 = ET.SubElement(post_add, "cac:AddressLine")
+#             line_3_val = ET.SubElement(add_line3, "cbc:Line")
+#             line_3_val.text = combined_city_pincode
+
+#             cntry = ET.SubElement(post_add, "cac:Country")
+#             idntfn_cod = ET.SubElement(
+#                 cntry,
+#                 "cbc:IdentificationCode",
+#                 listAgencyID="6",
+#                 listID="ISO3166-1",
+#             )
+#             idntfn_cod.text = "MYS"
+
+#         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
+#         reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
+#         reg_name.text = sales_invoice_doc.company
+
+#         cont_ct = ET.SubElement(party_, "cac:Contact")
+
+#         if address.get("phone"):
+#             tele = ET.SubElement(cont_ct, "cbc:Telephone")
+#             tele.text = address.phone
+
+#         if address.get("email_id"):
+#             mail = ET.SubElement(cont_ct, "cbc:ElectronicMail")
+#             mail.text = address.email_id
+
+#         return invoice
+
+#     except (
+#         frappe.DoesNotExistError,
+#         frappe.ValidationError,
+#         AttributeError,
+#         KeyError,
+#     ) as e:
+#         frappe.throw(f"Error in company data generation: {str(e)}")
+#         return None
 
 
 def customer_data(invoice, sales_invoice_doc):
