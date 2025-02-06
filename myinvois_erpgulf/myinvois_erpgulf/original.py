@@ -19,6 +19,10 @@ from cryptography.hazmat.primitives.serialization import (
 )
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
+from myinvois_erpgulf.myinvois_erpgulf.consolidate_invoice import (
+    customer_data_consolidate,
+    delivery_data_consolidate,
+)
 from myinvois_erpgulf.myinvois_erpgulf.createxml import (
     create_invoice_with_extensions,
     salesinvoice_data,
@@ -513,7 +517,10 @@ def status_submission(invoice_number, sales_invoice_doc):
         submission_uid = response_data.get("submissionUid")
 
         if not submission_uid:
-            frappe.throw("Submission UID not found in the response.")
+            frappe.throw(
+                f"Submission UID not found.. not submitted due to an error in the response: "
+                f"{response_data}"
+            )
 
         url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
 
@@ -600,12 +607,10 @@ def status_submit_success_log(doc):
         frappe.log_error(f"Error during status submission: {str(e)}")
 
 
-@frappe.whitelist(allow_guest=True)
-def submit_document(invoice_number, any_item_has_tax_template=False):
-    """defining the submit document"""
+def validate_before(invoice_number, any_item_has_tax_template=False):
+    """this function validates the invoice before submission"""
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
-        # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
@@ -626,8 +631,15 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            invoice = customer_data(invoice, sales_invoice_doc)
-            invoice = delivery_data(invoice, sales_invoice_doc)
+            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            if customer_doc.customer_name != "General Public":
+                invoice = customer_data(invoice, sales_invoice_doc)
+            else:
+                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
+            if customer_doc.customer_name != "General Public":
+                invoice = delivery_data(invoice, sales_invoice_doc)
+            else:
+                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -674,15 +686,28 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             )
 
             submission_url(sales_invoice_doc)
-            status_submission(invoice_number, sales_invoice_doc)
+            response_data = json.loads(sales_invoice_doc.custom_submit_response)
+            submission_uid = response_data.get("submissionUid")
 
+            if not submission_uid:
+                frappe.throw(
+                    f"Submission UID not found.. not submitted due to an error in the response: "
+                    f"{response_data}"
+                )
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            invoice = customer_data(invoice, sales_invoice_doc)
-            invoice = delivery_data(invoice, sales_invoice_doc)
+            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            if customer_doc.customer_name != "General Public":
+                invoice = customer_data(invoice, sales_invoice_doc)
+            else:
+                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
+            if customer_doc.customer_name != "General Public":
+                invoice = delivery_data(invoice, sales_invoice_doc)
+            else:
+                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -703,7 +728,168 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 
             line_xml, doc_hash = xml_hash()
             submission_url(sales_invoice_doc)
-            status_submission(invoice_number, sales_invoice_doc)
+            response_data = json.loads(sales_invoice_doc.custom_submit_response)
+            submission_uid = response_data.get("submissionUid")
+
+            if not submission_uid:
+                frappe.throw(
+                    f"Submission UID not found.. not submitted due to an error in the response: "
+                    f"{response_data}"
+                )
+    except (
+        frappe.DoesNotExistError,
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        frappe.ValidationError,
+    ) as e:
+        frappe.throw(f"Error in validate before  document: {str(e)}")
+
+
+def validate_before_submit(doc, method=None):
+    """validating the invoice before submission"""
+    # frappe.throw(f"Triggered submit_document for {doc.name}")
+    validate_before(doc.name)
+
+
+@frappe.whitelist(allow_guest=True)
+def submit_document(invoice_number, any_item_has_tax_template=False):
+    """defining the submit document"""
+    try:
+        sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
+        # Check if any item has a tax template but not all items have one
+        if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
+            item.item_tax_template for item in sales_invoice_doc.items
+        ):
+            frappe.throw(
+                "If any one item has an Item Tax Template, all items must have an Item Tax Template."
+            )
+        else:
+            # Set to True if all items have a tax template
+            any_item_has_tax_template = all(
+                item.item_tax_template for item in sales_invoice_doc.items
+            )
+
+        settings = frappe.get_doc("LHDN Malaysia Setting")
+        if settings.certificate_file and settings.version == "1.1":
+
+            invoice = create_invoice_with_extensions()
+            invoice = salesinvoice_data(invoice, sales_invoice_doc)
+
+            invoice = company_data(invoice, sales_invoice_doc)
+            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            if customer_doc.customer_name != "General Public":
+                invoice = customer_data(invoice, sales_invoice_doc)
+            else:
+                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
+            if customer_doc.customer_name != "General Public":
+                invoice = delivery_data(invoice, sales_invoice_doc)
+            else:
+                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = payment_data(invoice, sales_invoice_doc)
+            # Call appropriate tax total function
+            invoice = allowance_charge_data(invoice, sales_invoice_doc)
+            if not any_item_has_tax_template:
+                invoice = tax_total(invoice, sales_invoice_doc)
+            else:
+                invoice = tax_total_with_template(invoice, sales_invoice_doc)
+
+            invoice = legal_monetary_total(invoice, sales_invoice_doc)
+
+            # Call appropriate item data function
+            if not any_item_has_tax_template:
+                invoice = invoice_line_item(invoice, sales_invoice_doc)
+            else:
+                invoice = item_data_with_template(invoice, sales_invoice_doc)
+
+            xml_structuring(invoice, sales_invoice_doc)
+
+            line_xml, doc_hash = xml_hash()
+
+            (
+                certificate_base64,
+                formatted_issuer_name,
+                x509_serial_number,
+                cert_digest,
+                signing_time,
+            ) = certificate_data()
+
+            signature = sign_data(line_xml)
+            prop_cert_base64 = signed_properties_hash(
+                signing_time, cert_digest, formatted_issuer_name, x509_serial_number
+            )
+
+            ubl_extension_string(
+                doc_hash,
+                prop_cert_base64,
+                signature,
+                certificate_base64,
+                signing_time,
+                cert_digest,
+                formatted_issuer_name,
+                x509_serial_number,
+                line_xml,
+            )
+
+            submission_url(sales_invoice_doc)
+            response_data = json.loads(sales_invoice_doc.custom_submit_response)
+            submission_uid = response_data.get("submissionUid")
+
+            if not submission_uid:
+                frappe.throw(
+                    f"Submission UID not found.. not submitted due to an error in the response: "
+                    f"{response_data}"
+                )
+            else:
+                status_submission(invoice_number, sales_invoice_doc)
+
+        else:
+            invoice = create_invoice_with_extensions()
+            invoice = salesinvoice_data(invoice, sales_invoice_doc)
+
+            invoice = company_data(invoice, sales_invoice_doc)
+            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            if customer_doc.customer_name != "General Public":
+                invoice = customer_data(invoice, sales_invoice_doc)
+            else:
+                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
+            if customer_doc.customer_name != "General Public":
+                invoice = delivery_data(invoice, sales_invoice_doc)
+            else:
+                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = payment_data(invoice, sales_invoice_doc)
+            # Call appropriate tax total function
+            invoice = allowance_charge_data(invoice, sales_invoice_doc)
+            if not any_item_has_tax_template:
+                invoice = tax_total(invoice, sales_invoice_doc)
+            else:
+                invoice = tax_total_with_template(invoice, sales_invoice_doc)
+
+            invoice = legal_monetary_total(invoice, sales_invoice_doc)
+
+            # Call appropriate item data function
+            if not any_item_has_tax_template:
+                invoice = invoice_line_item(invoice, sales_invoice_doc)
+            else:
+                invoice = item_data_with_template(invoice, sales_invoice_doc)
+
+            xml_structuring(invoice, sales_invoice_doc)
+
+            line_xml, doc_hash = xml_hash()
+            submission_url(sales_invoice_doc)
+            response_data = json.loads(sales_invoice_doc.custom_submit_response)
+            submission_uid = response_data.get("submissionUid")
+
+            if not submission_uid:
+                frappe.throw(
+                    f"Submission UID not found.. not submitted due to an error in the response: "
+                    f"{response_data}"
+                )
+            else:
+                status_submission(invoice_number, sales_invoice_doc)
+            # status_submission(invoice_number, sales_invoice_doc)
 
     except (
         frappe.DoesNotExistError,
