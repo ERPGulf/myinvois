@@ -268,4 +268,8 @@ doc_events = {
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
     }
 }
-fixtures = [{"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]}]
+fixtures = [
+    {"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]},
+    {"dt": "Print Format", "filters": [["module", "=", "Myinvois Erpgulf"]]},
+    {"dt": "Property Setter", "filters": [["module", "=", "Myinvois Erpgulf"]]},
+]
