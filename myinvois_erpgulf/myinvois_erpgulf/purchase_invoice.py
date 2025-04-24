@@ -66,9 +66,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
             billing_reference, "cac:InvoiceDocumentReference"
         )
         if sales_invoice_doc.custom_invoicetype_code in [
-            "02 : Credit Note",
-            "03 :  Debit Note",
-            "04 :  Refund Note",
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
             "14 : Self-billed Refund Note",
@@ -80,9 +77,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
 
         create_element(invoice_document_reference, "cbc:ID", invoice_id)
         if sales_invoice_doc.custom_invoicetype_code in [
-            "02 : Credit Note",
-            "03 :  Debit Note",
-            "04 :  Refund Note",
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
             "14 : Self-billed Refund Note",
@@ -92,7 +86,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                 frappe.throw("No document found in return_against.")
 
             # Fetch the full document using Frappe's API
-            doc = frappe.get_doc("Sales Invoice", doc_id)
+            doc = frappe.get_doc("Purchase Invoice", doc_id)
 
             # Check if `custom_submit_response` exists and is valid
             if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
@@ -180,7 +174,7 @@ def add_signature(invoice):
 
 
 def salesinvoice_data(invoice, sales_invoice_doc):
-    """Adds the Sales Invoice data to the invoice"""
+    """Adds the Purchase Invoice data to the invoice"""
     try:
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
 
@@ -244,7 +238,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error sales invoice data: {str(e)}")
+        frappe.msgprint(f"Error Purchase Invoice data: {str(e)}")
         return None
 
 
@@ -521,7 +515,7 @@ def customer_data(invoice, sales_invoice_doc):
     """Adds the Customer data to the invoice"""
     try:
 
-        customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+        customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
         accounting_customer_party = ET.SubElement(
             invoice, "cac:AccountingCustomerParty"
         )
@@ -615,7 +609,7 @@ def customer_data(invoice, sales_invoice_doc):
 def delivery_data(invoice, sales_invoice_doc):
     "" "Adds the Delivery data to the invoice" ""
     try:
-        customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+        customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
 
         delivery = ET.SubElement(invoice, "cac:Delivery")
         delivery_party = ET.SubElement(delivery, "cac:DeliveryParty")
@@ -1226,16 +1220,19 @@ def xml_structuring(invoice, sales_invoice_doc):
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
-        # try:
-        #                 fileXx = frappe.get_doc(
-        #                     {   "doctype": "File",
-        #                         "file_type": "xml",
-        #                         "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
-        #                         "attached_to_doctype":sales_invoice_doc.doctype,
-        #                         "attached_to_name":sales_invoice_doc.name,
-        #                         "content": raw_xml,
-        #                         "is_private": 1,})
-        #                 fileXx.save()
+
+        fileXx = frappe.get_doc(
+            {
+                "doctype": "File",
+                "file_type": "xml",
+                "file_name": "E-invoice-" + sales_invoice_doc.name + ".xml",
+                "attached_to_doctype": sales_invoice_doc.doctype,
+                "attached_to_name": sales_invoice_doc.name,
+                "content": raw_xml,
+                "is_private": 1,
+            }
+        )
+        fileXx.save()
 
         return raw_xml
     except Exception as e:
@@ -1243,7 +1240,7 @@ def xml_structuring(invoice, sales_invoice_doc):
 
 
 def generate_qr_code(sales_invoice_doc, status):
-    """Generate QR code for the given Sales Invoice"""
+    """Generate QR code for the given Purchase Invoice"""
     # Extract required fields
     customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
@@ -1290,12 +1287,12 @@ def generate_qr_code(sales_invoice_doc, status):
 
 
 def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
-    """Attach the QR code image to the Sales Invoice"""
+    """Attach the QR code image to the Purchase Invoice"""
     # Read the file content
     with open(qr_image_path, "rb") as qr_file:
         qr_content = qr_file.read()
 
-    # Create a File document and attach it to the Sales Invoice
+    # Create a File document and attach it to the Purchase Invoice
     qr_file_doc = frappe.get_doc(
         {
             "doctype": "File",

@@ -23,7 +23,7 @@ from myinvois_erpgulf.myinvois_erpgulf.consolidate_invoice import (
     customer_data_consolidate,
     delivery_data_consolidate,
 )
-from myinvois_erpgulf.myinvois_erpgulf.createxml import (
+from myinvois_erpgulf.myinvois_erpgulf.purchase_invoice import (
     create_invoice_with_extensions,
     salesinvoice_data,
     company_data,
@@ -609,7 +609,7 @@ def status_submit_success_log(doc):
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
     try:
-        sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
@@ -630,7 +630,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
             if customer_doc.customer_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
             else:
@@ -756,7 +756,7 @@ def validate_before_submit(doc, method=None):
 def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
-        sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
         # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
@@ -778,7 +778,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
             if customer_doc.customer_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
             else:
