@@ -23,7 +23,7 @@ from myinvois_erpgulf.myinvois_erpgulf.consolidate_invoice import (
     customer_data_consolidate,
     delivery_data_consolidate,
 )
-from myinvois_erpgulf.myinvois_erpgulf.createxml import (
+from myinvois_erpgulf.myinvois_erpgulf.purchase_invoice import (
     create_invoice_with_extensions,
     salesinvoice_data,
     company_data,
@@ -327,12 +327,15 @@ def submission_url(sales_invoice_doc):
             file_path = "/private/files/aftersignforsubmit.xml"
         else:
             file_path = "/private/files/beforesubmit1.xml"
+
         xml_path = frappe.local.site + file_path
 
         # Read XML data
         with open(xml_path, "rb") as file:
             xml_data = file.read()
+
         pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
+        # frappe.throw(f"XML data: {pretty_xml_string}")
         # file_path1 = "/private/files/signedxmlfile.xml"  # You can specify your desired file path here
         # xml_dat_path = frappe.local.site + file_path1
         # with open(xml_dat_path, "w", encoding="utf-8") as file:
@@ -343,7 +346,8 @@ def submission_url(sales_invoice_doc):
         sha256_hash = hashlib.sha256(xml_data).hexdigest()
         encoded_xml = base64.b64encode(xml_data).decode("utf-8")
         invoice_number = sales_invoice_doc.name
-
+        # frappe.throw(f"Invoice number: {invoice_number}")
+        # frappe.throw(f"Encoded XML: {encoded_xml}")
         json_payload = {
             "documents": [
                 {
@@ -354,7 +358,7 @@ def submission_url(sales_invoice_doc):
                 }
             ]
         }
-
+        # frappe.throw(f"JSON payload: {json_payload}")
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -370,7 +374,6 @@ def submission_url(sales_invoice_doc):
             )
 
         response = submit_request()
-
         if response.status_code in [401, 500]:
             get_access_token()  # Refresh the token and save it in settings
             settings.reload()  # Reload settings to get the new token
@@ -568,14 +571,13 @@ def status_submit_success_log(doc):
 
         response = requests.get(url, headers=headers, timeout=30)
         # Send the request
-        if response.status_code in [401, 500]:
+        if response.status_code == 401:
             get_access_token()  # Assuming this function refreshes the token
             settings.reload()  # Reload settings to get the updated token
             token = settings.bearer_token  # Get the refreshed token
             headers["Authorization"] = f"Bearer {token}"
 
             # Retry the request with the new token
-
             response = requests.get(url, headers=headers, timeout=30)
 
         if response.status_code == 200:
@@ -608,10 +610,12 @@ def status_submit_success_log(doc):
         frappe.log_error(f"Error during status submission: {str(e)}")
 
 
+@frappe.whitelist(allow_guest=True)
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
+    # frappe.throw("hi")
     try:
-        sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
@@ -632,12 +636,15 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+            # frappe.throw(
+            #     f"Fetched from DB: {customer_doc.customer_name} {sales_invoice_doc.supplier}"
+            # )
+            if customer_doc.supplier_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
             else:
                 invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
+            if customer_doc.supplier_name != "General Public":
                 invoice = delivery_data(invoice, sales_invoice_doc)
             else:
                 invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
@@ -694,23 +701,26 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             #     frappe.throw(
             #         f"Submission UID not found.. not submitted due to an error in the response: "
             #         f"{response_data}"
-            #     )
+            # )
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
-
+            # frappe.throw("hi1")
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
+            # # frappe.throw("hi2")
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+            if customer_doc.supplier_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
+                # frappe.throw("hi3")
             else:
                 invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
+            if customer_doc.supplier_name != "General Public":
                 invoice = delivery_data(invoice, sales_invoice_doc)
+                # frappe.throw("hi4")
             else:
                 invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
-            # Call appropriate tax total function
+            # # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
             if not any_item_has_tax_template:
                 invoice = tax_total(invoice, sales_invoice_doc)
@@ -726,7 +736,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 invoice = item_data_with_template(invoice, sales_invoice_doc)
 
             xml_structuring(invoice, sales_invoice_doc)
-
+            # frappe.throw("hi")
             line_xml, doc_hash = xml_hash()
             # submission_url(sales_invoice_doc)
             # response_data = json.loads(sales_invoice_doc.custom_submit_response)
@@ -758,7 +768,7 @@ def validate_before_submit(doc, method=None):
 def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
-        sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
         # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
@@ -780,12 +790,12 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+            if customer_doc.supplier_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
             else:
                 invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
+            if customer_doc.supplier_name != "General Public":
                 invoice = delivery_data(invoice, sales_invoice_doc)
             else:
                 invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
@@ -851,12 +861,12 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
             invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
+            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+            if customer_doc.supplier_name != "General Public":
                 invoice = customer_data(invoice, sales_invoice_doc)
             else:
                 invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
+            if customer_doc.supplier_name != "General Public":
                 invoice = delivery_data(invoice, sales_invoice_doc)
             else:
                 invoice = delivery_data_consolidate(invoice, sales_invoice_doc)

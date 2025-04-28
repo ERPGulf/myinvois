@@ -255,6 +255,7 @@ doctype_js = {
     "LHDN Setting": "myinvois_erpgulf/public/js/LHDN_setting.js",
     "Company": "public/js/company.js",
     "Customer": "public/js/customer.js",
+    "Purchase Invoice": "public/js/puchase.js",
 }
 
 doctype_list_js = {
@@ -266,8 +267,13 @@ doc_events = {
     "Sales Invoice": {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
-    }
+    },
+    # "Purchase Invoice": {
+    #     "before_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.validate_before_submit",
+    #     "on_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.submit_document_wrapper",
+    # },
 }
+
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Print Format", "filters": [["module", "=", "Myinvois Erpgulf"]]},

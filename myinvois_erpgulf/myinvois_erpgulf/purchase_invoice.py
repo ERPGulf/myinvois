@@ -6,6 +6,7 @@ import json
 import re
 import frappe
 import pyqrcode
+from frappe import _
 
 
 def get_icv_code(invoice_number):
@@ -19,7 +20,7 @@ def get_icv_code(invoice_number):
         frappe.throw("Type error in getting ICV number: " + str(e))
         return None
     except re.error as e:
-        frappe.throw("Regex error in getting ICV number: " + str(e))
+        frappe.throw(_("Regex error in getting ICV number: " + str(e)))
         return None
 
 
@@ -66,9 +67,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
             billing_reference, "cac:InvoiceDocumentReference"
         )
         if sales_invoice_doc.custom_invoicetype_code in [
-            "02 : Credit Note",
-            "03 :  Debit Note",
-            "04 :  Refund Note",
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
             "14 : Self-billed Refund Note",
@@ -80,9 +78,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
 
         create_element(invoice_document_reference, "cbc:ID", invoice_id)
         if sales_invoice_doc.custom_invoicetype_code in [
-            "02 : Credit Note",
-            "03 :  Debit Note",
-            "04 :  Refund Note",
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
             "14 : Self-billed Refund Note",
@@ -92,7 +87,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                 frappe.throw("No document found in return_against.")
 
             # Fetch the full document using Frappe's API
-            doc = frappe.get_doc("Sales Invoice", doc_id)
+            doc = frappe.get_doc("Purchase Invoice", doc_id)
 
             # Check if `custom_submit_response` exists and is valid
             if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
@@ -180,7 +175,7 @@ def add_signature(invoice):
 
 
 def salesinvoice_data(invoice, sales_invoice_doc):
-    """Adds the Sales Invoice data to the invoice"""
+    """Adds the Purchase Invoice data to the invoice"""
     try:
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
 
@@ -193,17 +188,21 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         if sales_invoice_doc.is_return == 1:
             # Check if the field is already set to "02 : Credit Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
-                "02 : Credit Note",
-                "04 :  Refund Note",
+                "12 : Self-billed Credit Note",
+                "14 : Self-billed Refund Note",
             ]:
                 frappe.throw(
-                    "Choose the invoice type code as '02 : Credit Note' and"
-                    " '04 :  Refund Note'"
+                    "Choose the invoice type code as Self-billed Credit Note and  Self-billed Refund Note"
                 )
-        if sales_invoice_doc.is_debit_note == 1:
+        if sales_invoice_doc.is_return == 1:
             # Check if the field is already set to "03 : Debit Note"
-            if sales_invoice_doc.custom_invoicetype_code != "03 :  Debit Note":
-                frappe.throw("Choose the invoice type code as '03 : Debit Note'")
+            if (
+                sales_invoice_doc.custom_invoicetype_code
+                != "13 : Self-billed Debit Note"
+            ):
+                frappe.throw(
+                    "Choose the invoice type code as '13 : Self-billed Debit Note'"
+                )
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
@@ -244,7 +243,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error sales invoice data: {str(e)}")
+        frappe.msgprint(f"Error Purchase Invoice data: {str(e)}")
         return None
 
 
@@ -252,13 +251,16 @@ def company_data(invoice, sales_invoice_doc):
     """Adds the Company data to the invoice"""
     try:
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+        # frappe.throw(f"Company loaded: {company_doc.name}")
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
+        # frappe.throw(f"Company 1loaded: {company_doc.name}")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
 
         # Extract MSIC code and name
         msic_code_full = (
             company_doc.custom_msic_code_
         )  # e.g., "01111: Growing of maize"
+        # frappe.throw(f"Company loaded: {msic_code_full}")
         if ":" in msic_code_full:
             msic_code_code, msic_code_name = [
                 s.strip() for s in msic_code_full.split(":", 1)
@@ -352,16 +354,10 @@ def company_data(invoice, sales_invoice_doc):
 
         # Contact Information
         cont_ct = ET.SubElement(party_, "cac:Contact")
-
-        phone = address.get("phone")
-        ET.SubElement(cont_ct, "cbc:Telephone").text = (
-            phone if not is_na(phone) else 60100000000
-        )
-
-        email = address.get("email_id")
-        if is_na(email) or not is_valid_email(email):
-            email = "noemail@noemail.com"
-        ET.SubElement(cont_ct, "cbc:ElectronicMail").text = email
+        if address.get("phone"):
+            ET.SubElement(cont_ct, "cbc:Telephone").text = address.phone
+        if address.get("email_id"):
+            ET.SubElement(cont_ct, "cbc:ElectronicMail").text = address.email_id
 
         return invoice
 
@@ -373,17 +369,6 @@ def company_data(invoice, sales_invoice_doc):
     ) as e:
         frappe.throw(f"Error in company data generation: {str(e)}")
         return None
-
-
-# Function to check for N/A variations
-def is_na(value):
-    return value is None or str(value).strip().lower() in ["n/a", "na", ""]
-
-
-# Function to validate email format
-def is_valid_email(email):
-    email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    return re.match(email_regex, email) is not None
 
 
 # def company_data(invoice, sales_invoice_doc):
@@ -538,7 +523,7 @@ def customer_data(invoice, sales_invoice_doc):
     """Adds the Customer data to the invoice"""
     try:
 
-        customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+        customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
         accounting_customer_party = ET.SubElement(
             invoice, "cac:AccountingCustomerParty"
         )
@@ -579,9 +564,9 @@ def customer_data(invoice, sales_invoice_doc):
         )
 
         if int(frappe.__version__.split(".")[0]) == 13:
-            address = frappe.get_doc("Address", sales_invoice_doc.customer_address)
+            address = frappe.get_doc("Address", sales_invoice_doc.primary_address)
         else:
-            address = frappe.get_doc("Address", customer_doc.customer_primary_address)
+            address = frappe.get_doc("Address", customer_doc.supplier_primary_address)
         posta_address = ET.SubElement(cac_Party, "cac:PostalAddress")
         name_city = ET.SubElement(posta_address, "cbc:CityName")
         name_city.text = address.city
@@ -615,7 +600,7 @@ def customer_data(invoice, sales_invoice_doc):
 
         party_legalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
         reg_name_val = ET.SubElement(party_legalEntity, "cbc:RegistrationName")
-        reg_name_val.text = sales_invoice_doc.customer
+        reg_name_val.text = sales_invoice_doc.supplier
 
         cont_customer = ET.SubElement(cac_Party, "cac:Contact")
         tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
@@ -632,7 +617,7 @@ def customer_data(invoice, sales_invoice_doc):
 def delivery_data(invoice, sales_invoice_doc):
     "" "Adds the Delivery data to the invoice" ""
     try:
-        customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+        customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
 
         delivery = ET.SubElement(invoice, "cac:Delivery")
         delivery_party = ET.SubElement(delivery, "cac:DeliveryParty")
@@ -650,9 +635,9 @@ def delivery_data(invoice, sales_invoice_doc):
         brn_id.text = str(customer_doc.custom_customer_registrationicpassport_number)
 
         if int(frappe.__version__.split(".")[0]) == 13:
-            address = frappe.get_doc("Address", sales_invoice_doc.customer_address)
+            address = frappe.get_doc("Address", sales_invoice_doc.primary_address)
         else:
-            address = frappe.get_doc("Address", customer_doc.customer_primary_address)
+            address = frappe.get_doc("Address", customer_doc.supplier_primary_address)
 
         postal_address = ET.SubElement(delivery_party, "cac:PostalAddress")
         city_name = ET.SubElement(postal_address, "cbc:CityName")
@@ -660,7 +645,8 @@ def delivery_data(invoice, sales_invoice_doc):
 
         postal_zone = ET.SubElement(postal_address, "cbc:PostalZone")
 
-        postal_zone.text = str(address.custom_state_code).split(":", 1)[1].strip()
+        postal_zone.text = address.pincode
+        # str(address.custom_state_code).split(":", 1)[1].strip()
 
         country_subentity_code = ET.SubElement(
             postal_address, "cbc:CountrySubentityCode"
@@ -695,7 +681,7 @@ def delivery_data(invoice, sales_invoice_doc):
 
         party_legal_entity = ET.SubElement(delivery_party, "cac:PartyLegalEntity")
         registration_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
-        registration_name.text = sales_invoice_doc.customer
+        registration_name.text = sales_invoice_doc.supplier
         return invoice
     except Exception as e:
         frappe.throw(f"Error in customer_data: {str(e)}")
@@ -1102,7 +1088,9 @@ def invoice_line_item(invoice, sales_invoice_doc):
             pri_amnt_item = ET.SubElement(
                 price_item, "cbc:PriceAmount", currencyID="MYR"
             )
-            pri_amnt_item.text = str(abs(single_item.base_rate) - discount_amount)
+            pri_amnt_item.text = str(
+                abs(single_item.base_price_list_rate) - discount_amount
+            )
             # frappe.msgprint(f"Set price amount: {pri_amnt_item.text}")
 
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
@@ -1218,9 +1206,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
             cbc_PriceAmount = ET.SubElement(
                 cac_Price, "cbc:PriceAmount", currencyID="MYR"
             )
-            cbc_PriceAmount.text = str(
-                abs(single_item.base_price_list_rate) - discount_amount
-            )
+            cbc_PriceAmount.text = str(abs(single_item.base_rate) - discount_amount)
 
             cac_ItemPriceExtension = ET.SubElement(
                 cac_InvoiceLine, "cac:ItemPriceExtension"
@@ -1241,16 +1227,19 @@ def xml_structuring(invoice, sales_invoice_doc):
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
-        # try:
-        #                 fileXx = frappe.get_doc(
-        #                     {   "doctype": "File",
-        #                         "file_type": "xml",
-        #                         "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
-        #                         "attached_to_doctype":sales_invoice_doc.doctype,
-        #                         "attached_to_name":sales_invoice_doc.name,
-        #                         "content": raw_xml,
-        #                         "is_private": 1,})
-        #                 fileXx.save()
+
+        # fileXx = frappe.get_doc(
+        #     {
+        #         "doctype": "File",
+        #         "file_type": "xml",
+        #         "file_name": "E-invoice-" + sales_invoice_doc.name + ".xml",
+        #         "attached_to_doctype": sales_invoice_doc.doctype,
+        #         "attached_to_name": sales_invoice_doc.name,
+        #         "content": raw_xml,
+        #         "is_private": 0,
+        #     }
+        # )
+        # fileXx.save()
 
         return raw_xml
     except Exception as e:
@@ -1258,21 +1247,35 @@ def xml_structuring(invoice, sales_invoice_doc):
 
 
 def generate_qr_code(sales_invoice_doc, status):
-    """Generate QR code for the given Sales Invoice"""
+    """Generate QR code for the given Purchase Invoice"""
     # Extract required fields
-    customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+    customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
     verification_url = (
         "https://verify.hasil.gov.my/einvoice?ref=" + sales_invoice_doc.name
     )
+    # qr_data = {
+    #     "uin": sales_invoice_doc.name,  # Invoice number
+    #     "seller_tin": company_doc.custom_company_tin_number,
+    #     "buyer_tin": customer_doc.custom_customer_tin_number,
+    #     "date": sales_invoice_doc.posting_date.strftime("%Y-%m-%d"),
+    #     "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
+    #     "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
+    #     "status": status,  # Example status, modify as needed
+    #     "verification_url": verification_url,
+    # }
+    posting_date = sales_invoice_doc.posting_date
+    if isinstance(posting_date, str):
+        posting_date = datetime.strptime(posting_date, "%Y-%m-%d").date()
+
     qr_data = {
-        "uin": sales_invoice_doc.name,  # Invoice number
+        "uin": sales_invoice_doc.name,
         "seller_tin": company_doc.custom_company_tin_number,
         "buyer_tin": customer_doc.custom_customer_tin_number,
-        "date": sales_invoice_doc.posting_date.strftime("%Y-%m-%d"),
+        "date": posting_date.strftime("%Y-%m-%d"),
         "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
         "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
-        "status": status,  # Example status, modify as needed
+        "status": status,
         "verification_url": verification_url,
     }
     # frappe.throw(f"QR Code generated and saved at {qr_data}")
@@ -1291,12 +1294,12 @@ def generate_qr_code(sales_invoice_doc, status):
 
 
 def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
-    """Attach the QR code image to the Sales Invoice"""
+    """Attach the QR code image to the Purchase Invoice"""
     # Read the file content
     with open(qr_image_path, "rb") as qr_file:
         qr_content = qr_file.read()
 
-    # Create a File document and attach it to the Sales Invoice
+    # Create a File document and attach it to the Purchase Invoice
     qr_file_doc = frappe.get_doc(
         {
             "doctype": "File",
