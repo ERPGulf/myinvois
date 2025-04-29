@@ -2,6 +2,7 @@
 
 import frappe
 import requests
+from frappe import _
 
 
 def get_api_url(base_url):
@@ -16,7 +17,7 @@ def get_api_url(base_url):
         return url
 
     except (ValueError, TypeError, KeyError) as e:
-        frappe.throw(("get api url" f"error: {str(e)}"))
+        frappe.throw(_(("get api url" f"error: {str(e)}")))
         return None
 
 
@@ -50,7 +51,9 @@ def get_access_token():
             settings.save()
 
         else:
-            frappe.throw("An error occurred while fetching the token", response.json())
+            frappe.throw(
+                _("An error occurred while fetching the token", response.json())
+            )
         return response.json()
     except requests.exceptions.RequestException as e:
-        frappe.throw(f"An error occurred while fetching the token: {e}")
+        frappe.throw(_(f"An error occurred while fetching the token: {e}"))

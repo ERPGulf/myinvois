@@ -39,7 +39,7 @@ def create_invoice_with_extensions():
         )
         return invoice
     except (ET.ParseError, TypeError, ValueError) as e:
-        frappe.msgprint(f"Error creating invoice extensions: {str(e)}")
+        frappe.throw(_(f"Error creating invoice extensions: {str(e)}"))
         return ET.Element("Error")
 
 
@@ -116,7 +116,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error in add billing reference: {str(e)}")
+        frappe.throw(_(f"Error in add billing reference: {str(e)}"))
         return None
 
         # Use the `uuid` to create the element
@@ -148,7 +148,7 @@ def add_additional_document_reference(invoice, document_references):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error add aditional daata: {str(e)}")
+        frappe.throw(_(f"Error add aditional daata: {str(e)}"))
         return None
 
 
@@ -170,7 +170,7 @@ def add_signature(invoice):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error signature data: {str(e)}")
+        frappe.throw(_(f"Error signature data: {str(e)}"))
         return None
 
 
@@ -243,7 +243,7 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error Purchase Invoice data: {str(e)}")
+        frappe.throw(_(f"Error Purchase Invoice data: {str(e)}"))
         return None
 
 
@@ -367,7 +367,7 @@ def company_data(invoice, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.throw(f"Error in company data generation: {str(e)}")
+        frappe.throw(_(f"Error in company data generation: {str(e)}"))
         return None
 
 
@@ -610,7 +610,7 @@ def customer_data(invoice, sales_invoice_doc):
         mail_party.text = str(address.email_id)
         return invoice
     except Exception as e:
-        frappe.throw(f"Error customer data: {str(e)}")
+        frappe.throw(_(f"Error customer data: {str(e)}"))
         return None
 
 
@@ -684,7 +684,7 @@ def delivery_data(invoice, sales_invoice_doc):
         registration_name.text = sales_invoice_doc.supplier
         return invoice
     except Exception as e:
-        frappe.throw(f"Error in customer_data: {str(e)}")
+        frappe.throw(_(f"Error in customer_data: {str(e)}"))
         return None
 
 
@@ -733,7 +733,7 @@ def payment_data(invoice, sales_invoice_doc):
         # paid_time.text = "00:30:00Z"
         return invoice
     except Exception as e:
-        frappe.throw(f"Error adding payment data: {str(e)}")
+        frappe.throw(_(f"Error adding payment data: {str(e)}"))
         return None
 
 
@@ -771,7 +771,7 @@ def allowance_charge_data(invoice, sales_invoice_doc):
                 # amount_2.text = "100"
             return invoice
     except Exception as e:
-        frappe.throw(f"Error adding allowance charge data: {str(e)}")
+        frappe.throw(_(f"Error adding allowance charge data: {str(e)}"))
         return None
 
 
@@ -819,7 +819,7 @@ def tax_total(invoice, sales_invoice_doc):
         taxscheme_id.text = "OTH"
         return invoice
     except Exception as e:
-        frappe.throw(f"Error tax total: {str(e)}")
+        frappe.throw(_(f"Error tax total: {str(e)}"))
         return None
 
 
@@ -911,7 +911,7 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             cbc_TaxScheme_ID.text = "OTH"
         return invoice
     except Exception as e:
-        frappe.throw(f"Error in tax total calculation: {str(e)}")
+        frappe.throw(_(f"Error in tax total calculation: {str(e)}"))
         return None
 
 
@@ -957,7 +957,7 @@ def legal_monetary_total(invoice, sales_invoice_doc):
         )
         return invoice
     except Exception as e:
-        frappe.throw(f"Error legal monetary: {str(e)}")
+        frappe.throw(_(f"Error legal monetary: {str(e)}"))
         return None
 
 
@@ -969,7 +969,7 @@ def get_Tax_for_Item(full_string, item):
         tax_amount = data.get(item, [0, 0])[1]
         return tax_amount, tax_percentage
     except Exception as e:
-        frappe.throw("error occured in tax for item" + str(e))
+        frappe.throw(_("error occured in tax for item" + str(e)))
 
 
 def invoice_line_item(invoice, sales_invoice_doc):
@@ -1101,7 +1101,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
         # frappe.msgprint("Completed processing all items")
         return invoice
     except Exception as e:
-        frappe.throw(f"Error in invoice_line_item: {str(e)}")
+        frappe.throw(_(f"Error in invoice_line_item: {str(e)}"))
 
 
 def item_data_with_template(invoice, sales_invoice_doc):
@@ -1217,7 +1217,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
             cbc_Amount.text = str(abs(single_item.base_amount))
         return invoice
     except Exception as e:
-        frappe.throw(f"Error in invoice_line item template: {str(e)}")
+        frappe.throw(_(f"Error in invoice_line item template: {str(e)}"))
         return None
 
 
@@ -1243,7 +1243,7 @@ def xml_structuring(invoice, sales_invoice_doc):
 
         return raw_xml
     except Exception as e:
-        frappe.throw(f"Error in xml structuring: {str(e)}")
+        frappe.throw(_(f"Error in xml structuring: {str(e)}"))
 
 
 def generate_qr_code(sales_invoice_doc, status):

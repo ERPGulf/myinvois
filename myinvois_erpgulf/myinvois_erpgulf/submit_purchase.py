@@ -42,6 +42,7 @@ from myinvois_erpgulf.myinvois_erpgulf.purchase_invoice import (
     attach_qr_code_to_sales_invoice,
 )
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
+from frappe import _
 
 
 def xml_hash():
@@ -55,7 +56,7 @@ def xml_hash():
         doc_hash = base64.b64encode(sha256_hash).decode("utf-8")
         return line_xml, doc_hash
     except (OSError, etree.XMLSyntaxError, base64.binascii.Error) as e:
-        frappe.throw(f"Error in xml hash: {str(e)}")
+        frappe.throw(_(f"Error in xml hash: {str(e)}"))
 
 
 def certificate_data():
@@ -122,7 +123,7 @@ def certificate_data():
             )
 
     except (frappe.DoesNotExistError, OSError, ValueError) as e:
-        frappe.throw(f"Error loading certificate details: {str(e)}")
+        frappe.throw(_(f"Error loading certificate details: {str(e)}"))
 
 
 def bytes_to_base64_string(value: bytes) -> str:
@@ -169,7 +170,7 @@ def sign_data(line_xml):
 
         return base64_string
     except (ValueError, TypeError) as e:
-        frappe.throw(f"Error in sign data: {str(e)}")
+        frappe.throw(_(f"Error in sign data: {str(e)}"))
 
 
 def signed_properties_hash(
@@ -293,10 +294,12 @@ def ubl_extension_string(
                 file.write(result_final)
         else:
             frappe.throw(
-                "The element <cac:AccountingSupplierParty> was not found in the XML string."
+                _(
+                    "The element <cac:AccountingSupplierParty> was not found in the XML string."
+                )
             )
     except (ValueError, TypeError, OSError) as e:
-        frappe.throw(f"Error in UBL extension string: {str(e)}")
+        frappe.throw(_(f"Error in UBL extension string: {str(e)}"))
 
 
 def get_api_url(base_url):
@@ -311,7 +314,7 @@ def get_api_url(base_url):
         return url
 
     except (ValueError, TypeError, KeyError) as e:
-        frappe.throw(("get api url" f"error: {str(e)}"))
+        frappe.throw(_(("get api url" f"error: {str(e)}")))
         return None
 
 
@@ -421,7 +424,7 @@ def submission_url(sales_invoice_doc):
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
 
     except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
-        frappe.throw(f"Error in submission URL: {str(e)}")
+        frappe.throw(_(f"Error in submission URL: {str(e)}"))
 
 
 def success_log(response, submission_uuid, status, invoice_number):
@@ -472,8 +475,8 @@ def success_log(response, submission_uuid, status, invoice_number):
         return doc_instance
 
     except Exception as e:
-        frappe.log_error(f"Error in success_log: {str(e)}")
-        frappe.throw(f"Error in success log: {str(e)}")
+        frappe.log_error(_(f"Error in success_log: {str(e)}"))
+        frappe.throw(_(f"Error in success log: {str(e)}"))
 
 
 def error_log(custom_error_submission=None):
@@ -505,8 +508,8 @@ def error_log(custom_error_submission=None):
 
     except Exception as e:
         # If logging fails, log the exception and throw a descriptive message
-        frappe.log_error(f"Failed to log error: {frappe.get_traceback()}")
-        frappe.throw(f"Error while logging the error: {str(e)}")
+        frappe.log_error(_(f"Failed to log error: {frappe.get_traceback()}"))
+        frappe.throw(_(f"Error while logging the error: {str(e)}"))
 
 
 def status_submission(invoice_number, sales_invoice_doc):
@@ -547,8 +550,8 @@ def status_submission(invoice_number, sales_invoice_doc):
         else:
             error_log()
     except Exception as e:
-        frappe.log_error(f"Error during status submission: {str(e)}")
-        frappe.throw(f"Error during status submission: {str(e)}")
+        frappe.log_error(_(f"Error during status submission: {str(e)}"))
+        frappe.throw(_(f"Error during status submission: {str(e)}"))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -604,10 +607,10 @@ def status_submit_success_log(doc):
             doc_instance.save(ignore_permissions=True)
 
     except requests.RequestException as e:
-        frappe.throw(f"Request failed: {str(e)}")
-        frappe.log_error(f"Error during status submission: {str(e)}")
+        frappe.throw(_(f"Request failed: {str(e)}"))
+        frappe.log_error(_(f"Error during status submission: {str(e)}"))
     except (ValueError, KeyError, frappe.ValidationError) as e:
-        frappe.log_error(f"Error during status submission: {str(e)}")
+        frappe.log_error(_(f"Error during status submission: {str(e)}"))
 
 
 @frappe.whitelist(allow_guest=True)
@@ -755,7 +758,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         TypeError,
         frappe.ValidationError,
     ) as e:
-        frappe.throw(f"Error in validate before  document: {str(e)}")
+        frappe.throw(_(f"Error in validate before  document: {str(e)}"))
 
 
 def validate_before_submit(doc, method=None):
@@ -910,7 +913,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         TypeError,
         frappe.ValidationError,
     ) as e:
-        frappe.throw(f"Error in submit document: {str(e)}")
+        frappe.throw(_(f"Error in submit document: {str(e)}"))
 
 
 def submit_document_wrapper(doc, method=None):
