@@ -303,7 +303,7 @@ def merge_sales_invoices(invoice_numbers):
         invoice_numbers = frappe.parse_json(invoice_numbers)
 
     if not invoice_numbers or len(invoice_numbers) < 2:
-        frappe.throw("Please select at least two Sales Invoices to merge.")
+        frappe.throw(_("Please select at least two Sales Invoices to merge."))
 
     # Fetch all Sales Invoices
     sales_invoices = frappe.get_all(
@@ -327,7 +327,7 @@ def merge_sales_invoices(invoice_numbers):
     )
 
     if not sales_invoices:
-        frappe.throw("No valid Sales Invoices found.")
+        frappe.throw(_("No valid Sales Invoices found."))
 
     # Use the first invoice as a base for shared values
     base_invoice = sales_invoices[0]

@@ -4,9 +4,9 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 import json
 import re
+from frappe import _  # Importing the translation function
 import frappe
 import pyqrcode
-from frappe import _
 
 
 def get_icv_code(invoice_number):
@@ -90,7 +90,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         ]:
             doc_id = sales_invoice_doc.return_against
             if not doc_id:
-                frappe.throw("No document found in return_against.")
+                frappe.throw(_("No document found in return_against."))
 
             # Fetch the full document using Frappe's API
             doc = frappe.get_doc("Sales Invoice", doc_id)
@@ -109,9 +109,9 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                         uuid = accepted_documents[0].get("uuid")
                         create_element(invoice_document_reference, "cbc:UUID", uuid)
                     else:
-                        frappe.throw(
+                        frappe.throw(_(
                             _("No accepted documents found in custom_submit_response.")
-                        )
+                        ))
                 except json.JSONDecodeError:
                     frappe.throw(_("Invalid JSON format in custom_submit_response."))
             else:
@@ -122,7 +122,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         AttributeError,
         KeyError,
     ) as e:
-        frappe.msgprint(f"Error in add billing reference: {str(e)}")
+        frappe.msgprint(_(f"Error in add billing reference: {str(e)}"))
         return None
 
         # Use the `uuid` to create the element
@@ -197,14 +197,14 @@ def salesinvoice_data(invoice, sales_invoice_doc):
                 "02 : Credit Note",
                 "04 :  Refund Note",
             ]:
-                frappe.throw(
+                frappe.throw(_(
                     "Choose the invoice type code as '02 : Credit Note' and"
                     " '04 :  Refund Note'"
-                )
+                ))
         if sales_invoice_doc.is_debit_note == 1:
             # Check if the field is already set to "03 : Debit Note"
             if sales_invoice_doc.custom_invoicetype_code != "03 :  Debit Note":
-                frappe.throw("Choose the invoice type code as '03 : Debit Note'")
+                frappe.throw(_("Choose the invoice type code as '03 : Debit Note'"))
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
@@ -307,9 +307,9 @@ def company_data(invoice, sales_invoice_doc):
         )
 
         if not address_list:
-            frappe.throw(
+            frappe.throw(_(
                 "Invoice requires a proper address. Please add your company address in the Address field."
-            )
+            ))
 
         address = address_list[0]  # Select the first address only
 

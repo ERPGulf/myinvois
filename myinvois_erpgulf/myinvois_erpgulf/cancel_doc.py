@@ -1,5 +1,6 @@
 import json
 import requests
+from frappe import _  # Importing the translation function
 import frappe
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
@@ -49,7 +50,7 @@ def cancel_document_wrapper(doc, method):
             response = requests.put(url, headers=headers, json=payload,timeout=10)
 
         if response.status_code == 200:
-            frappe.msgprint(response.text)  # Display the actual response text
+            frappe.msgprint(_(response.text)) # Display the actual response text
         else:
             frappe.throw(_("LHDN cancellation failed: {0}").format(response.text))
 
