@@ -80,22 +80,16 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
-            "14 : Self-billed Refund Note",
         ]:
             doc_id = sales_invoice_doc.return_against
             if not doc_id:
-                frappe.throw("No document found in return_against.")
+                frappe.throw(_("No document found in return_against."))
 
-            # Fetch the full document using Frappe's API
             doc = frappe.get_doc("Purchase Invoice", doc_id)
 
-            # Check if `custom_submit_response` exists and is valid
             if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
                 try:
-                    # Parse the JSON data
                     custom_submit_response = json.loads(doc.custom_submit_response)
-
-                    # Extract the `uuid` from `acceptedDocuments`
                     accepted_documents = custom_submit_response.get(
                         "acceptedDocuments", []
                     )
@@ -104,12 +98,42 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                         create_element(invoice_document_reference, "cbc:UUID", uuid)
                     else:
                         frappe.throw(
-                            "No accepted documents found in custom_submit_response."
+                            _("No accepted documents found in custom_submit_response.")
                         )
-                except json.JSONDecodeError:
-                    frappe.throw("Invalid JSON format in custom_submit_response.")
-            else:
-                frappe.throw("custom_submit_response is missing or empty.")
+                except Exception as e:
+                    frappe.throw(
+                        _("Error parsing custom_submit_response: {0}").format(str(e))
+                    )
+
+        elif (
+            sales_invoice_doc.custom_invoicetype_code == "14 : Self-billed Refund Note"
+        ):
+            doc_id = sales_invoice_doc.custom_return_againstrefund_purchase_invoice
+            if not doc_id:
+                frappe.throw(_("No document found in custom_return_against_refund."))
+
+            doc = frappe.get_doc("Purchase Invoice", doc_id)
+
+            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
+                try:
+                    custom_submit_response = json.loads(doc.custom_submit_response)
+                    accepted_documents = custom_submit_response.get(
+                        "acceptedDocuments", []
+                    )
+                    if accepted_documents:
+                        uuid = accepted_documents[0].get("uuid")
+                        create_element(invoice_document_reference, "cbc:UUID", uuid)
+                    else:
+                        frappe.throw(
+                            _("No accepted documents found in custom_submit_response.")
+                        )
+                except Exception as e:
+                    frappe.throw(
+                        _("Error parsing custom_submit_response: {0}").format(str(e))
+                    )
+
+        else:
+            frappe.throw(_("custom_submit_response is missing or empty."))
     except (
         frappe.DoesNotExistError,
         frappe.ValidationError,
@@ -189,19 +213,19 @@ def salesinvoice_data(invoice, sales_invoice_doc):
             # Check if the field is already set to "02 : Credit Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
                 "12 : Self-billed Credit Note",
-                "14 : Self-billed Refund Note",
+                "13 : Self-billed Debit Note",
             ]:
                 frappe.throw(
                     "Choose the invoice type code as Self-billed Credit Note and  Self-billed Refund Note"
                 )
-        if sales_invoice_doc.is_return == 1:
+        if sales_invoice_doc.custom_is_return_refund == 1:
             # Check if the field is already set to "03 : Debit Note"
             if (
                 sales_invoice_doc.custom_invoicetype_code
-                != "13 : Self-billed Debit Note"
+                != "14 : Self-billed Refund Note"
             ):
                 frappe.throw(
-                    "Choose the invoice type code as '13 : Self-billed Debit Note'"
+                    "Choose the invoice type code as '14 : Self-billed Refund Note'"
                 )
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 

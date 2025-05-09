@@ -268,10 +268,10 @@ doc_events = {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
     },
-    # "Purchase Invoice": {
-    #     "before_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.validate_before_submit",
-    #     "on_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.submit_document_wrapper",
-    # },
+    "Purchase Invoice": {
+        "before_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.validate_before_submit",
+        "on_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.submit_document_wrapper",
+    },
 }
 
 fixtures = [
