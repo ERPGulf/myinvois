@@ -132,8 +132,8 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                         _("Error parsing custom_submit_response: {0}").format(str(e))
                     )
 
-        else:
-            frappe.throw(_("custom_submit_response is missing or empty."))
+        # else:
+        #     frappe.throw(_("custom_submit_response is missing or empty."))
     except (
         frappe.DoesNotExistError,
         frappe.ValidationError,
