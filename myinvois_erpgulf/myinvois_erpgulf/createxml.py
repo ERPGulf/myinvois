@@ -1112,7 +1112,26 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
             )
-            item_doc = frappe.get_doc("Item", single_item.item_code)
+            # item_doc = frappe.get_doc("Item", single_item.item_name)
+            item_doc = None
+
+            # First try to fetch using item_code if available
+            if single_item.get("item_code"):
+                # try:
+                item_doc = frappe.get_doc("Item", single_item.item_code)
+            # except frappe.DoesNotExistError:
+            #     frappe.throw(f"Item with code '{single_item.item_code}' not found")
+            # Otherwise, use item_name as fallback
+            elif single_item.get("item_name"):
+                item_result = frappe.get_all(
+                    "Item",
+                    filters={"item_name": single_item.item_name},
+                    fields=["name"],
+                    limit=1,
+                )
+                if not item_result:
+                    frappe.throw(f"Item with name '{single_item.item_name}' not found")
+                item_doc = frappe.get_doc("Item", item_result[0].name)
             classification_code = str(item_doc.custom_item_classification_code).split(
                 ":"
             )[0]

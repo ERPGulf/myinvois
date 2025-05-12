@@ -20,8 +20,7 @@ from cryptography.hazmat.primitives.serialization import (
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, serialization
 from myinvois_erpgulf.myinvois_erpgulf.consolidate_invoice import (
-    customer_data_consolidate,
-    delivery_data_consolidate,
+    company_data_consolidate,
 )
 from myinvois_erpgulf.myinvois_erpgulf.createxml import (
     create_invoice_with_extensions,
@@ -637,17 +636,15 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
 
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+            if company_doc != "General Public":
+                invoice = company_data(invoice, sales_invoice_doc)
+            else:
+                invoice = company_data_consolidate(invoice, sales_invoice_doc)
 
-            invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = customer_data(invoice, sales_invoice_doc)
+            invoice = delivery_data(invoice, sales_invoice_doc)
+
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -705,17 +702,15 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+            if company_doc != "General Public":
+                invoice = company_data(invoice, sales_invoice_doc)
+            else:
+                invoice = company_data_consolidate(invoice, sales_invoice_doc)
 
-            invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = customer_data(invoice, sales_invoice_doc)
+
+            invoice = delivery_data(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -785,17 +780,15 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+            if company_doc != "General Public":
+                invoice = company_data(invoice, sales_invoice_doc)
+            else:
+                invoice = company_data_consolidate(invoice, sales_invoice_doc)
 
-            invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = customer_data(invoice, sales_invoice_doc)
+
+            invoice = delivery_data(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -856,17 +849,15 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+            if company_doc != "General Public":
+                invoice = company_data(invoice, sales_invoice_doc)
+            else:
+                invoice = company_data_consolidate(invoice, sales_invoice_doc)
 
-            invoice = company_data(invoice, sales_invoice_doc)
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != "General Public":
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-            if customer_doc.customer_name != "General Public":
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+            invoice = customer_data(invoice, sales_invoice_doc)
+
+            invoice = delivery_data(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)

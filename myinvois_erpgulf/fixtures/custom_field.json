@@ -1830,7 +1830,7 @@
   "name": "Sales Invoice-custom_invoicetype_code",
   "no_copy": 0,
   "non_negative": 0,
-  "options": "01 :  Invoice\n02 : Credit Note\n03 :  Debit Note\n04 :  Refund Note\n",
+  "options": "01 :  Invoice\n02 : Credit Note\n03 :  Debit Note\n04 :  Refund Note\n05 : Consolidated Invoice\n",
   "permlevel": 0,
   "precision": "",
   "print_hide": 0,
