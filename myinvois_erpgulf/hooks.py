@@ -267,10 +267,12 @@ doc_events = {
     "Sales Invoice": {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
+        "on_cancel": "myinvois_erpgulf.myinvois_erpgulf.cancel_doc.cancel_document_wrapper",
     },
     "Purchase Invoice": {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.submit_document_wrapper",
+        "on_cancel": "myinvois_erpgulf.myinvois_erpgulf.cancel_doc.cancel_document_wrapper",
     },
 }
 

@@ -384,6 +384,10 @@ def submission_url(sales_invoice_doc):
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
         sales_invoice_doc.db_set("custom_submit_response", response.text)
+        sales_invoice_doc.db_set(
+            "custom_submission_time",
+            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        )
         sales_invoice_doc.save(ignore_permissions=True)
         frappe.db.commit()
         existing_files = frappe.get_all(

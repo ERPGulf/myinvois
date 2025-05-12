@@ -3,6 +3,8 @@
 import xml.etree.ElementTree as ET
 import frappe
 from frappe import _
+import datetime
+
 
 NOT_APPLICABLE = "NA"
 
@@ -351,6 +353,9 @@ def merge_sales_invoices(invoice_numbers):
             "items": [],
             "taxes": [],
             "remarks": f"Merged from invoices: {', '.join(invoice_numbers)}",
+            "custom_submission_time": datetime.datetime.now(
+                datetime.timezone.utc
+            ).strftime("%Y-%m-%dT%H:%M:%SZ"),
         }
     )
 

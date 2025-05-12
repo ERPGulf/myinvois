@@ -1,67 +1,10 @@
-# import json
-# import requests
-# from frappe import _  # Importing the translation function
-# import frappe
-# from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
-
-
-# @frappe.whitelist(allow_guest=True)
-# def cancel_document_wrapper(doc, method):
-#     """Wrapper function to handle document cancellation."""
-#     # If not submitted to LHDN, allow normal cancel
-#     if not doc.custom_submit_response:
-#         return  # nothing to do extra, just cancel locally
-
-#     try:
-#         response_data = json.loads(doc.custom_submit_response)
-#     except json.JSONDecodeError:
-#         frappe.throw(_("Invalid LHDN submission response format."))
-
-#     submission_uid = response_data.get("submissionUid")
-#     uuid = response_data.get("uuid")
-
-#     if not submission_uid or not uuid:
-#         return  # No valid submission data, cancel normally
-
-#     settings = frappe.get_doc("LHDN Malaysia Setting")
-#     token = settings.bearer_token
-
-#     try:
-#         url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/state/{uuid}/state"
-#         headers = {
-#             "Content-Type": "application/json",
-#             "Authorization": f"Bearer {token}",  # Use the token retrieved from settings
-#         }
-#         payload = {
-#             "status": "cancelled",
-#             "reason": "Cancelled from ERP system by user",
-#         }
-
-#         response = requests.put(url, headers=headers, json=,timeout=10)
-
-#         # Check if the response status code is 401 or 500, then refresh token and retry
-#         if response.status_code in [401, 500]:
-#             get_access_token()  # Refresh the token and save it in settings
-#             settings.reload()  # Reload settings to get the new token
-#             token = settings.bearer_token  # Fetch updated token
-#             headers["Authorization"] = f"Bearer {token}"  # Update headers with new token
-
-#             # Retry the cancellation API with the new token
-#             response = requests.put(url, headers=headers, json=payload,timeout=10)
-
-#         if response.status_code == 200:
-#             frappe.msgprint(_(response.text)) # Display the actual response text
-#         else:
-#             frappe.throw(_("LHDN cancellation failed: {0}").format(response.text))
-
-#     except Exception as e:
-#         frappe.throw(_("Error cancelling document from LHDN: {0}").format(str(e)))
-
+"""LHDN Document Cancellation Module"""
 
 import json
 import requests
-from frappe import _
 import frappe
+from frappe import _
+import datetime
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
 
@@ -69,53 +12,82 @@ from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 def cancel_document_wrapper(doc, method):
     """Wrapper function to handle document cancellation via LHDN."""
 
-    # If not submitted to LHDN, allow normal cancel
     if not doc.custom_submit_response:
-        frappe.throw(_(doc.custom_submit_response))
-        return  # Nothing to do extra, just cancel locally
+
+        return
 
     try:
         response_data = json.loads(doc.custom_submit_response)
     except json.JSONDecodeError:
-        frappe.throw(_("Invalid LHDN submission response format."))
+        frappe.throw(_("Invalid JSON format in custom_submit_response."))
 
     submission_uid = response_data.get("submissionUid")
-    uuid = response_data.get("uuid")
+
+    # ✅ Extract uuid from acceptedDocuments[0]
+    accepted_docs = response_data.get("acceptedDocuments", [])
+    if accepted_docs and "uuid" in accepted_docs[0]:
+        uuid = accepted_docs[0]["uuid"]
+    else:
+        frappe.throw(_("UUID not found in accepted documents."))
 
     if not submission_uid or not uuid:
-        return  # No valid submission data, cancel normally
+        frappe.throw(
+            _("Missing submission UID or UUID. Cannot proceed with cancellation.")
+        )
+    submission_time_str = (
+        doc.custom_submission_time
+    )  # Assuming this stores the timestamp like '2025-05-10T08:00:00Z'
+    if not submission_time_str:
+        frappe.throw(
+            _("Submission time not found. Cannot validate cancellation window.")
+        )
+
+    # Parse submission time to datetime object
+    submission_time = datetime.datetime.strptime(
+        submission_time_str, "%Y-%m-%dT%H:%M:%SZ"
+    )
+    submission_time = submission_time.replace(tzinfo=datetime.timezone.utc)
+
+    # Get current UTC time
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+
+    # Check if within 72 hours
+    time_diff = current_time - submission_time
+    if time_diff.total_seconds() > 72 * 3600:
+        frappe.throw(_("Cancellation not allowed after 72 hours of submission."))
 
     settings = frappe.get_doc("LHDN Malaysia Setting")
     token = settings.bearer_token
 
-    try:
-        url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/state/{uuid}/state"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
-        payload = {
-            "status": "cancelled",
-            "reason": "Cancelled from ERP system by user",
-        }
+    url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/state/{uuid}/state"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+    payload = {
+        "status": "cancelled",
+        "reason": "Cancelled from ERP system by user",
+    }
 
+    try:
         # First attempt
         response = requests.put(url, headers=headers, json=payload, timeout=10)
 
-        # Handle token issues or server errors
+        # Retry if token expired or internal server error
         if response.status_code in [401, 500]:
-            get_access_token()  # Refresh token
+            get_access_token()
             settings.reload()
             token = settings.bearer_token
             headers["Authorization"] = f"Bearer {token}"
 
-            # Retry the request
             response = requests.put(url, headers=headers, json=payload, timeout=10)
 
-        # Handle response
+        # Final response handling
         if response.status_code == 200:
-            frappe.msgprint(_(response.text))  # Display the actual response text
             frappe.msgprint(_("LHDN document cancelled successfully."))
+            frappe.msgprint(_(response.text))
+            # doc.custom_lhdn_status = "Cancelled"
+            # doc.save()  # Optional: show raw response
         else:
             frappe.throw(_("LHDN cancellation failed: {0}").format(response.text))
 

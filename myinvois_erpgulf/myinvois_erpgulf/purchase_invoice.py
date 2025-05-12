@@ -69,9 +69,13 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
-            "14 : Self-billed Refund Note",
         ]:
             invoice_id = sales_invoice_doc.return_against
+        elif (
+            sales_invoice_doc.custom_invoicetype_code == "14 : Self-billed Refund Note"
+        ):
+
+            invoice_id = sales_invoice_doc.custom_return_againstrefund_purchase_invoice
         else:
 
             invoice_id = get_icv_code(invoice_number)
@@ -378,11 +382,22 @@ def company_data(invoice, sales_invoice_doc):
 
         # Contact Information
         cont_ct = ET.SubElement(party_, "cac:Contact")
-        if address.get("phone"):
-            ET.SubElement(cont_ct, "cbc:Telephone").text = address.phone
-        if address.get("email_id"):
-            ET.SubElement(cont_ct, "cbc:ElectronicMail").text = address.email_id
+        # if address.get("phone"):
+        #     ET.SubElement(cont_ct, "cbc:Telephone").text = address.phone
+        # if address.get("email_id"):
+        #     ET.SubElement(cont_ct, "cbc:ElectronicMail").text = address.email_id
 
+        phone = address.get("phone")
+        ET.SubElement(cont_ct, "cbc:Telephone").text = (
+            phone if not is_na(phone) else 60100000000
+        )
+        email = address.get("email_id")
+
+        if is_na(email) or not is_valid_email(email):
+
+            email = "noemail@noemail.com"
+
+        ET.SubElement(cont_ct, "cbc:ElectronicMail").text = email
         return invoice
 
     except (
@@ -393,6 +408,18 @@ def company_data(invoice, sales_invoice_doc):
     ) as e:
         frappe.throw(_(f"Error in company data generation: {str(e)}"))
         return None
+
+
+def is_na(value):
+
+    return value is None or str(value).strip().lower() in ["n/a", "na", ""]
+
+
+def is_valid_email(email):
+
+    email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
+
+    return re.match(email_regex, email) is not None
 
 
 # def company_data(invoice, sales_invoice_doc):
@@ -708,7 +735,7 @@ def delivery_data(invoice, sales_invoice_doc):
         registration_name.text = sales_invoice_doc.supplier
         return invoice
     except Exception as e:
-        frappe.throw(_(f"Error in customer_data: {str(e)}"))
+        frappe.throw(_(f"Error in supplier data: {str(e)}"))
         return None
 
 
