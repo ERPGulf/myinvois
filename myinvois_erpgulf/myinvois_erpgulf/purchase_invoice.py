@@ -735,7 +735,9 @@ def delivery_data(invoice, sales_invoice_doc):
         registration_name.text = sales_invoice_doc.supplier
         return invoice
     except Exception as e:
-        frappe.throw(_(f"Error in supplier data: {str(e)}"))
+        frappe.throw(
+            _(f"Error in customer means company details in purchase invoice: {str(e)}")
+        )
         return None
 
 
