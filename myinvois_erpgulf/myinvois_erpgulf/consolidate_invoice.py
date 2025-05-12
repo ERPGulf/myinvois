@@ -51,7 +51,10 @@ def customer_data_consolidate(invoice, sales_invoice_doc):
         add_cust_line1 = ET.SubElement(posta_address, "cac:AddressLine")
         add_line1 = ET.SubElement(add_cust_line1, "cbc:Line")
         add_line1.text = NOT_APPLICABLE
-
+        if int(frappe.__version__.split(".")[0]) == 13:
+            address = frappe.get_doc("Address", sales_invoice_doc.customer_address)
+        else:
+            address = frappe.get_doc("Address", customer_doc.customer_primary_address)
         add_cust_line2 = ET.SubElement(posta_address, "cac:AddressLine")
         add_line2 = ET.SubElement(add_cust_line2, "cbc:Line")
         add_line2.text = NOT_APPLICABLE
@@ -76,10 +79,10 @@ def customer_data_consolidate(invoice, sales_invoice_doc):
 
         cont_customer = ET.SubElement(cac_Party, "cac:Contact")
         tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
-        tele_party.text = NOT_APPLICABLE
+        tele_party.text = str(address.phone)
 
         mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
-        mail_party.text = NOT_APPLICABLE
+        mail_party.text = str(address.email_id)
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error customer data: {str(e)}"))
