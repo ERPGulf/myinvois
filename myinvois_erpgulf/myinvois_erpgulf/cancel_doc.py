@@ -92,4 +92,5 @@ def cancel_document_wrapper(doc, method):
             frappe.throw(_("LHDN cancellation failed: {0}").format(response.text))
 
     except Exception as e:
+
         frappe.throw(_("Error cancelling document from LHDN: {0}").format(str(e)))
