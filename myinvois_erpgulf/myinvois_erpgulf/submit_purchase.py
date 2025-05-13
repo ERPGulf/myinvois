@@ -903,6 +903,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
     settings = frappe.get_doc("LHDN Malaysia Setting")
+    # Check if the document is already submitted
     if settings.enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
         # frappe.throw(f"Triggered submit_document for {doc.name}")
         submit_document(doc.name)
