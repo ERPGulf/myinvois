@@ -15,7 +15,8 @@
   "client_id",
   "client_secret",
   "certificate_file",
-  "pfx_cert_password"
+  "pfx_cert_password",
+  "enable_lhdn_invoice"
  ],
  "fields": [
   {
@@ -77,12 +78,18 @@
    "fieldtype": "Select",
    "label": "Version",
    "options": "1.0\n1.1"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_lhdn_invoice",
+   "fieldtype": "Check",
+   "label": "Enable LHDN invoice"
   }
  ],
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-01-09 14:24:55.128863",
+ "modified": "2025-05-13 10:50:34.848921",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",
