@@ -387,6 +387,7 @@ def merge_sales_invoices(invoice_numbers):
             "is_pos": base_invoice["is_pos"],
             "debit_to": get_company_account(base_invoice["debit_to"], target_company),
             "is_return": 0,
+            "custom_is_submit_to_lhdn": 1,
             "items": [],
             "taxes": [],
             "remarks": f"Merged from invoices: {', '.join(invoice_numbers)}",
