@@ -1228,12 +1228,12 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 listID="CLASS",
             )
             # cbc_ItemClassificationCode.text =str(single_item.custom_item_classification_code)
-            item_doc = frappe.get_doc(
-                "Item", single_item.item_code
-            )  # Example for Frappe framework
-            classification_code = str(item_doc.custom_item_classification_code).split(
-                ":"
-            )[0]
+            # item_doc = frappe.get_doc(
+            #     "Item", single_item.item_code
+            # )  # Example for Frappe framework
+            classification_code = str(
+                single_item.custom_item_classification_codes
+            ).split(":")[0]
             cbc_ItemClassificationCode.text = classification_code
 
             cac_Price = ET.SubElement(cac_InvoiceLine, "cac:Price")
