@@ -905,7 +905,7 @@ def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
     settings = frappe.get_doc("LHDN Malaysia Setting")
-    if settings.enable_lhdn_invoice:
+    if settings.enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
         # Call the submit_document function
         # frappe.throw(f"Calling submit_document for {doc.name}")
         submit_document(doc.name)
