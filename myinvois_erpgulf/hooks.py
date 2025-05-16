@@ -277,6 +277,7 @@ doc_events = {
     },
 }
 
+# Fixtures
 fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Print Format", "filters": [["module", "=", "Myinvois Erpgulf"]]},
