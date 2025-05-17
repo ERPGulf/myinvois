@@ -779,115 +779,128 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
             )
 
         settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.certificate_file and settings.version == "1.1":
+        if (
+            settings.enable_lhdn_invoice
+            and sales_invoice_doc.custom_is_submit_to_lhdn == 1
+        ):
+            if settings.certificate_file and settings.version == "1.1":
 
-            invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc)
+                invoice = create_invoice_with_extensions()
+                invoice = salesinvoice_data(invoice, sales_invoice_doc)
 
-            invoice = company_data(invoice, sales_invoice_doc)
+                invoice = company_data(invoice, sales_invoice_doc)
 
-            invoice = customer_data(invoice, sales_invoice_doc)
+                invoice = customer_data(invoice, sales_invoice_doc)
 
-            invoice = delivery_data(invoice, sales_invoice_doc)
+                invoice = delivery_data(invoice, sales_invoice_doc)
 
-            invoice = payment_data(invoice, sales_invoice_doc)
-            # Call appropriate tax total function
-            invoice = allowance_charge_data(invoice, sales_invoice_doc)
-            if not any_item_has_tax_template:
-                invoice = tax_total(invoice, sales_invoice_doc)
-            else:
-                invoice = tax_total_with_template(invoice, sales_invoice_doc)
+                invoice = payment_data(invoice, sales_invoice_doc)
+                # Call appropriate tax total function
+                invoice = allowance_charge_data(invoice, sales_invoice_doc)
+                if not any_item_has_tax_template:
+                    invoice = tax_total(invoice, sales_invoice_doc)
+                else:
+                    invoice = tax_total_with_template(invoice, sales_invoice_doc)
 
-            invoice = legal_monetary_total(invoice, sales_invoice_doc)
+                invoice = legal_monetary_total(invoice, sales_invoice_doc)
 
-            # Call appropriate item data function
-            if not any_item_has_tax_template:
-                invoice = invoice_line_item(invoice, sales_invoice_doc)
-            else:
-                invoice = item_data_with_template(invoice, sales_invoice_doc)
+                # Call appropriate item data function
+                if not any_item_has_tax_template:
+                    invoice = invoice_line_item(invoice, sales_invoice_doc)
+                else:
+                    invoice = item_data_with_template(invoice, sales_invoice_doc)
 
-            xml_structuring(invoice, sales_invoice_doc)
+                xml_structuring(invoice, sales_invoice_doc)
 
-            line_xml, doc_hash = xml_hash()
+                line_xml, doc_hash = xml_hash()
 
-            (
-                certificate_base64,
-                formatted_issuer_name,
-                x509_serial_number,
-                cert_digest,
-                signing_time,
-            ) = certificate_data()
+                (
+                    certificate_base64,
+                    formatted_issuer_name,
+                    x509_serial_number,
+                    cert_digest,
+                    signing_time,
+                ) = certificate_data()
 
-            signature = sign_data(line_xml)
-            prop_cert_base64 = signed_properties_hash(
-                signing_time, cert_digest, formatted_issuer_name, x509_serial_number
-            )
-
-            ubl_extension_string(
-                doc_hash,
-                prop_cert_base64,
-                signature,
-                certificate_base64,
-                signing_time,
-                cert_digest,
-                formatted_issuer_name,
-                x509_serial_number,
-                line_xml,
-            )
-
-            submission_url(sales_invoice_doc)
-            response_data = json.loads(sales_invoice_doc.custom_submit_response)
-            submission_uid = response_data.get("submissionUid")
-
-            if not submission_uid:
-                frappe.throw(
-                    f"Submission UID not found.. not submitted due to an error in the response: "
-                    f"{response_data}"
+                signature = sign_data(line_xml)
+                prop_cert_base64 = signed_properties_hash(
+                    signing_time, cert_digest, formatted_issuer_name, x509_serial_number
                 )
-            else:
-                status_submission(invoice_number, sales_invoice_doc)
 
+                ubl_extension_string(
+                    doc_hash,
+                    prop_cert_base64,
+                    signature,
+                    certificate_base64,
+                    signing_time,
+                    cert_digest,
+                    formatted_issuer_name,
+                    x509_serial_number,
+                    line_xml,
+                )
+
+                submission_url(sales_invoice_doc)
+                response_data = json.loads(sales_invoice_doc.custom_submit_response)
+                submission_uid = response_data.get("submissionUid")
+
+                if not submission_uid:
+                    frappe.throw(
+                        f"Submission UID not found.. not submitted due to an error in the response: "
+                        f"{response_data}"
+                    )
+                else:
+                    status_submission(invoice_number, sales_invoice_doc)
+
+            else:
+                invoice = create_invoice_with_extensions()
+                invoice = salesinvoice_data(invoice, sales_invoice_doc)
+
+                invoice = company_data(invoice, sales_invoice_doc)
+
+                invoice = customer_data(invoice, sales_invoice_doc)
+
+                invoice = delivery_data(invoice, sales_invoice_doc)
+
+                invoice = payment_data(invoice, sales_invoice_doc)
+                # Call appropriate tax total function
+                invoice = allowance_charge_data(invoice, sales_invoice_doc)
+                if not any_item_has_tax_template:
+                    invoice = tax_total(invoice, sales_invoice_doc)
+                else:
+                    invoice = tax_total_with_template(invoice, sales_invoice_doc)
+
+                invoice = legal_monetary_total(invoice, sales_invoice_doc)
+
+                # Call appropriate item data function
+                if not any_item_has_tax_template:
+                    invoice = invoice_line_item(invoice, sales_invoice_doc)
+                else:
+                    invoice = item_data_with_template(invoice, sales_invoice_doc)
+
+                xml_structuring(invoice, sales_invoice_doc)
+
+                line_xml, doc_hash = xml_hash()
+                submission_url(sales_invoice_doc)
+                response_data = json.loads(sales_invoice_doc.custom_submit_response)
+                submission_uid = response_data.get("submissionUid")
+
+                if not submission_uid:
+                    frappe.throw(
+                        f"Submission UID not found.. not submitted due to an error in the response: "
+                        f"{response_data}"
+                    )
+                else:
+                    status_submission(invoice_number, sales_invoice_doc)
+                # status_submission(invoice_number, sales_invoice_doc)
         else:
-            invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc)
-
-            invoice = company_data(invoice, sales_invoice_doc)
-
-            invoice = customer_data(invoice, sales_invoice_doc)
-
-            invoice = delivery_data(invoice, sales_invoice_doc)
-
-            invoice = payment_data(invoice, sales_invoice_doc)
-            # Call appropriate tax total function
-            invoice = allowance_charge_data(invoice, sales_invoice_doc)
-            if not any_item_has_tax_template:
-                invoice = tax_total(invoice, sales_invoice_doc)
-            else:
-                invoice = tax_total_with_template(invoice, sales_invoice_doc)
-
-            invoice = legal_monetary_total(invoice, sales_invoice_doc)
-
-            # Call appropriate item data function
-            if not any_item_has_tax_template:
-                invoice = invoice_line_item(invoice, sales_invoice_doc)
-            else:
-                invoice = item_data_with_template(invoice, sales_invoice_doc)
-
-            xml_structuring(invoice, sales_invoice_doc)
-
-            line_xml, doc_hash = xml_hash()
-            submission_url(sales_invoice_doc)
-            response_data = json.loads(sales_invoice_doc.custom_submit_response)
-            submission_uid = response_data.get("submissionUid")
-
-            if not submission_uid:
-                frappe.throw(
-                    f"Submission UID not found.. not submitted due to an error in the response: "
-                    f"{response_data}"
-                )
-            else:
-                status_submission(invoice_number, sales_invoice_doc)
-            # status_submission(invoice_number, sales_invoice_doc)
+            if not settings.enable_lhdn_invoice:
+                frappe.throw(" LHDN Invoice Submission is not enabled in settings ")
+            if sales_invoice_doc.custom_is_submit_to_lhdn == 0:
+                frappe.throw(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
+                # frappe.throw(
+                #     f"Invoice {invoice_number} is not marked for submission to LHDN."
+                # )
+                pass
 
     except (
         frappe.DoesNotExistError,
