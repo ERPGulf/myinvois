@@ -534,7 +534,7 @@ def status_submission(invoice_number, sales_invoice_doc):
         headers = {"Authorization": f"Bearer {token}"}
 
         response = requests.get(url, headers=headers, timeout=30)
-
+        status = "Unknown"
         if response.status_code == 200:
             response_data = response.json()  # Parse the response as JSON
             document_summary = response_data.get("documentSummary", [])

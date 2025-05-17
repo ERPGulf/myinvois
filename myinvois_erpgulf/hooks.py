@@ -248,9 +248,6 @@ from . import __version__ as app_version
 # }
 
 
-# hooks.py
-
-
 doctype_js = {
     "LHDN Setting": "myinvois_erpgulf/public/js/LHDN_setting.js",
     "Company": "public/js/company.js",

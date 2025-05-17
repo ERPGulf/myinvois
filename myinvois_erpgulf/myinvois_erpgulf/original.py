@@ -383,12 +383,29 @@ def submission_url(sales_invoice_doc):
         frappe.msgprint(f"Response body: {response.text}")
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
-        sales_invoice_doc.db_set("custom_submit_response", response.text)
+        # sales_invoice_doc.db_set("custom_submit_response", response.text)
+
         sales_invoice_doc.db_set(
             "custom_submission_time",
             datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            commit=True,
+            update_modified=True,
         )
+        sales_invoice_doc.db_set(
+            "custom_submit_response",
+            response.text,
+            commit=True,
+            update_modified=True,
+        )  # Also update in-memory value
+
+        submission_time = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        sales_invoice_doc.custom_submit_response = response.text
+        sales_invoice_doc.custom_submission_time = submission_time
         sales_invoice_doc.save(ignore_permissions=True)
+
+        # sales_invoice_doc.reload()
         frappe.db.commit()
         existing_files = frappe.get_all(
             "File",
@@ -423,6 +440,8 @@ def submission_url(sales_invoice_doc):
         # Generate and attach QR code
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        frappe.db.commit()
+        # sales_invoice_doc.reload()
 
     except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
@@ -534,7 +553,7 @@ def status_submission(invoice_number, sales_invoice_doc):
         headers = {"Authorization": f"Bearer {token}"}
 
         response = requests.get(url, headers=headers, timeout=30)
-
+        status = "Unknown"
         if response.status_code == 200:
             response_data = response.json()  # Parse the response as JSON
             document_summary = response_data.get("documentSummary", [])
@@ -547,6 +566,8 @@ def status_submission(invoice_number, sales_invoice_doc):
             )  # Pass JSON, not string
 
             doc.save(ignore_permissions=True)
+            doc.reload()
+            frappe.db.commit()
 
         else:
             error_log()
@@ -598,7 +619,7 @@ def status_submit_success_log(doc):
             )  # Update the lhdn_response field
             doc_instance.time = frappe.utils.now()
             doc_instance.save(ignore_permissions=True)
-
+            frappe.db.commit()
             return {"message": "Response saved successfully"}
 
         else:
@@ -607,7 +628,7 @@ def status_submit_success_log(doc):
             doc_instance = frappe.get_doc("LHDN Success Log", doc.get("name"))
             doc_instance.lhdn_response = json.dumps(response_data, indent=4)
             doc_instance.save(ignore_permissions=True)
-
+            frappe.db.commit()
     except requests.RequestException as e:
         frappe.throw(_(f"Request failed: {str(e)}"))
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
@@ -912,6 +933,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 else:
                     status_submission(invoice_number, sales_invoice_doc)
                 # status_submission(invoice_number, sales_invoice_doc)
+
         else:
             if not settings.enable_lhdn_invoice:
                 frappe.throw(" LHDN Invoice Submission is not enabled in settings ")
