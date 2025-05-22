@@ -52,3 +52,25 @@ extend_listview_event("Sales Invoice", "onload", function (listview) {
 
     console.log('Custom "Merge and Consolidate Invoices" action added to Sales Invoice list view.');
 });
+
+
+frappe.ui.form.on('Sales Invoice', { 
+    refresh: function(frm) {
+        // Add the custom button
+        frm.add_custom_button(__('Get Status of SubmittedDoc'), function() {
+            // Call the backend method to get the status
+            frappe.call({
+                method: "myinvois_erpgulf.myinvois_erpgulf.get_status.status_submit",
+                args: {
+                    "doc": frm.doc  // Pass the current document
+                },
+                callback: function(response) {
+                    if (response.message) {
+                        frappe.msgprint(__("Status updated successfully! Check the logs for details."));
+                        frm.reload_doc();  // Reload the form to reflect any changes
+                    }
+                }
+            });
+        });
+    }
+});

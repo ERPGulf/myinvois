@@ -374,7 +374,7 @@
   "name": "Supplier-custom_customer__registrationicpassport_type",
   "no_copy": 0,
   "non_negative": 0,
-  "options": "\nBRN\nMyKad\nMyKas\nMy Tentera\nPassport",
+  "options": "\nBRN\nMyKad\nMyKas\nMy Tentera",
   "permlevel": 0,
   "precision": "",
   "print_hide": 0,

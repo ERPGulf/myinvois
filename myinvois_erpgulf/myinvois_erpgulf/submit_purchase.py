@@ -419,10 +419,11 @@ def submission_url(sales_invoice_doc):
             }
         )
         xml_file.save()
-
-        # Generate and attach QR code
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        frappe.db.commit()
+        sales_invoice_doc.reload()
+        # Generate and attach QR code
 
     except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
@@ -547,7 +548,7 @@ def status_submission(invoice_number, sales_invoice_doc):
             )  # Pass JSON, not string
 
             doc.save(ignore_permissions=True)
-
+            return status
         else:
             error_log()
     except Exception as e:
@@ -707,7 +708,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             # frappe.throw("hi1")
             invoice = company_data(invoice, sales_invoice_doc)
             # # frappe.throw("hi2")
-            customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+            # customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
 
             invoice = customer_data(invoice, sales_invoice_doc)
             # frappe.throw("hi3")
@@ -850,6 +851,8 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     )
                 else:
                     status_submission(invoice_number, sales_invoice_doc)
+                    # qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
 
             else:
                 invoice = create_invoice_with_extensions()
@@ -891,7 +894,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     )
                 else:
                     status_submission(invoice_number, sales_invoice_doc)
-                # status_submission(invoice_number, sales_invoice_doc)
+                #     qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                #     attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+                # # status_submission(invoice_number, sales_invoice_doc)
         else:
             if not settings.enable_lhdn_invoice:
                 frappe.throw(" LHDN Invoice Submission is not enabled in settings ")

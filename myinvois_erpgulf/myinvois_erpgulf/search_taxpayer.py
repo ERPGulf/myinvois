@@ -1,14 +1,14 @@
+"""this module provides functions to search for TIN company or customer details."""
+
 import requests
 import frappe
 from frappe import _
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
-import requests
-import frappe
-from frappe import _
 
 
 @frappe.whitelist()
 def search_company_tin(company_name):
+    """Search for TIN using company name, ID type, and ID value."""
     # Fetch company doc
     company = frappe.get_doc("Company", company_name)
 

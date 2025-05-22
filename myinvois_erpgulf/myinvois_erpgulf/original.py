@@ -441,7 +441,7 @@ def submission_url(sales_invoice_doc):
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
         frappe.db.commit()
-        # sales_invoice_doc.reload()
+        sales_invoice_doc.reload()
 
     except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
@@ -569,6 +569,7 @@ def status_submission(invoice_number, sales_invoice_doc):
             doc.reload()
             frappe.db.commit()
 
+            return status
         else:
             error_log()
     except Exception as e:
@@ -885,6 +886,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     )
                 else:
                     status_submission(invoice_number, sales_invoice_doc)
+                    # qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+                    # frappe.db.commit()
 
             else:
                 invoice = create_invoice_with_extensions()
@@ -932,6 +936,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     )
                 else:
                     status_submission(invoice_number, sales_invoice_doc)
+
                 # status_submission(invoice_number, sales_invoice_doc)
 
         else:

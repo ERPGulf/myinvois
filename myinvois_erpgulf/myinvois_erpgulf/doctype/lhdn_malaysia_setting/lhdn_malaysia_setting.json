@@ -40,7 +40,7 @@
   },
   {
    "fieldname": "pfx_cert_password",
-   "fieldtype": "Data",
+   "fieldtype": "Password",
    "label": "PFX cert Password"
   },
   {
@@ -89,7 +89,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-05-19 14:29:09.145626",
+ "modified": "2025-05-20 14:46:27.624609",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "LHDN Malaysia Setting",
