@@ -1106,10 +1106,19 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_data = ET.SubElement(invoice_line, "cac:Item")
             descp_item = ET.SubElement(item_data, "cbc:Description")
             # descp_item.text = str(single_item.description)
-            if single_item.description:
-                descp_item.text = str(single_item.description)
-            else:
-                descp_item.text = str(single_item.item_name)
+            desc = ""
+            if single_item.description and single_item.item_name:
+                desc = f"{single_item.description} - {single_item.item_name}"
+            elif single_item.description:
+                desc = str(single_item.description)
+            elif single_item.item_name:
+                desc = str(single_item.item_name)
+
+            descp_item.text = desc
+            # if single_item.description:
+            #     descp_item.text = str(single_item.description)
+            # else:
+            #     descp_item.text = str(single_item.item_name)
             # frappe.msgprint(f"Set item description: {descp_item.text}")
 
             comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
@@ -1222,9 +1231,13 @@ def item_data_with_template(invoice, sales_invoice_doc):
             cac_Item = ET.SubElement(cac_InvoiceLine, "cac:Item")
             cbc_Description = ET.SubElement(cac_Item, "cbc:Description")
             # cbc_Description.text = str(single_item.description)
-            if single_item.description:
+            if single_item.description and single_item.item_name:
+                cbc_Description.text = (
+                    f"{single_item.description} - {single_item.item_name}"
+                )
+            elif single_item.description:
                 cbc_Description.text = str(single_item.description)
-            else:
+            elif single_item.item_name:
                 cbc_Description.text = str(single_item.item_name)
 
             cac_CommodityClassification = ET.SubElement(
