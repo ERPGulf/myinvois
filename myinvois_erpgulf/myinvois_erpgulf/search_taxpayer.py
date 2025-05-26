@@ -133,3 +133,65 @@ def search_customer_tin(customer_name):
     customer.save(ignore_permissions=True)
 
     return data
+
+
+from urllib.parse import quote
+
+
+@frappe.whitelist()
+def search_sales_tin(sales_invoice_doc):
+    """Search for TIN using customer name, ID type, and ID value."""
+
+    # Ensure we have a full Sales Invoice doc
+    if isinstance(sales_invoice_doc, dict):
+        sales_invoice_doc = frappe.get_doc(
+            "Sales Invoice", sales_invoice_doc.get("name")
+        )
+    elif isinstance(sales_invoice_doc, str):
+        sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice_doc)
+
+    id_type = sales_invoice_doc.get("custom_customer__registrationicpassport_type")
+    id_value = sales_invoice_doc.get("custom_customer_registrationicpassport_number")
+    taxpayer_name = sales_invoice_doc.get("custom_customer_taxpayer_name")
+
+    if id_type and id_value:
+        query_url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/taxpayer/search/tin?idType={id_type}&idValue={id_value}"
+    elif taxpayer_name:
+        query_url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/taxpayer/search/tin?taxpayerName={quote(taxpayer_name)}"
+    else:
+        frappe.throw(
+            _(
+                "Either ID Type and Value or Taxpayer Name must be present in the Sales Invoice."
+            )
+        )
+
+    settings = frappe.get_doc("LHDN Malaysia Setting")
+    token = settings.get("bearer_token")
+
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    response = requests.get(query_url, headers=headers, timeout=10)
+
+    if response.status_code in [401, 500]:
+        get_access_token()
+        settings.reload()
+        token = settings.get("bearer_token")
+        headers["Authorization"] = f"Bearer {token}"
+        response = requests.get(query_url, headers=headers, timeout=10)
+
+    frappe.msgprint(f"Response body: {response.text}")
+
+    if response.status_code != 200:
+        frappe.throw(_("API request failed: {0}").format(response.text))
+
+    try:
+        data = response.json()
+    except ValueError:
+        frappe.throw(_("Failed to parse API response."))
+
+    tin = data.get("tin") or data.get("data", {}).get("tin")
+    if not tin:
+        frappe.throw(_("TIN not found in API response."))
+
+    sales_invoice_doc.db_set("custom_customer_tin_number", tin)
+
+    return {"taxpayerTIN": tin, "message": _("TIN fetched successfully."), "data": data}

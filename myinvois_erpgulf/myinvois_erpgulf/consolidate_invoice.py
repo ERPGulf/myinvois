@@ -76,10 +76,9 @@ def customer_data_consolidate(invoice, sales_invoice_doc):
 
         cont_customer = ET.SubElement(cac_Party, "cac:Contact")
         tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
-        tele_party.text = NOT_APPLICABLE
-
+        tele_party.text = "Info@m-pos.com.my"
         mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
-        mail_party.text = NOT_APPLICABLE
+        mail_party.text = "+60123456789"
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error customer data: {str(e)}"))
@@ -350,6 +349,7 @@ def merge_sales_invoices(invoice_numbers):
             "is_pos": base_invoice["is_pos"],
             "debit_to": base_invoice["debit_to"],
             "is_return": 0,
+            "custom_is_submit_to_lhdn": 1,
             "items": [],
             "taxes": [],
             "remarks": f"Merged from invoices: {', '.join(invoice_numbers)}",

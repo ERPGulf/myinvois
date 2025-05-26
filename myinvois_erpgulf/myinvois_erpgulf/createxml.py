@@ -567,18 +567,32 @@ def customer_data(invoice, sales_invoice_doc):
 
         party_id_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
         prty_id = ET.SubElement(party_id_1, "cbc:ID", schemeID="TIN")
-        prty_id.text = str(customer_doc.custom_customer_tin_number)
+        prty_id.text = str(sales_invoice_doc.custom_customer_tin_number)
 
         party_identifn_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
         id_party2 = ET.SubElement(
             party_identifn_2,
             "cbc:ID",
-            schemeID=str(customer_doc.custom_customer__registrationicpassport_type),
+            schemeID=str(
+                sales_invoice_doc.custom_customer__registrationicpassport_type
+            ),
         )
-        id_party2.text = str(
-            customer_doc.custom_customer_registrationicpassport_number
-        )  # Buyer’s Registration / Identification Number / Passport Number
+        customer_doc.custom_customer__registrationicpassport_type = (
+            sales_invoice_doc.custom_customer__registrationicpassport_type
+        )
+        customer_doc.custom_customer_tin_number = (
+            sales_invoice_doc.custom_customer_tin_number
+        )
+        # Save the Customer doc
 
+        id_party2.text = str(
+            sales_invoice_doc.custom_customer_registrationicpassport_number
+        )  # Buyer’s Registration / Identification Number / Passport Number
+        customer_doc.custom_customer_registrationicpassport_number = (
+            sales_invoice_doc.custom_customer_registrationicpassport_number
+        )
+        customer_doc.save(ignore_permissions=True)
+        frappe.db.commit()
         partyid_3 = ET.SubElement(cac_Party, "cac:PartyIdentification")
         value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
         customer_doc.custom_sst_number = (
@@ -644,6 +658,7 @@ def customer_data(invoice, sales_invoice_doc):
 
         mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
         mail_party.text = str(address.email_id)
+
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error customer data: {str(e)}"))
@@ -660,15 +675,19 @@ def delivery_data(invoice, sales_invoice_doc):
 
         party_id_tin = ET.SubElement(delivery_party, "cac:PartyIdentification")
         tin_id = ET.SubElement(party_id_tin, "cbc:ID", schemeID="TIN")
-        tin_id.text = str(customer_doc.custom_customer_tin_number)
+        tin_id.text = str(sales_invoice_doc.custom_customer_tin_number)
 
         party_id_brn = ET.SubElement(delivery_party, "cac:PartyIdentification")
         brn_id = ET.SubElement(
             party_id_brn,
             "cbc:ID",
-            schemeID=str(customer_doc.custom_customer__registrationicpassport_type),
+            schemeID=str(
+                sales_invoice_doc.custom_customer__registrationicpassport_type
+            ),
         )
-        brn_id.text = str(customer_doc.custom_customer_registrationicpassport_number)
+        brn_id.text = str(
+            sales_invoice_doc.custom_customer_registrationicpassport_number
+        )
 
         if int(frappe.__version__.split(".")[0]) == 13:
             address = frappe.get_doc("Address", sales_invoice_doc.customer_address)
