@@ -32,7 +32,18 @@ def status_submit(doc):
         submission_response_str = doc.get("custom_submit_response", "{}")
         response_data = json.loads(submission_response_str)
         submission_uid = response_data.get("submissionUid")
+
         if not submission_uid:
+            invoice_doctype = doc.get("doctype")
+            if invoice_doctype not in ["Sales Invoice", "Purchase Invoice"]:
+                frappe.throw(
+                    _("Document type must be Sales Invoice or Purchase Invoice.")
+                )
+
+            invoice = frappe.get_doc(invoice_doctype, doc.get("name"))
+            invoice.custom_lhdn_status = "Failed"
+            invoice.save(ignore_permissions=True)
+            frappe.db.commit()
             frappe.throw(
                 _(
                     "As per LHDN Regulation,Submission UID is missing from the document's custom_submit_response."
@@ -90,6 +101,7 @@ def status_submit(doc):
     except requests.RequestException as e:
         frappe.throw(_("Request failed: {0}").format(str(e)))
     except (ValueError, KeyError, frappe.ValidationError) as e:
+
         frappe.log_error(title="LHDN Status Error", message=str(e))
         frappe.throw(
             _("Failed to update LHDN submission status. Check logs for details.")

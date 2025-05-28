@@ -449,6 +449,8 @@ def submission_url(sales_invoice_doc, company_abbr):
         # Generate and attach QR code
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        sales_invoice_doc.db_update()
+
         frappe.db.commit()
         sales_invoice_doc.reload()
 
@@ -553,10 +555,20 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         submission_uid = response_data.get("submissionUid")
 
         if not submission_uid:
-            frappe.throw(
+            if isinstance(sales_invoice_doc, dict):
+                sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+
+            sales_invoice_doc.custom_lhdn_status = "Failed"
+            sales_invoice_doc.db_update()
+
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+
+            frappe.msgprint(
                 f"Submission UID not found.. not submitted due to an error in the response: "
                 f"{response_data}"
             )
+            return
 
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
@@ -590,12 +602,15 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
                 status = "Submitted"
                 sales_invoice_doc.custom_lhdn_status = status
                 sales_invoice_doc.save(ignore_permissions=True)
+                sales_invoice_doc.db_update()
+                frappe.db.commit()
             doc = success_log(
                 response.json(), submission_uid, status, invoice_number, company_doc
             )  # Pass JSON, not string
 
             doc.save(ignore_permissions=True)
             doc.reload()
+
             frappe.db.commit()
 
             return status
@@ -621,6 +636,7 @@ def status_submit_success_log(doc):
         token = company_doc.custom_bearer_token
         submission_uid = doc.get("submission_uuid")
         if not submission_uid:
+
             frappe.throw("Submission UID is missing from the document.")
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
