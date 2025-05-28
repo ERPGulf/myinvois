@@ -69,13 +69,9 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
+            "14 : Self-billed Refund Note",
         ]:
             invoice_id = sales_invoice_doc.return_against
-        elif (
-            sales_invoice_doc.custom_invoicetype_code == "14 : Self-billed Refund Note"
-        ):
-
-            invoice_id = sales_invoice_doc.custom_return_againstrefund_purchase_invoice
         else:
 
             invoice_id = get_icv_code(invoice_number)
@@ -84,6 +80,7 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "12 : Self-billed Credit Note",
             "13 : Self-billed Debit Note",
+            "14 : Self-billed Refund Note",
         ]:
             doc_id = sales_invoice_doc.return_against
             if not doc_id:
@@ -102,34 +99,9 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                         create_element(invoice_document_reference, "cbc:UUID", uuid)
                     else:
                         frappe.throw(
-                            _("No accepted documents found in custom_submit_response.")
-                        )
-                except Exception as e:
-                    frappe.throw(
-                        _("Error parsing custom_submit_response: {0}").format(str(e))
-                    )
-
-        elif (
-            sales_invoice_doc.custom_invoicetype_code == "14 : Self-billed Refund Note"
-        ):
-            doc_id = sales_invoice_doc.custom_return_againstrefund_purchase_invoice
-            if not doc_id:
-                frappe.throw(_("No document found in custom_return_against_refund."))
-
-            doc = frappe.get_doc("Purchase Invoice", doc_id)
-
-            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
-                try:
-                    custom_submit_response = json.loads(doc.custom_submit_response)
-                    accepted_documents = custom_submit_response.get(
-                        "acceptedDocuments", []
-                    )
-                    if accepted_documents:
-                        uuid = accepted_documents[0].get("uuid")
-                        create_element(invoice_document_reference, "cbc:UUID", uuid)
-                    else:
-                        frappe.throw(
-                            _("No accepted documents found in custom_submit_response.")
+                            _(
+                                "As per LHDN Regulation,no accepted documents found in custom_submit_response."
+                            )
                         )
                 except Exception as e:
                     frappe.throw(
@@ -202,7 +174,7 @@ def add_signature(invoice):
         return None
 
 
-def salesinvoice_data(invoice, sales_invoice_doc):
+def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
     """Adds the Purchase Invoice data to the invoice"""
     try:
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
@@ -211,31 +183,37 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         create_element(invoice, "cbc:IssueDate", formatted_date)
         create_element(invoice, "cbc:IssueTime", formatted_time)
         if not sales_invoice_doc.custom_invoicetype_code:
-            frappe.throw("Custom Invoice Type Code is missing! ")
-
-        if sales_invoice_doc.is_return == 1:
-            # Check if the field is already set to "02 : Credit Note"
-            if sales_invoice_doc.custom_invoicetype_code not in [
-                "12 : Self-billed Credit Note",
-                "13 : Self-billed Debit Note",
-            ]:
-                frappe.throw(
-                    "Choose the invoice type code as Self-billed Credit Note and  Self-billed Refund Note"
-                )
-        if sales_invoice_doc.custom_is_return_refund == 1:
+            frappe.throw("As per LHDN Regulation,Custom Invoice Type Code is missing! ")
+        if (
+            sales_invoice_doc.custom_is_return_refund == 1
+            and sales_invoice_doc.is_return == 1
+        ):
             # Check if the field is already set to "03 : Debit Note"
             if (
                 sales_invoice_doc.custom_invoicetype_code
                 != "14 : Self-billed Refund Note"
             ):
                 frappe.throw(
-                    "Choose the invoice type code as '14 : Self-billed Refund Note'"
+                    "As per LHDN Regulation, the invoice type code as '14 : Self-billed Refund Note'"
                 )
+        if (
+            sales_invoice_doc.is_return == 1
+            and sales_invoice_doc.custom_is_return_refund == 0
+        ):
+            # Check if the field is already set to "02 : Credit Note"
+            if sales_invoice_doc.custom_invoicetype_code not in [
+                "12 : Self-billed Credit Note",
+                "13 : Self-billed Debit Note",
+            ]:
+                frappe.throw(
+                    "As per LHDN Regulation,Choose the invoice type code as Self-billed Credit Note or Self-billed Debit Note"
+                )
+
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.certificate_file and settings.version == "1.1":
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
             create_element(
                 invoice,
                 "cbc:InvoiceTypeCode",
@@ -422,7 +400,7 @@ def customer_data(invoice, sales_invoice_doc):
         id_party2 = ET.SubElement(
             party_identifn_2,
             "cbc:ID",
-            schemeID=str(customer_doc.custom_company_registrationicpassport_type),
+            schemeID=str(customer_doc.custom_company_registration_for_self_einvoicing),
         )
         id_party2.text = str(
             customer_doc.custom_company__registrationicpassport_number
@@ -535,7 +513,7 @@ def delivery_data(invoice, sales_invoice_doc):
         brn_id = ET.SubElement(
             party_id_brn,
             "cbc:ID",
-            schemeID=str(customer_doc.custom_company_registrationicpassport_type),
+            schemeID=str(customer_doc.custom_company_registration_for_self_einvoicing),
         )
         brn_id.text = str(customer_doc.custom_company__registrationicpassport_number)
 

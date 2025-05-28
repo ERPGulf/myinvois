@@ -23,25 +23,6 @@ frappe.ui.form.on('Customer', {
         frm.refresh_field('custom_customer_registrationicpassport_number');
     },
       // you can call this from a custom button or another event
-      custom_check_customer_tin: function(frm) {
-        frappe.call({
-            method: "myinvois_erpgulf.myinvois_erpgulf.search_taxpayer.search_customer_tin",
-            args: {
-                customer_name: frm.doc.name
-            },
-            callback: function(r) {
-                if (!r.exc) {
-                    if (r.message?.taxpayerTIN) {
-                        frappe.msgprint(__('TIN Fetched Successfully: ') + r.message.taxpayerTIN);
-                    } else {
-                        frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
-                    }
-                    frm.reload_doc();  // Refresh the document to reflect any updates
-                } else {
-                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
-                }
-            }
-        });
-    }
-});
+     
+    });
 

@@ -1,0 +1,36 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">LHDN Malaysia</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dashboard\",\"col\":3}}]",
+ "creation": "2025-05-28 08:01:29.009689",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "idx": 0,
+ "indicator_color": "green",
+ "is_hidden": 0,
+ "label": "LHDN Malaysia",
+ "links": [],
+ "modified": "2025-05-28 10:41:28.654083",
+ "modified_by": "Administrator",
+ "module": "Myinvois Erpgulf",
+ "name": "LHDN Malaysia",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 28.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Dashboard",
+   "link_to": "lhdn-dashboard",
+   "type": "Page"
+  }
+ ],
+ "title": "LHDN Malaysia"
+}

@@ -7,7 +7,7 @@ frappe.ui.form.on('LHDN Success Log', {
             frappe.call({
                 method: "myinvois_erpgulf.myinvois_erpgulf.original.status_submit_success_log",
                 args: {
-                    "doc": frm.doc  // Pass the current document
+                    "doc": frm.doc,
                 },
                 callback: function(response) {
                     if (response.message) {

@@ -69,10 +69,10 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "02 : Credit Note",
             "03 :  Debit Note",
+            "04 :  Refund Note",
         ]:
             invoice_id = sales_invoice_doc.return_against
-        elif sales_invoice_doc.custom_invoicetype_code == "04 :  Refund Note":
-            invoice_id = sales_invoice_doc.custom_return_against_refund
+
         else:
             invoice_id = get_icv_code(invoice_number)
 
@@ -80,35 +80,11 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         if sales_invoice_doc.custom_invoicetype_code in [
             "02 : Credit Note",
             "03 :  Debit Note",
+            "04 :  Refund Note",
         ]:
             doc_id = sales_invoice_doc.return_against
             if not doc_id:
                 frappe.throw(_("No document found in return_against."))
-
-            doc = frappe.get_doc("Sales Invoice", doc_id)
-
-            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
-                try:
-                    custom_submit_response = json.loads(doc.custom_submit_response)
-                    accepted_documents = custom_submit_response.get(
-                        "acceptedDocuments", []
-                    )
-                    if accepted_documents:
-                        uuid = accepted_documents[0].get("uuid")
-                        create_element(invoice_document_reference, "cbc:UUID", uuid)
-                    else:
-                        frappe.throw(
-                            _("No accepted documents found in custom_submit_response.")
-                        )
-                except Exception as e:
-                    frappe.throw(
-                        _("Error parsing custom_submit_response: {0}").format(str(e))
-                    )
-
-        elif sales_invoice_doc.custom_invoicetype_code == "04 :  Refund Note":
-            doc_id = sales_invoice_doc.custom_return_against_refund
-            if not doc_id:
-                frappe.throw(_("No document found in custom_return_against_refund."))
 
             doc = frappe.get_doc("Sales Invoice", doc_id)
 
@@ -196,7 +172,7 @@ def add_signature(invoice):
         return None
 
 
-def salesinvoice_data(invoice, sales_invoice_doc):
+def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
     """Adds the Sales Invoice data to the invoice"""
     try:
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
@@ -207,27 +183,45 @@ def salesinvoice_data(invoice, sales_invoice_doc):
         if not sales_invoice_doc.custom_invoicetype_code:
             frappe.throw("Custom Invoice Type Code is missing! ")
 
-        if sales_invoice_doc.is_return == 1:
+        if (
+            sales_invoice_doc.is_return == 1
+            and sales_invoice_doc.custom_is_return_refund == 0
+        ):
             # Check if the field is already set to "02 : Credit Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
                 "02 : Credit Note",
             ]:
-                frappe.throw(_("Choose the invoice type code as '02 : Credit Note'"))
-        if sales_invoice_doc.custom_is_return_refund == 1:
+                frappe.throw(
+                    _(
+                        "As per LHDN Regulation,Choose the invoice type code as '02 : Credit Note'"
+                    )
+                )
+        if (
+            sales_invoice_doc.custom_is_return_refund == 1
+            and sales_invoice_doc.is_return == 1
+        ):
             # Check if the field is already set to "04 :  Refund Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
                 "04 :  Refund Note",
             ]:
-                frappe.throw(_("Choose the invoice type code as '04 :  Refund Note'"))
+                frappe.throw(
+                    _(
+                        "As per LHDN Regulation,Choose the invoice type code as '04 :  Refund Note'"
+                    )
+                )
         if sales_invoice_doc.is_debit_note == 1:
             # Check if the field is already set to "03 : Debit Note"
             if sales_invoice_doc.custom_invoicetype_code != "03 :  Debit Note":
-                frappe.throw(_("Choose the invoice type code as '03 : Debit Note'"))
+                frappe.throw(
+                    _(
+                        "As per LHDN Regulation,Choose the invoice type code as '03 : Debit Note'"
+                    )
+                )
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
         invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.certificate_file and settings.version == "1.1":
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
             create_element(
                 invoice,
                 "cbc:InvoiceTypeCode",
@@ -327,7 +321,7 @@ def company_data(invoice, sales_invoice_doc):
         if not address_list:
             frappe.throw(
                 _(
-                    "Invoice requires a proper address. Please add your company address in the Address field."
+                    "As per LHDN Regulation,Invoice requires a proper address. Please add your company address in the Address field."
                 )
             )
 

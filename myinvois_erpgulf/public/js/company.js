@@ -107,3 +107,28 @@ frappe.ui.form.on('Company', {
         });
     }
 });
+
+frappe.ui.form.on("Company", {
+    refresh: function(frm) {
+        // Optional actions on refresh
+    },
+    custom_taxpayer_login: function(frm) {
+        frappe.call({
+            method: "myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin.get_access_token",
+            args: {
+                doc: frm.doc.name  // Send just the company name string
+            },
+            callback: function(r) {
+                if (!r.exc) {
+                    frappe.msgprint("Access token fetched successfully!");
+                    frm.reload_doc();  // Reload to show updated token
+                } else {
+                    frappe.msgprint("Failed to fetch access token.");
+                }
+            },
+            error: function(err) {
+                frappe.msgprint("Error: " + err.message);
+            }
+        });
+    }
+});

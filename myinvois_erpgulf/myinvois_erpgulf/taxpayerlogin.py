@@ -5,32 +5,44 @@ import requests
 from frappe import _
 
 
-def get_api_url(base_url):
-    """There are many api susing in zatca which can be defined by a feild in settings"""
+def get_api_url(company_abbr, base_url):
+    """Constructs the API URL based on the company abbreviation and base URL."""
     try:
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.integration_type == "Sandbox":
-            url = settings.custom_sandbox_url + base_url
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if company_doc.custom_integration_type == "Sandbox":
+            url = company_doc.custom_sandbox_url + base_url
         else:
-            url = settings.custom_production_url + base_url
-
+            url = company_doc.custom_production_url + base_url
         return url
-
-    except (ValueError, TypeError, KeyError) as e:
-        frappe.throw(_(("get api url" f"error: {str(e)}")))
+    except Exception as e:
+        frappe.throw(_(f"Error getting API URL: {str(e)}"))
         return None
 
 
-@frappe.whitelist(allow_guest=True)  # Make sure this method is whitelisted
-def get_access_token():
-    """Get access token from LHDN API"""
-    # Debug to ensure function is triggered
-    # frappe.msgprint("Python function triggered successfully!")
-    url = get_api_url(base_url="connect/token")
-    # url = "https://preprod-api.myinvois.hasil.gov.my/connect/token"
-    settings = frappe.get_doc("LHDN Malaysia Setting")
-    client_id = settings.client_id
-    client_secret = settings.client_secret
+@frappe.whitelist(allow_guest=True)
+def get_access_token(doc):
+    """Fetches the access token from the LHDN API for the specified company."""
+    # Determine company name
+    if isinstance(doc, str):
+        company_name = doc
+    elif isinstance(doc, dict):
+        company_name = doc.get("name") or doc.get("company")  # Try both
+        if not company_name:
+            frappe.throw(_("Company name not provided in doc"))
+    else:
+        frappe.throw(_("Invalid argument type for doc"))
+
+    # Load company doc
+    try:
+        company_doc = frappe.get_doc("Company", company_name)
+    except frappe.DoesNotExistError:
+        frappe.throw(_(f"Company '{company_name}' not found"))
+
+    company_abbr = company_doc.abbr
+    url = get_api_url(company_abbr, base_url="/connect/token")
+
+    client_id = company_doc.custom_client_id
+    client_secret = company_doc.custom_client_secret
     payload = {
         "client_id": client_id,
         "client_secret": client_secret,
@@ -42,18 +54,20 @@ def get_access_token():
     try:
         response = requests.post(url, headers=headers, data=payload, timeout=10)
         response.raise_for_status()
-        # frappe.msgprint(f"Access token response: {response.text}")
         token_response = response.json()
         access_token = token_response.get("access_token")
 
         if access_token:
-            settings.bearer_token = access_token
-            settings.save()
-
+            company_doc.custom_bearer_token = access_token
+            company_doc.save()
+            company_doc.save(ignore_permissions=True)
         else:
             frappe.throw(
-                _("An error occurred while fetching the token", response.json())
+                _("Failed to fetch access token. Response: {0}").format(token_response)
             )
-        return response.json()
+        company_doc.save()
+        company_doc.save(ignore_permissions=True)
+        return token_response
+
     except requests.exceptions.RequestException as e:
-        frappe.throw(_(f"An error occurred while fetching the token: {e}"))
+        frappe.throw(_(f"Error fetching token: {e}"))

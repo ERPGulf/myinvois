@@ -1,8 +1,8 @@
-"""this module for getting teh status through button"""
+"""this module contains the function to get the status of LHDN submission"""
 
+import json
 import frappe
 import requests
-import json
 from frappe import _
 from myinvois_erpgulf.myinvois_erpgulf.original import get_api_url
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
@@ -10,69 +10,85 @@ from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
 @frappe.whitelist(allow_guest=True)
 def status_submit(doc):
-    """Fetch submission status and update in Sales or Purchase Invoice."""
-
+    """
+    Fetch submission status from LHDN API and update the corresponding Sales or Purchase Invoice.
+    """
     try:
-        # Parse string input to dict
+        # If doc is a JSON string (from client side), parse it to dict
         if isinstance(doc, str):
-            doc = frappe.parse_json(doc)
 
-        # Get settings and token
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        token = settings.bearer_token
+            doc = json.loads(doc)
 
-        # Get submission UID
-        response_data = json.loads(doc.get("custom_submit_response", "{}"))
+        company_name = doc.get("company")
+        if not company_name:
+            frappe.throw(_("Company name not provided in document."))
+
+        company_doc = frappe.get_doc("Company", company_name)
+        token = company_doc.custom_bearer_token
+        if not token:
+            frappe.throw(_("Bearer token not found in company document."))
+
+        # Extract submissionUid from stored API response JSON string
+        submission_response_str = doc.get("custom_submit_response", "{}")
+        response_data = json.loads(submission_response_str)
         submission_uid = response_data.get("submissionUid")
         if not submission_uid:
-            frappe.throw("Submission UID is missing from the document.")
+            frappe.throw(
+                _(
+                    "As per LHDN Regulation,Submission UID is missing from the document's custom_submit_response."
+                )
+            )
 
-        # Prepare request
-        url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
+        company_abbr = company_doc.abbr
+        url = get_api_url(
+            company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
+        )
         headers = {"Authorization": f"Bearer {token}"}
 
-        # First attempt
+        # Make API request to get status
         response = requests.get(url, headers=headers, timeout=30)
 
-        # Retry on auth/server error
+        # Retry once on auth or server error
         if response.status_code in [401, 500]:
-            get_access_token()  # Refresh token
-            settings.reload()
-            token = settings.bearer_token
+            get_access_token(doc)  # Refresh token
+            company_doc.reload()
+            token = company_doc.custom_bearer_token
             headers["Authorization"] = f"Bearer {token}"
             response = requests.get(url, headers=headers, timeout=30)
 
-        # Success response
         if response.status_code == 200:
-            frappe.msgprint(f"Response body: {response.text}")
             response_data = response.json()
 
             document_summary = response_data.get("documentSummary", [])
             if document_summary:
                 status = document_summary[0].get("status", "Unknown")
 
-                # Try Sales Invoice first
-                if doc.get("doctype") == "Sales Invoice":
-                    invoice = frappe.get_doc("Sales Invoice", doc.get("name"))
-                else:
-                    # If not found, try Purchase Invoice
-                    invoice = frappe.get_doc("Purchase Invoice", doc.get("name"))
+                # Determine the invoice doctype to update
+                invoice_doctype = doc.get("doctype")
+                if invoice_doctype not in ["Sales Invoice", "Purchase Invoice"]:
+                    frappe.throw(
+                        _("Document type must be Sales Invoice or Purchase Invoice.")
+                    )
 
+                invoice = frappe.get_doc(invoice_doctype, doc.get("name"))
                 invoice.custom_lhdn_status = status
                 invoice.save(ignore_permissions=True)
-                frappe.msgprint(_("LHDN submission status updated: ") + status)
+                frappe.db.commit()
+                frappe.msgprint(response.text)  # Log the full response for debugging
+                frappe.msgprint(_("LHDN submission status updated: {0}").format(status))
+            else:
+                frappe.msgprint(_("No document summary found in response."))
 
-            frappe.db.commit()
             return response_data
-
-        # Handle non-success response
         else:
             frappe.throw(
-                f"Failed to retrieve status. HTTP {response.status_code}: {response.text}"
+                _("Failed to retrieve status. HTTP {0}: {1}").format(
+                    response.status_code, response.text
+                )
             )
 
     except requests.RequestException as e:
-        frappe.throw(_(f"Request failed: {str(e)}"))
+        frappe.throw(_("Request failed: {0}").format(str(e)))
     except (ValueError, KeyError, frappe.ValidationError) as e:
         frappe.log_error(title="LHDN Status Error", message=str(e))
         frappe.throw(

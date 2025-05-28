@@ -59,19 +59,23 @@ def xml_hash():
         frappe.throw(_(f"Error in xml hash: {str(e)}"))
 
 
-def certificate_data():
+def certificate_data(company_abbr):
     """defining the certificate data"""
     try:
+        company_name = frappe.db.get_value("Company", {"abbr": company_abbr}, "name")
+        if not company_name:
+            frappe.throw(_(f"Company with abbreviation {company_abbr} not found."))
 
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        attached_file = settings.certificate_file
+        # Fetch the company document
+        company_doc = frappe.get_doc("Company", company_name)
+        attached_file = company_doc.custom_certificate_file
 
         if not attached_file:
             frappe.throw("No PFX file attached in the settings.")
         file_doc = frappe.get_doc("File", {"file_url": attached_file})
         pfx_path = file_doc.get_full_path()
 
-        pfx_password = settings.pfx_cert_password
+        pfx_password = company_doc.custom_pfx_cert_password
         pem_output_path = frappe.local.site + "/private/files/certificate.pem"
         pem_encryption_password = pfx_password.encode()
         with open(pfx_path, "rb") as f:
@@ -133,7 +137,7 @@ def bytes_to_base64_string(value: bytes) -> str:
     return base64.b64encode(value).decode("ASCII")
 
 
-def sign_data(line_xml):
+def sign_data(line_xml, company_abbr):
     """defining the sign data"""
     try:
         # print(single_line_ xml1)
@@ -147,9 +151,13 @@ def sign_data(line_xml):
         if cert_pem is None:
             raise ValueError("cert_pem cannot be None")
         cert = load_pem_x509_certificate(cert_pem.encode(), default_backend())
-        # print(cert.issuer)
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        pass_file = settings.pfx_cert_password
+        company_name = frappe.db.get_value("Company", {"abbr": company_abbr}, "name")
+        if not company_name:
+            frappe.throw(_(f"Company with abbreviation {company_abbr} not found."))
+
+        company_doc = frappe.get_doc("Company", company_name)
+
+        pass_file = company_doc.custom_pfx_cert_password
         private_key = serialization.load_pem_private_key(
             cert_pem.encode(),
             password=pass_file.encode(),
@@ -302,14 +310,14 @@ def ubl_extension_string(
         frappe.throw(_(f"Error in UBL extension string: {str(e)}"))
 
 
-def get_api_url(base_url):
+def get_api_url(company_abbr, base_url):
     """There are many api susing in zatca which can be defined by a feild in settings"""
     try:
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.integration_type == "Sandbox":
-            url = settings.custom_sandbox_url + base_url
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if company_doc.custom_integration_type == "Sandbox":
+            url = company_doc.custom_sandbox_url + base_url
         else:
-            url = settings.custom_production_url + base_url
+            url = company_doc.custom_production_url + base_url
 
         return url
 
@@ -318,15 +326,14 @@ def get_api_url(base_url):
         return None
 
 
-def submission_url(sales_invoice_doc):
+def submission_url(sales_invoice_doc, company_abbr):
     """defining the submission url"""
     try:
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        token = settings.bearer_token  # Fetch token from settings
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
 
-        # Determine the file path based on integration type
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.certificate_file and settings.version == "1.1":
+        token = company_doc.custom_bearer_token  # Fetch token from settings
+
+        if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
             file_path = "/private/files/aftersignforsubmit.xml"
         else:
             file_path = "/private/files/beforesubmit1.xml"
@@ -366,7 +373,7 @@ def submission_url(sales_invoice_doc):
         # Function to send the submission request
         def submit_request():
             return requests.post(
-                url=get_api_url(base_url="api/v1.0/documentsubmissions"),
+                url=get_api_url(company_abbr, base_url="/api/v1.0/documentsubmissions"),
                 headers=headers,
                 json=json_payload,
                 timeout=30,
@@ -375,9 +382,11 @@ def submission_url(sales_invoice_doc):
         response = submit_request()
 
         if response.status_code in [401, 500]:
-            get_access_token()  # Refresh the token and save it in settings
-            settings.reload()  # Reload settings to get the new token
-            token = settings.bearer_token  # Fetch updated token
+            get_access_token(
+                company_doc.name
+            )  # Refresh the token and save it in settings
+            company_doc.reload()  # Reload settings to get the new token
+            token = company_doc.custom_bearer_token  # Fetch updated token
             headers["Authorization"] = f"Bearer {token}"
             response = submit_request()
         frappe.msgprint(f"Response body: {response.text}")
@@ -447,7 +456,7 @@ def submission_url(sales_invoice_doc):
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
 
 
-def success_log(response, submission_uuid, status, invoice_number):
+def success_log(response, submission_uuid, status, invoice_number, company_doc=None):
     """Log successful invoice submissions or update an existing log."""
     try:
         current_time = frappe.utils.now()
@@ -485,6 +494,7 @@ def success_log(response, submission_uuid, status, invoice_number):
                     "invoice_number": invoice_number,
                     "time": current_time,
                     "lhdn_response": response_str,
+                    "custom_company_data": company_doc,
                 }
             )
             doc_instance.insert(ignore_permissions=True)
@@ -532,14 +542,14 @@ def error_log(custom_error_submission=None):
         frappe.throw(_(f"Error while logging the error: {str(e)}"))
 
 
-def status_submission(invoice_number, sales_invoice_doc):
+def status_submission(invoice_number, sales_invoice_doc, company_abbr):
     """Fetching the status of the submission"""
     try:
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        token = settings.bearer_token
-        response_data = json.loads(
-            sales_invoice_doc.custom_submit_response
-        )  # Parse JSON response
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        token = company_doc.custom_bearer_token
+        submission_response_str = sales_invoice_doc.get("custom_submit_response", "{}")
+
+        response_data = json.loads(submission_response_str)
         submission_uid = response_data.get("submissionUid")
 
         if not submission_uid:
@@ -548,21 +558,40 @@ def status_submission(invoice_number, sales_invoice_doc):
                 f"{response_data}"
             )
 
-        url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
+        url = get_api_url(
+            company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
+        )
 
         headers = {"Authorization": f"Bearer {token}"}
-
-        response = requests.get(url, headers=headers, timeout=30)
         status = "Unknown"
+        response = requests.get(url, headers=headers, timeout=30)
+        if response.status_code in [401, 500]:
+
+            get_access_token(company_doc)  # Refresh token
+
+            company_doc.reload()
+
+            token = company_doc.custom_bearer_token
+
+            headers["Authorization"] = f"Bearer {token}"
+
+            response = requests.get(url, headers=headers, timeout=30)
         if response.status_code == 200:
-            response_data = response.json()  # Parse the response as JSON
+
+            response_data = response.json()
+
             document_summary = response_data.get("documentSummary", [])
+
             if document_summary:
-                status = document_summary[0].get("status", "Unknown")
+                status = document_summary[0].get(
+                    "status", "Submitted"
+                )  # default to 'Submitted' if no status key
+            else:
+                status = "Submitted"
                 sales_invoice_doc.custom_lhdn_status = status
                 sales_invoice_doc.save(ignore_permissions=True)
             doc = success_log(
-                response.json(), submission_uid, status, invoice_number
+                response.json(), submission_uid, status, invoice_number, company_doc
             )  # Pass JSON, not string
 
             doc.save(ignore_permissions=True)
@@ -585,22 +614,26 @@ def status_submit_success_log(doc):
         # Load the document into a Python dictionary if passed as a string
         if isinstance(doc, str):
             doc = frappe.parse_json(doc)
-
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        token = settings.bearer_token
+        company_name = doc.custom_company_data
+        settings = frappe.get_doc("Company", company_name)
+        company_abbr = settings.abbr
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        token = company_doc.custom_bearer_token
         submission_uid = doc.get("submission_uuid")
         if not submission_uid:
             frappe.throw("Submission UID is missing from the document.")
-        url = get_api_url(base_url=f"api/v1.0/documentsubmissions/{submission_uid}")
+        url = get_api_url(
+            company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
+        )
 
         headers = {"Authorization": f"Bearer {token}"}  # Authorization header
 
         response = requests.get(url, headers=headers, timeout=30)
         # Send the request
         if response.status_code in [401, 500]:
-            get_access_token()  # Assuming this function refreshes the token
-            settings.reload()  # Reload settings to get the updated token
-            token = settings.bearer_token  # Get the refreshed token
+            get_access_token(company_doc)  # Assuming this function refreshes the token
+            company_doc.reload()  # Reload settings to get the updated token
+            token = company_doc.custom_bearer_token  # Get the refreshed token
             headers["Authorization"] = f"Bearer {token}"
 
             # Retry the request with the new token
@@ -642,11 +675,14 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
         # Check if any item has a tax template but not all items have one
+        company_name = sales_invoice_doc.company
+        settings = frappe.get_doc("Company", company_name)
+        company_abbr = settings.abbr
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
             frappe.throw(
-                "If any one item has an Item Tax Template, all items must have an Item Tax Template."
+                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
             )
         else:
             # Set to True if all items have a tax template
@@ -654,11 +690,10 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 item.item_tax_template for item in sales_invoice_doc.items
             )
 
-        settings = frappe.get_doc("LHDN Malaysia Setting")
-        if settings.certificate_file and settings.version == "1.1":
+        if settings.custom_certificate_file and settings.custom_version == "1.1":
 
             invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
 
             # if company_doc != "General Public":
             invoice = company_data(invoice, sales_invoice_doc)
@@ -700,9 +735,9 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 x509_serial_number,
                 cert_digest,
                 signing_time,
-            ) = certificate_data()
+            ) = certificate_data(company_abbr)
 
-            signature = sign_data(line_xml)
+            signature = sign_data(line_xml, company_abbr)
             prop_cert_base64 = signed_properties_hash(
                 signing_time, cert_digest, formatted_issuer_name, x509_serial_number
             )
@@ -730,7 +765,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             #     )
         else:
             invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc)
+            invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
             company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
             # if company_doc != "General Public":
             invoice = company_data(invoice, sales_invoice_doc)
@@ -795,13 +830,17 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        company_name = sales_invoice_doc.company
+        settings = frappe.get_doc("Company", company_name)
+        company_abbr = settings.abbr
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
         # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
             frappe.throw(
-                "If any one item has an Item Tax Template, all items must have an Item Tax Template."
+                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
             )
         else:
             # Set to True if all items have a tax template
@@ -809,15 +848,14 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 item.item_tax_template for item in sales_invoice_doc.items
             )
 
-        settings = frappe.get_doc("LHDN Malaysia Setting")
         if (
-            settings.enable_lhdn_invoice
+            settings.custom_enable_lhdn_invoice
             and sales_invoice_doc.custom_is_submit_to_lhdn == 1
         ):
-            if settings.certificate_file and settings.version == "1.1":
+            if settings.custom_certificate_file and settings.custom_version == "1.1":
 
                 invoice = create_invoice_with_extensions()
-                invoice = salesinvoice_data(invoice, sales_invoice_doc)
+                invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
                 # if company_doc != "General Public":
                 invoice = company_data(invoice, sales_invoice_doc)
                 customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
@@ -856,9 +894,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     x509_serial_number,
                     cert_digest,
                     signing_time,
-                ) = certificate_data()
+                ) = certificate_data(company_abbr)
 
-                signature = sign_data(line_xml)
+                signature = sign_data(line_xml, company_abbr)
                 prop_cert_base64 = signed_properties_hash(
                     signing_time, cert_digest, formatted_issuer_name, x509_serial_number
                 )
@@ -875,24 +913,24 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     line_xml,
                 )
 
-                submission_url(sales_invoice_doc)
+                submission_url(sales_invoice_doc, company_abbr)
                 response_data = json.loads(sales_invoice_doc.custom_submit_response)
                 submission_uid = response_data.get("submissionUid")
 
                 if not submission_uid:
                     frappe.throw(
-                        f"Submission UID not found.. not submitted due to an error in the response: "
+                        f"As per LHDN Regulation,Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
                     )
                 else:
-                    status_submission(invoice_number, sales_invoice_doc)
+                    status_submission(invoice_number, sales_invoice_doc, company_abbr)
                     # qr_image_path = generate_qr_code(sales_invoice_doc, status)
                     # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
                     # frappe.db.commit()
 
             else:
                 invoice = create_invoice_with_extensions()
-                invoice = salesinvoice_data(invoice, sales_invoice_doc)
+                invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
 
                 # if company_doc != "General Public":
                 invoice = company_data(invoice, sales_invoice_doc)
@@ -925,7 +963,8 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 xml_structuring(invoice, sales_invoice_doc)
 
                 line_xml, doc_hash = xml_hash()
-                submission_url(sales_invoice_doc)
+                # frappe.throw(f"line_xml: {line_xml}")
+                submission_url(sales_invoice_doc, company_abbr)
                 response_data = json.loads(sales_invoice_doc.custom_submit_response)
                 submission_uid = response_data.get("submissionUid")
 
@@ -935,15 +974,17 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                         f"{response_data}"
                     )
                 else:
-                    status_submission(invoice_number, sales_invoice_doc)
+                    status_submission(invoice_number, sales_invoice_doc, company_abbr)
 
                 # status_submission(invoice_number, sales_invoice_doc)
 
         else:
-            if not settings.enable_lhdn_invoice:
-                frappe.throw(" LHDN Invoice Submission is not enabled in settings ")
+            if not settings.custom_enable_lhdn_invoice:
+                frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
             if sales_invoice_doc.custom_is_submit_to_lhdn == 0:
-                frappe.throw(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
+                frappe.throw(
+                    _(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
+                )
                 # frappe.throw(
                 #     f"Invoice {invoice_number} is not marked for submission to LHDN."
                 # )
@@ -963,8 +1004,18 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
-    settings = frappe.get_doc("LHDN Malaysia Setting")
-    if settings.enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
+    company_name = doc.company
+    settings = frappe.get_doc("Company", company_name)
+    if not settings.custom_enable_lhdn_invoice:
+        frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
+    if doc.custom_is_submit_to_lhdn == 0:
+        frappe.throw(_("IN Invoice  is submit to LHDN NOT CHECKED."))
+        # frappe.throw(
+        #     f"Invoice {invoice_number} is not marked for submission to LHDN."
+        # )
+        pass
+
+    if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
         # Call the submit_document function
         # frappe.throw(f"Calling submit_document for {doc.name}")
         submit_document(doc.name)

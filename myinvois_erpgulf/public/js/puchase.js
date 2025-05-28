@@ -58,3 +58,36 @@ frappe.ui.form.on('Purchase Invoice', {
         }
     }
 });
+
+
+
+
+frappe.ui.form.on('Purchase Invoice', {
+    refresh: function(frm) {
+        // Optional: call on refresh or via button
+    },
+
+    custom_check_supplier_tin: function(frm) {
+        frappe.call({
+            method: "myinvois_erpgulf.myinvois_erpgulf.search_taxpayer.search_purchase_tin",
+            args: {
+                sales_invoice_doc: frm.doc.name
+            },
+            callback: function(r) {
+                if (!r.exc) {
+                    if (r.message?.taxpayerTIN) {
+                        frappe.msgprint(__('TIN Fetched Successfully: ') + r.message.taxpayerTIN);
+                        frm.reload_doc();
+                    } else {
+                        frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
+                    }
+                } else {
+                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
+                }
+            },
+            error: function(err) {
+                frappe.msgprint(__('API call failed: ') + JSON.stringify(err));
+            }
+        });
+    }
+});
