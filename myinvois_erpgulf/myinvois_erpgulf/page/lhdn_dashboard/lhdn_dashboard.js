@@ -14,6 +14,7 @@ class LhdnDashboard {
         this.render_cards();
         this.render_charts();
         this.render_list();
+        this.render_purchase_invoice_list();
     }
 
     make_form() {
@@ -22,67 +23,132 @@ class LhdnDashboard {
                 { fieldtype: "HTML", fieldname: "summary_cards" },
                 { label: __("Charts"), fieldname: "lhdn_charts", fieldtype: "HTML" },
                 { label: __("Current Month LHDN Status"), fieldname: "current_month_lhdn_chart", fieldtype: "HTML" },
-                { label: __("LHDN List"), fieldtype: "HTML", fieldname: "lhdn_list" }
+                { label: __("Sales Invoice List"), fieldtype: "HTML", fieldname: "lhdn_list" },
+                { label: __("Purchase Invoice List"), fieldtype: "HTML", fieldname: "purchase_invoice_list" }
             ],
             body: this.page.body,
         });
         this.form.make();
     }
 
-    render_cards() {
-        const statuses = ['Valid', 'Invalid', 'Submitted', 'Cancelled', 'Failed', 'Not Submitted'];
-        const statusPromises = statuses.map(status => {
-            return frappe.call({
-                method: "frappe.client.get_count",
-                args: {
-                    doctype: "Sales Invoice",
-                    filters: { custom_lhdn_status: status }
-                }
-            });
+render_cards() {
+    const statuses = ['Valid', 'Invalid', 'Submitted', 'Cancelled', 'Failed', 'Not Submitted'];
+
+    const getCounts = (doctype, filters) => frappe.call({
+        method: "frappe.client.get_count",
+        args: { doctype, filters }
+    });
+
+    const getNotSubmittedCounts = (doctype) => {
+        const draftCountPromise = frappe.call({
+            method: "frappe.client.get_count",
+            args: { doctype, filters: { docstatus: 0 } }
+        });
+        const blankStatusCountPromise = frappe.call({
+            method: "frappe.client.get_count",
+            args: {
+                doctype,
+                filters: [
+                    // ["docstatus", "=", 1],
+                    ["custom_lhdn_status", "in", ["", null]]
+                ]
+            }
         });
 
-        Promise.all(statusPromises).then((responses) => {
-            let cardHtml = `<div class="card-container" style="display: flex; gap: 10px; justify-content: space-between; flex-wrap: nowrap; overflow-x: auto; margin-top: 20px; margin-bottom: 20px;">`;
-
-
-            responses.forEach((response, index) => {
-                const count = response.message || 0;
-                cardHtml += this.create_card(statuses[index], count, index);
-            });
-
-            cardHtml += '</div>';
-            this.form.get_field("summary_cards").html(cardHtml);
+        return Promise.all([draftCountPromise, blankStatusCountPromise]).then(([draftCountRes, blankStatusCountRes]) => {
+            const draftCount = draftCountRes.message || 0;
+            const blankStatusCount = blankStatusCountRes.message || 0;
+            return draftCount + blankStatusCount;
         });
-    }
+    };
 
-    create_card(title, count, index) {
+    const promises = statuses.map(status => {
+        if (status === 'Not Submitted') {
+            return Promise.all([
+                getNotSubmittedCounts("Sales Invoice"),
+                getNotSubmittedCounts("Purchase Invoice")
+            ]).then(([salesCount, purchaseCount]) => ({
+                status,
+                sales_count: salesCount,
+                purchase_count: purchaseCount
+            }));
+        } else {
+            const filters = { custom_lhdn_status: status };
+            return Promise.all([
+                getCounts("Sales Invoice", filters),
+                getCounts("Purchase Invoice", filters)
+            ]).then(([salesCount, purchaseCount]) => ({
+                status,
+                sales_count: salesCount.message || 0,
+                purchase_count: purchaseCount.message || 0
+            }));
+        }
+    });
+
+    Promise.all(promises).then(results => {
+        let cardHtml = '';
+
+        for (let i = 0; i < results.length; i += 3) {
+            cardHtml += `<div class="status-row" style="display: flex; gap: 30px; margin-bottom: 30px;">`;
+
+            for (let j = i; j < i + 3 && j < results.length; j++) {
+                const res = results[j];
+                cardHtml += `
+                    <div style="flex: 1;">
+                        <h4 style="margin-bottom: 10px;">${res.status}</h4>
+                        <div style="display: flex; gap: 12px;">
+                            ${this.create_card(res.status, res.sales_count, j, "Sales Invoice")}
+                            ${this.create_card(res.status, res.purchase_count, j, "Purchase Invoice")}
+                        </div>
+                    </div>
+                `;
+            }
+
+            cardHtml += `</div>`;
+        }
+
+        this.form.get_field("summary_cards").html(cardHtml);
+    });
+}
+
+
+    create_card(title, count, index, doctype) {
         const colors = [
-            '#ff6384', // Valid
-            '#36a2eb', // Invalid
-            '#ffce56', // Submitted
-            '#4bc0c0', // Cancelled
-            '#9966ff', // Failed
-            '#999999'  // Not Submitted
+            '#ff6384', '#36a2eb', '#ffce56',
+            '#4bc0c0', '#9966ff', '#999999'
         ];
-        return `
-            <div style="flex: 0 0 16%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); min-width: 150px;">
-                <h4 style="font-weight: bold; color: #495057;">${title}</h4>
-                <div class="count" style="font-size: 32px; font-weight: bold; color: ${colors[index % colors.length]}; margin-top: 10px;">${count}</div>
-            </div>
-        `;
 
+        const reportName = doctype === "Sales Invoice"
+            ? "LHDN Status Report"
+            : "LHDN Status Report2";
+
+        return `
+            <a href="/app/query-report/${encodeURIComponent(reportName)}?&status=${encodeURIComponent(title)}" style="color: inherit;">
+                <div 
+                    style="flex: 0 0 22%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; 
+                    padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 180px; 
+                    cursor: pointer; transition: transform 0.2s ease;"
+                    onmouseover="this.style.transform='scale(1.02)'"
+                    onmouseout="this.style.transform='scale(1)'"
+                >
+                    <h5 style="font-weight: 600; margin-bottom: 8px;">${doctype}</h5>
+                    <div style="font-size: 16px; color: #495057;">${title}</div>
+                    <div style="font-size: 28px; font-weight: bold; color: ${colors[index % colors.length]};">${count}</div>
+                </div>
+            </a>
+        `;
     }
 
     render_charts() {
         const charts_container = `
-        <div style="display: flex; justify-content: space-between; box-sizing: border-box;">
-            <div style="width: 49%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                <canvas id="currentMonthChart" style="flex: 1; height: 250px;"></canvas>
-            </div>
-            <div style="width: 49%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-                <canvas id="monthlyChart" style="flex: 1; height: 250px;"></canvas>
-            </div>
-        </div>`;
+            <div style="display: flex; justify-content: space-between; box-sizing: border-box;">
+                <div style="width: 49%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <canvas id="currentMonthChart" style="flex: 1; height: 250px;"></canvas>
+                </div>
+                <div style="width: 49%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; text-align: center; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+                    <canvas id="monthlyChart" style="flex: 1; height: 250px;"></canvas>
+                </div>
+            </div>`;
 
         this.form.get_field("lhdn_charts").html(charts_container);
 
@@ -104,30 +170,34 @@ class LhdnDashboard {
         const monthlyStatusCount = {};
         const currentYear = new Date().getFullYear();
 
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Sales Invoice",
-                fields: ["posting_date", "custom_lhdn_status"],
-                filters: { docstatus: 1 },
-                limit_page_length: 5000
-            },
-            callback: (response) => {
-                if (response.message) {
-                    response.message.forEach((invoice) => {
-                        const date = new Date(invoice.posting_date);
-                        const year = date.getFullYear();
-                        const month = date.getMonth();
-                        const status = invoice.custom_lhdn_status;
+        Promise.all([
+            frappe.call({
+                method: "frappe.client.get_list",
+                args: { doctype: "Sales Invoice", fields: ["posting_date", "custom_lhdn_status"], filters: { docstatus: 1 }, limit_page_length: 5000 }
+            }),
+            frappe.call({
+                method: "frappe.client.get_list",
+                args: { doctype: "Purchase Invoice", fields: ["posting_date", "custom_lhdn_status"], filters: { docstatus: 1 }, limit_page_length: 5000 }
+            })
+        ]).then(([salesRes, purchaseRes]) => {
+            const data = [...(salesRes.message || []), ...(purchaseRes.message || [])];
 
-                        if (year === currentYear) {
-                            if (!monthlyStatusCount[status]) monthlyStatusCount[status] = Array(12).fill(0);
-                            monthlyStatusCount[status][month]++;
-                        }
-                    });
-                    this.render_chart(chartId, monthlyStatusCount, label, chartType);
+            data.forEach(invoice => {
+                const date = new Date(invoice.posting_date);
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                let status = invoice.custom_lhdn_status;
+
+                if (year === currentYear) {
+                    if (!status || !status.trim()) {
+                        status = "Not Submitted";
+                    }
+                    if (!monthlyStatusCount[status]) monthlyStatusCount[status] = Array(12).fill(0);
+                    monthlyStatusCount[status][month]++;
                 }
-            }
+            });
+
+            this.render_chart(chartId, monthlyStatusCount, label, chartType);
         });
     }
 
@@ -135,35 +205,39 @@ class LhdnDashboard {
         const currentMonth = new Date().getMonth();
         const statusCount = {};
 
-        frappe.call({
-            method: "frappe.client.get_list",
-            args: {
-                doctype: "Sales Invoice",
-                fields: ["posting_date", "custom_lhdn_status"],
-                filters: { docstatus: 1 },
-                limit_page_length: 5000
-            },
-            callback: (response) => {
-                if (response.message) {
-                    response.message.forEach((invoice) => {
-                        const month = new Date(invoice.posting_date).getMonth();
-                        const status = invoice.custom_lhdn_status;
+        Promise.all([
+            frappe.call({
+                method: "frappe.client.get_list",
+                args: { doctype: "Sales Invoice", fields: ["posting_date", "custom_lhdn_status"], filters: { docstatus: 1 }, limit_page_length: 5000 }
+            }),
+            frappe.call({
+                method: "frappe.client.get_list",
+                args: { doctype: "Purchase Invoice", fields: ["posting_date", "custom_lhdn_status"], filters: { docstatus: 1 }, limit_page_length: 5000 }
+            })
+        ]).then(([salesRes, purchaseRes]) => {
+            const data = [...(salesRes.message || []), ...(purchaseRes.message || [])];
 
-                        if (month === currentMonth) {
-                            statusCount[status] = (statusCount[status] || 0) + 1;
-                        }
-                    });
-                    this.render_chart(chartId, statusCount, label, chartType);
+            data.forEach(invoice => {
+                const month = new Date(invoice.posting_date).getMonth();
+                let status = invoice.custom_lhdn_status;
+
+                if (month === currentMonth) {
+                    if (!status || !status.trim()) {
+                        status = "Not Submitted";
+                    }
+                    statusCount[status] = (statusCount[status] || 0) + 1;
                 }
-            }
+            });
+
+            this.render_chart(chartId, statusCount, label, chartType);
         });
     }
 
     render_chart(chartId, data, label, chartType) {
         const ctx = document.getElementById(chartId).getContext('2d');
-        const labels = chartType === 'bar' ?
-            ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] :
-            Object.keys(data);
+        const labels = chartType === 'bar'
+            ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+            : Object.keys(data);
 
         const colors = [
             'rgba(255, 99, 132, 0.6)',   // Valid
@@ -213,31 +287,76 @@ class LhdnDashboard {
             },
             callback: (r) => {
                 if (r.message) {
-                    let rows = r.message.map(row => 
+                    let rows = r.message.map(row =>
                         `<tr>
                             <td>${row.name}</td>
                             <td>${row.customer}</td>
                             <td>${row.posting_date}</td>
-                            <td>${row.custom_lhdn_status || ''}</td>
-                            <td>${row.grand_total.toFixed(2)}</td>
+                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.grand_total}</td>
                         </tr>`
-                    ).join('');
+                    ).join("");
 
-                    const tableHtml = `
-                        <table class="table table-bordered table-striped" style="width: 100%; margin-top: 20px;">
+                    const table_html = `
+                        <table class="table table-bordered table-striped">
                             <thead>
                                 <tr>
                                     <th>Invoice</th>
                                     <th>Customer</th>
-                                    <th>Date</th>
+                                    <th>Posting Date</th>
                                     <th>LHDN Status</th>
-                                    <th>Total</th>
+                                    <th>Grand Total</th>
                                 </tr>
                             </thead>
-                            <tbody>${rows}</tbody>
+                            <tbody>
+                                ${rows}
+                            </tbody>
                         </table>`;
 
-                    this.form.get_field("lhdn_list").html(tableHtml);
+                    this.form.get_field("lhdn_list").html(table_html);
+                }
+            }
+        });
+    }
+
+    render_purchase_invoice_list() {
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+                doctype: "Purchase Invoice",
+                fields: ["name", "supplier", "posting_date", "custom_lhdn_status", "grand_total"],
+                limit_page_length: 50,
+                order_by: "posting_date desc"
+            },
+            callback: (r) => {
+                if (r.message) {
+                    let rows = r.message.map(row =>
+                        `<tr>
+                            <td>${row.name}</td>
+                            <td>${row.supplier}</td>
+                            <td>${row.posting_date}</td>
+                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.grand_total}</td>
+                        </tr>`
+                    ).join("");
+
+                    const table_html = `
+                        <table class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Invoice</th>
+                                    <th>Supplier</th>
+                                    <th>Posting Date</th>
+                                    <th>LHDN Status</th>
+                                    <th>Grand Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>`;
+
+                    this.form.get_field("purchase_invoice_list").html(table_html);
                 }
             }
         });

@@ -61,7 +61,7 @@ def status_submit(doc):
 
         # Retry once on auth or server error
         if response.status_code in [401, 500]:
-            get_access_token(doc)  # Refresh token
+            get_access_token(company_doc.name)  # Refresh token
             company_doc.reload()
             token = company_doc.custom_bearer_token
             headers["Authorization"] = f"Bearer {token}"
