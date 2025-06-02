@@ -5,9 +5,13 @@ A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-
 **🚀 Features**
 
 ✅ Compliance with LHDN E-Invoicing for Version 1.0 and Version 1.1
+
 ✅ Seamless integration with LHDN APIs for integration, submission, validation & cancellation
+
 ✅ Secure digital certificate management for Version 1.1 and XML signing for both versions
+
 ✅ Automatic access token retrieval & renewal
+
 ✅ Support for a wide range of document types:
 
     Standard Invoices
@@ -20,9 +24,13 @@ A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-
     Self-Billed Refund Notes
 
 ✅ QR Code generation and attachment to invoices
+
 ✅ Automatic submission to LHDN for both submission and validation
+
 ✅ Comprehensive success logging and error handling for audit trails
+
 ✅ Reports comparing ERPNext invoices with LHDN portal statistics
+
 ✅ Integrated LHDN Dashboard System for real-time insights and monitoring
 
 **🔹 Compatibility**
@@ -54,9 +62,13 @@ Feature Details 🔓 License MIT (Or another license)
 
 🛠 Maintenance
 ✅ Actively Maintained
+
 🔄 PRs Welcome
+
 ✅ Contributions Encouraged
+
 🏆 Open Source ✅
+
 🎥 Watch our step-by-step tutorial on YouTube:https://youtu.be/ExhjZv2zHaY
 
 **🌟 Development & Contributions**
