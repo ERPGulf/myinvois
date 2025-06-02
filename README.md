@@ -35,7 +35,7 @@ A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-
 ✅ Integrated LHDN Dashboard System for real-time insights and monitoring
 
 **🔹 Compatibility**
-🌐 ERPNext Versions: 13, 14, and 15
+🌐 ERPNext Versions: 15 and 16 ( future release tested for verison 16 )
 
 
 # Get the app from GitHub
