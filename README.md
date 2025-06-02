@@ -1,6 +1,7 @@
 **🇲🇾 Malaysia LHDN E-Invoicing – A Frappe ERPNext App**
 
-A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-Invoicing regulations, supporting both versions of the standard.
+A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-Invoicing regulations,
+ supporting both versions of the standard.
 
 **🚀 Features**
 
@@ -54,7 +55,9 @@ sudo service supervisor restart
 
 **🔹 Verify Installation**
 1️⃣ Log in to ERPNext
+
 2️⃣ Navigate to Help → About
+
 3️⃣ Confirm the LHDN app is listed
 
 **📈 Project Status**
@@ -73,9 +76,13 @@ Feature Details 🔓 License MIT (Or another license)
 
 **🌟 Development & Contributions**
 We welcome contributions! To contribute:
+
 1️⃣ Fork this repository
+
 2️⃣ Improve the code, add features, or fix bugs
+
 3️⃣ Submit a Pull Request for review
+
 4️⃣ Report issues via the Issues section
 
 Your contributions make this project better! 🙌
@@ -85,5 +92,6 @@ For implementation support or customization, contact: 📧 support@ERPGulf.com
 
 **👥 Social**
 Stay connected and join the community! 🚀
+
 With this app, you're ready to be fully LHDN-compliant! 🎯
 
