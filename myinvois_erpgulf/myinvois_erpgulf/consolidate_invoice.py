@@ -561,9 +561,11 @@ def merge_sales_invoices(invoice_numbers):
     # Cancel or delete original invoices
     for inv in sales_invoices:
         doc = frappe.get_doc("Sales Invoice", inv["name"])
-        if doc.docstatus == 1:
-            doc.cancel()
-        elif doc.docstatus == 0:
-            doc.delete()
+        doc.custom_consolidate_invoice_number = new_invoice.name
+        doc.save(ignore_permissions=True)
+    #     if doc.docstatus == 1:
+    #         doc.cancel()
+    #     elif doc.docstatus == 0:
+    #         doc.delete()
 
     return new_invoice.name
