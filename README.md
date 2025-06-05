@@ -34,7 +34,18 @@ A Frappe ERPNext app designed to help businesses in Malaysia comply with LHDN e-
 
 ✅ Integrated LHDN Dashboard System for real-time insights and monitoring
 
+**🧾 Invoice Consolidation Support:**
+
+✅ Merge multiple standard Sales Invoices into one consolidated invoice
+
+✅ Generate valid XML for consolidated invoice and submit it to LHDN as a standard invoice
+
+✅ Automatically assign QR code and attach it to the consolidated invoice
+
+✅ Track source invoice references via a link field for complete audit traceability
+
 **🔹 Compatibility**
+
 🌐 ERPNext Versions: 15 and 16 ( future release tested for verison 16 )
 
 
@@ -48,12 +59,15 @@ bench --site yoursite.com install-app myinvois_erpgulf
 bench --site yoursite.com migrate
 
 # Restart bench or supervisor
+
 bench restart
 # OR
+
 sudo service supervisor restart
 
 
 **🔹 Verify Installation**
+
 1️⃣ Log in to ERPNext
 
 2️⃣ Navigate to Help → About
@@ -61,9 +75,11 @@ sudo service supervisor restart
 3️⃣ Confirm the LHDN app is listed
 
 **📈 Project Status**
+
 Feature Details 🔓 License MIT (Or another license)
 
-🛠 Maintenance
+**🛠 Maintenance**
+
 ✅ Actively Maintained
 
 🔄 PRs Welcome
@@ -75,6 +91,7 @@ Feature Details 🔓 License MIT (Or another license)
 🎥 Watch our step-by-step tutorial on YouTube:https://youtu.be/ExhjZv2zHaY
 
 **🌟 Development & Contributions**
+
 We welcome contributions! To contribute:
 
 1️⃣ Fork this repository
@@ -88,9 +105,11 @@ We welcome contributions! To contribute:
 Your contributions make this project better! 🙌
 
 **📩 Support & Customization**
+
 For implementation support or customization, contact: 📧 support@ERPGulf.com
 
 **👥 Social**
+
 Stay connected and join the community! 🚀
 
 With this app, you're ready to be fully LHDN-compliant! 🎯
