@@ -970,14 +970,16 @@ def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
     company_name = doc.company
     settings = frappe.get_doc("Company", company_name)
+
+    if not doc.custom_is_submit_to_lhdn:  # 0 or False
+        frappe.msgprint(
+            _(
+                "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
+            )
+        )
+        return  # again, nothing to push – just let the submission workflow finish normally
     if not settings.custom_enable_lhdn_invoice:
-        frappe.throw(" LHDN Invoice Submission is not enabled in settings ")
-    if doc.custom_is_submit_to_lhdn == 0:
-        frappe.throw(_("IN Invoice IS submit to LHDN NOT CHECKED."))
-        # frappe.throw(
-        #     f"Invoice {invoice_number} is not marked for submission to LHDN."
-        # )
-        pass
+        frappe.msgprint(" LHDN Invoice Submission is not enabled in settings ")
     if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
         # frappe.throw(f"Triggered submit_document for {doc.name}")
         submit_document(doc.name)
