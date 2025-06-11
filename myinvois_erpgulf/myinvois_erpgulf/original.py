@@ -544,6 +544,82 @@ def error_log(custom_error_submission=None):
         frappe.throw(_(f"Error while logging the error: {str(e)}"))
 
 
+# def status_submission(invoice_number, sales_invoice_doc, company_abbr):
+#     """Fetching the status of the submission"""
+#     try:
+#         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+#         token = company_doc.custom_bearer_token
+#         submission_response_str = sales_invoice_doc.get("custom_submit_response", "{}")
+
+#         response_data = json.loads(submission_response_str)
+#         submission_uid = response_data.get("submissionUid")
+
+#         if not submission_uid:
+#             if isinstance(sales_invoice_doc, dict):
+#                 sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+
+#             sales_invoice_doc.custom_lhdn_status = "Failed"
+#             sales_invoice_doc.db_update()
+
+#             sales_invoice_doc.save(ignore_permissions=True)
+#             frappe.db.commit()
+
+#             frappe.msgprint(
+#                 f"Submission UID not found.. not submitted due to an error in the response: "
+#                 f"{response_data}"
+#             )
+#             return
+
+#         url = get_api_url(
+#             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
+#         )
+
+#         headers = {"Authorization": f"Bearer {token}"}
+#         status = "Unknown"
+#         response = requests.get(url, headers=headers, timeout=30)
+#         if response.status_code in [401, 500]:
+
+#             get_access_token(company_doc)  # Refresh token
+
+#             company_doc.reload()
+
+#             token = company_doc.custom_bearer_token
+
+#             headers["Authorization"] = f"Bearer {token}"
+
+#             response = requests.get(url, headers=headers, timeout=30)
+#         if response.status_code == 200:
+
+#             response_data = response.json()
+
+#             document_summary = response_data.get("documentSummary", [])
+
+#             if document_summary:
+#                 status = document_summary[0].get(
+#                     "status", "Submitted"
+#                 )  # default to 'Submitted' if no status key
+#             else:
+#                 status = "Submitted"
+#                 sales_invoice_doc.custom_lhdn_status = status
+#                 sales_invoice_doc.save(ignore_permissions=True)
+#                 sales_invoice_doc.db_update()
+#                 frappe.db.commit()
+#             doc = success_log(
+#                 response.json(), submission_uid, status, invoice_number, company_doc
+#             )  # Pass JSON, not string
+
+#             doc.save(ignore_permissions=True)
+#             doc.reload()
+
+#             frappe.db.commit()
+
+
+#             return status
+#         else:
+#             error_log()
+#     except Exception as e:
+#         frappe.log_error(_(f"Error during status submission: {str(e)}"))
+#         frappe.throw(_(f"Error during status submission: {str(e)}"))
 def status_submission(invoice_number, sales_invoice_doc, company_abbr):
     """Fetching the status of the submission"""
     try:
@@ -554,13 +630,12 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         response_data = json.loads(submission_response_str)
         submission_uid = response_data.get("submissionUid")
 
+        # Case: No submission UID
         if not submission_uid:
             if isinstance(sales_invoice_doc, dict):
                 sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
 
             sales_invoice_doc.custom_lhdn_status = "Failed"
-            sales_invoice_doc.db_update()
-
             sales_invoice_doc.save(ignore_permissions=True)
             frappe.db.commit()
 
@@ -570,52 +645,49 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
             )
             return
 
+        # Prepare API URL and headers
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
         )
-
         headers = {"Authorization": f"Bearer {token}"}
-        status = "Unknown"
+
         response = requests.get(url, headers=headers, timeout=30)
         if response.status_code in [401, 500]:
-
-            get_access_token(company_doc)  # Refresh token
-
+            # Refresh token and retry
+            get_access_token(company_doc)
             company_doc.reload()
-
             token = company_doc.custom_bearer_token
-
             headers["Authorization"] = f"Bearer {token}"
-
             response = requests.get(url, headers=headers, timeout=30)
+
         if response.status_code == 200:
-
             response_data = response.json()
-
             document_summary = response_data.get("documentSummary", [])
 
             if document_summary:
-                status = document_summary[0].get(
-                    "status", "Submitted"
-                )  # default to 'Submitted' if no status key
+                status = document_summary[0].get("status", "Submitted")
             else:
                 status = "Submitted"
-                sales_invoice_doc.custom_lhdn_status = status
-                sales_invoice_doc.save(ignore_permissions=True)
-                sales_invoice_doc.db_update()
-                frappe.db.commit()
+
+            sales_invoice_doc.custom_lhdn_status = status
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+
             doc = success_log(
                 response.json(), submission_uid, status, invoice_number, company_doc
-            )  # Pass JSON, not string
-
+            )
             doc.save(ignore_permissions=True)
             doc.reload()
-
             frappe.db.commit()
 
             return status
         else:
+            # API returned error
+            sales_invoice_doc.custom_lhdn_status = "Failed"
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
             error_log()
+
     except Exception as e:
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
         frappe.throw(_(f"Error during status submission: {str(e)}"))
@@ -694,6 +766,8 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         company_name = sales_invoice_doc.company
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
+        if not sales_invoice_doc.custom_is_submit_to_lhdn:  # 0 or False
+            return
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
@@ -934,6 +1008,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 submission_uid = response_data.get("submissionUid")
 
                 if not submission_uid:
+                    sales_invoice_doc.custom_lhdn_status = "Failed"
+                    sales_invoice_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
                     frappe.throw(
                         f"As per LHDN Regulation,Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
@@ -985,11 +1062,18 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 submission_uid = response_data.get("submissionUid")
 
                 if not submission_uid:
+                    sales_invoice_doc.custom_lhdn_status = "Failed"
+                    sales_invoice_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
                     frappe.throw(
                         f"Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
                     )
+                # else:
                 else:
+                    sales_invoice_doc.custom_lhdn_status = "Submitted"
+                    sales_invoice_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
                     status_submission(invoice_number, sales_invoice_doc, company_abbr)
 
                 # status_submission(invoice_number, sales_invoice_doc)
@@ -1024,12 +1108,13 @@ def submit_document_wrapper(doc, method=None):
     settings = frappe.get_doc("Company", company_name)
     if not settings.custom_enable_lhdn_invoice:
         frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
-    if doc.custom_is_submit_to_lhdn == 0:
-        frappe.throw(_("IN Invoice  is submit to LHDN NOT CHECKED."))
-        # frappe.throw(
-        #     f"Invoice {invoice_number} is not marked for submission to LHDN."
-        # )
-        pass
+    if not doc.custom_is_submit_to_lhdn:  # 0 or False
+        frappe.msgprint(
+            _(
+                "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
+            )
+        )
+        return
 
     if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
         # Call the submit_document function
