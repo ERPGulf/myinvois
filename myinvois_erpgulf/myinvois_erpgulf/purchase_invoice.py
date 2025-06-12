@@ -1232,6 +1232,8 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
         }
     )
     qr_file_doc.save(ignore_permissions=True)
+    sales_invoice_doc.db_set("custom_einvoice_qr", qr_file_doc.file_url)
+    sales_invoice_doc.notify_update()
 
 
 # print(f"QR Code generated and saved at {qr_image_path}")
