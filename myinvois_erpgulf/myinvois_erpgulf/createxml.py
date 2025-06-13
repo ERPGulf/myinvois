@@ -1376,9 +1376,6 @@ def generate_qr_code(sales_invoice_doc, status):
 
     # Retry once after waiting 30 seconds and refreshing token
     if not long_id:
-        import time
-
-        time.sleep(2)
         get_access_token(company_doc.name)  # Regenerate token
         company_doc.reload()
         token = company_doc.custom_bearer_token
@@ -1386,7 +1383,7 @@ def generate_qr_code(sales_invoice_doc, status):
         long_id = get_long_id()
 
     if not long_id:
-        frappe.throw("longId still not found after retry.")
+        return
 
     # Build final verification URL and generate QR code
     verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
@@ -1426,4 +1423,32 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
     sales_invoice_doc.notify_update()
 
 
+def delayed_qr_generation(sales_invoice_name):
+    sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice_name)
+    try:
+        status = "delayed"
+        qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+    except Exception as e:
+        frappe.log_error(str(e), "Delayed QR generation failed")
+
+
 # print(f"QR Code generated and saved at {qr_image_path}")
+def after_submit(sales_invoice_doc):
+    """Run QR generation only if not already attached."""
+    existing_qr = frappe.get_all(
+        "File",
+        filters={
+            "attached_to_doctype": sales_invoice_doc.doctype,
+            "attached_to_name": sales_invoice_doc.name,
+            "file_name": ["like", f"QR_{sales_invoice_doc.name}.png"],
+        },
+    )
+    if not existing_qr:
+        frappe.enqueue(
+            "myinvois_erpgulf.myinvois_erpgulf.createxml.delayed_qr_generation",  # Update this path
+            queue="long",
+            timeout=300,
+            now=False,
+            sales_invoice_name=sales_invoice_doc.name,
+        )

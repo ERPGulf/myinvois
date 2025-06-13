@@ -3361,7 +3361,7 @@
  },
  {
   "allow_in_quick_entry": 0,
-  "allow_on_submit": 0,
+  "allow_on_submit": 1,
   "bold": 0,
   "collapsible": 0,
   "collapsible_depends_on": null,
@@ -3404,7 +3404,7 @@
   "print_hide": 0,
   "print_hide_if_no_value": 0,
   "print_width": null,
-  "read_only": 0,
+  "read_only": 1,
   "read_only_depends_on": null,
   "report_hide": 0,
   "reqd": 0,

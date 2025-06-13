@@ -1,4 +1,3 @@
-
 # from frappe import _
 app_name = "myinvois_erpgulf"
 app_title = "Myinvois Erpgulf"
@@ -6,7 +5,6 @@ app_publisher = "ERPGulf"
 app_description = "MyInvoice - E-Invoice for Malaysia"
 app_email = "support@erpgulf.com"
 app_license = "mit"
-
 
 
 from . import __version__ as app_version
@@ -267,6 +265,7 @@ doc_events = {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
         "on_cancel": "myinvois_erpgulf.myinvois_erpgulf.cancel_doc.cancel_document_wrapper",
+        "after_submit": "myinvois_erpgulf.myinvois_erpgulf.createxml.after_submit",
     },
     "Purchase Invoice": {
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.submit_purchase.validate_before_submit",
