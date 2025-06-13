@@ -6,7 +6,9 @@ import json
 import re
 from frappe import _  # Importing the translation function
 import frappe
+import requests
 import pyqrcode
+from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
 
 def get_icv_code(invoice_number):
@@ -1313,27 +1315,83 @@ def xml_structuring(invoice, sales_invoice_doc):
         frappe.throw(_(f"Error in xml structuring: {str(e)}"))
 
 
+def get_api_url(company_abbr, base_url=""):
+    """Return full API URL based on integration type and base URL"""
+    try:
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+
+        if company_doc.custom_integration_type == "Sandbox":
+            base = company_doc.custom_sandbox_url or ""
+        else:
+            base = company_doc.custom_production_url or ""
+
+        # Clean up slashes to avoid issues
+        return (base.rstrip("/") + "/" + base_url.lstrip("/")).rstrip("/")
+
+    except Exception as e:
+        frappe.throw(f"Error generating API URL: {e}")
+
+
 def generate_qr_code(sales_invoice_doc, status):
-    """Generate QR code for the given Sales Invoice"""
-    # Extract required fields
+    """Generate QR code for the given Sales Invoice that links to verification URL"""
+
     customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-    verification_url = (
-        "https://verify.hasil.gov.my/einvoice?ref=" + sales_invoice_doc.name
+    company_abbr = company_doc.abbr
+
+    submit_response = json.loads(sales_invoice_doc.custom_submit_response or "{}")
+    token = company_doc.get("custom_bearer_token")
+    if not token:
+        frappe.throw("Bearer token not found in Company document.")
+
+    submission_uid = submit_response.get("submissionUid")
+    if not submission_uid:
+        frappe.throw("submissionUid not found in custom_submit_response.")
+
+    uuid = None
+    if submit_response.get("acceptedDocuments"):
+        uuid = submit_response["acceptedDocuments"][0].get("uuid")
+    if not uuid:
+        frappe.throw("UUID not found in acceptedDocuments.")
+
+    # Build longId API URL
+    longid_api = get_api_url(
+        company_abbr, f"/api/v1.0/documentsubmissions/{submission_uid}"
     )
-    qr_data = {
-        "uin": sales_invoice_doc.name,  # Invoice number
-        "seller_tin": company_doc.custom_company_tin_number,
-        "buyer_tin": customer_doc.custom_customer_tin_number,
-        "date": sales_invoice_doc.posting_date.strftime("%Y-%m-%d"),
-        "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
-        "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
-        "status": status,  # Example status, modify as needed
-        "verification_url": verification_url,
-    }
-    # frappe.throw(f"QR Code generated and saved at {qr_data}")
-    # Serialize to JSON
-    qr_code_payload = json.dumps(qr_data)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    def get_long_id():
+        try:
+            res = requests.get(longid_api, headers=headers, timeout=30)
+            if res.status_code != 200:
+                return None
+            res_data = res.json()
+            if res_data.get("documentSummary"):
+                return res_data["documentSummary"][0].get("longId")
+        except Exception as e:
+            frappe.log_error(str(e), "QR Code Generation: longId request failed")
+        return None
+
+    long_id = get_long_id()
+
+    # Retry once after waiting 30 seconds and refreshing token
+    if not long_id:
+        import time
+
+        time.sleep(2)
+        get_access_token(company_doc.name)  # Regenerate token
+        company_doc.reload()
+        token = company_doc.custom_bearer_token
+        headers["Authorization"] = f"Bearer {token}"
+        long_id = get_long_id()
+
+    if not long_id:
+        frappe.throw("longId still not found after retry.")
+
+    # Build final verification URL and generate QR code
+    verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+
+    qr_code_payload = json.dumps(verification_url)
     # Generate QR code
     qr = pyqrcode.create(qr_code_payload)
 
@@ -1364,6 +1422,8 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
         }
     )
     qr_file_doc.save(ignore_permissions=True)
+    sales_invoice_doc.db_set("custom_einvoice_qr", qr_file_doc.file_url)
+    sales_invoice_doc.notify_update()
 
 
 # print(f"QR Code generated and saved at {qr_image_path}")
