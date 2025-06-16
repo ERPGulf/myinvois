@@ -968,20 +968,26 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 
 def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
-    company_name = doc.company
-    settings = frappe.get_doc("Company", company_name)
+    frappe.publish_realtime("show_lhdn_loader", {}, user=frappe.session.user)
+    try:
+        company_name = doc.company
+        settings = frappe.get_doc("Company", company_name)
 
-    if not doc.custom_is_submit_to_lhdn:  # 0 or False
-        frappe.msgprint(
-            _(
-                "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
+        if not doc.custom_is_submit_to_lhdn:  # 0 or False
+            frappe.msgprint(
+                _(
+                    "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
+                )
             )
-        )
-        return  # again, nothing to push – just let the submission workflow finish normally
-    if not settings.custom_enable_lhdn_invoice:
-        frappe.msgprint(" LHDN Invoice Submission is not enabled in settings ")
-    if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
-        # frappe.throw(f"Triggered submit_document for {doc.name}")
-        submit_document(doc.name)
-    else:
-        pass
+            return  # again, nothing to push – just let the submission workflow finish normally
+        if not settings.custom_enable_lhdn_invoice:
+            frappe.msgprint(" LHDN Invoice Submission is not enabled in settings ")
+        if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
+            # frappe.throw(f"Triggered submit_document for {doc.name}")
+
+            submit_document(doc.name)
+
+        else:
+            pass
+    finally:
+        frappe.publish_realtime("hide_lhdn_loader", {}, user=frappe.session.user)
