@@ -3396,7 +3396,7 @@
   "modified": "2025-06-13 08:34:43.425569",
   "module": "Myinvois Erpgulf",
   "name": "Sales Invoice-custom_consolidate_invoice_number",
-  "no_copy": 0,
+  "no_copy": 1,
   "non_negative": 0,
   "options": "Sales Invoice",
   "permlevel": 0,

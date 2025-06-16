@@ -462,6 +462,7 @@ def merge_sales_invoices(invoice_numbers):
         row.custom_item_classification_codes = "004:Consolidated e-Invoice"
 
     new_invoice.insert()
+
     new_invoice.submit()
 
     # Update original invoices
