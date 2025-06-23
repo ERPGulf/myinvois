@@ -1247,13 +1247,17 @@ def generate_qr_code(sales_invoice_doc, status):
 
     submission_uid = submit_response.get("submissionUid")
     if not submission_uid:
-        frappe.throw("submissionUid not found in custom_submit_response.")
+        # frappe.msgprint("Getting error from lhdn ,pls check submit response feild")
+        pass
 
     uuid = None
     if submit_response.get("acceptedDocuments"):
         uuid = submit_response["acceptedDocuments"][0].get("uuid")
     if not uuid:
-        frappe.throw("UUID not found in acceptedDocuments.")
+        sales_invoice_doc.custom_lhdn_status = "Failed"
+        sales_invoice_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+        frappe.throw("Getting error from lhdn ,pls check submit response feild")
 
     # Build longId API URL
     longid_api = get_api_url(
