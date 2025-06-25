@@ -1350,7 +1350,7 @@ def generate_qr_code(sales_invoice_doc, status):
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        frappe.throw("Getting error from lhdn ,pls check submit response fild")
+        frappe.throw("Getting error from lhdn ,pls check submit response field")
         # return
 
     uuid = None

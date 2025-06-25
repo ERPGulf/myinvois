@@ -1233,6 +1233,9 @@ def get_api_url(company_abbr, base_url=""):
         frappe.throw(f"Error generating API URL: {e}")
 
 
+import os
+
+
 def generate_qr_code(sales_invoice_doc, status):
     """Generate QR code for the given Sales Invoice that links to verification URL"""
 
@@ -1247,19 +1250,18 @@ def generate_qr_code(sales_invoice_doc, status):
 
     submission_uid = submit_response.get("submissionUid")
     if not submission_uid:
-        # frappe.msgprint("Getting error from lhdn ,pls check submit response feild")
-        pass
+        sales_invoice_doc.custom_lhdn_status = "Failed"
+        sales_invoice_doc.save(ignore_permissions=True)
+        frappe.db.commit()
+        frappe.throw("Getting error from LHDN, please check 'Submit Response' field")
 
     uuid = None
     if submit_response.get("acceptedDocuments"):
         uuid = submit_response["acceptedDocuments"][0].get("uuid")
     if not uuid:
-        sales_invoice_doc.custom_lhdn_status = "Failed"
-        sales_invoice_doc.save(ignore_permissions=True)
-        frappe.db.commit()
-        frappe.throw("Getting error from lhdn ,pls check submit response feild")
+        frappe.throw("UUID not found in acceptedDocuments from LHDN response.")
 
-    # Build longId API URL
+    # 🔗 Build longId API URL
     longid_api = get_api_url(
         company_abbr, f"/api/v1.0/documentsubmissions/{submission_uid}"
     )
@@ -1269,8 +1271,15 @@ def generate_qr_code(sales_invoice_doc, status):
         try:
             res = requests.get(longid_api, headers=headers, timeout=30)
             if res.status_code != 200:
+                frappe.log_error(
+                    f"Status {res.status_code} for longId API",
+                    "LHDN longId Fetch Error",
+                )
                 return None
+
             res_data = res.json()
+            frappe.log_error(json.dumps(res_data, indent=2), "LHDN longId Response")
+
             if res_data.get("documentSummary"):
                 return res_data["documentSummary"][0].get("longId")
         except Exception as e:
@@ -1279,43 +1288,43 @@ def generate_qr_code(sales_invoice_doc, status):
 
     long_id = get_long_id()
 
-    # Retry once after waiting 30 seconds and refreshing token
+    # 🔁 Retry after refreshing token
     if not long_id:
-        import time
-
-        time.sleep(2)
-        get_access_token(company_doc.name)  # Regenerate token
+        get_access_token(company_doc.name)
         company_doc.reload()
         token = company_doc.custom_bearer_token
         headers["Authorization"] = f"Bearer {token}"
         long_id = get_long_id()
-
     if not long_id:
-        frappe.throw("longId still not found after retry.")
+        frappe.log_error(
+            "longId not found from LHDN — skipping QR generation",
+            "QR Generation Skipped",
+        )
+        return None  # ✅ silently skip
 
-    # Build final verification URL and generate QR code
+    # ✅ Generate QR
     verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
-
-    qr_code_payload = json.dumps(verification_url)
-    # Generate QR code
-    qr = pyqrcode.create(qr_code_payload)
-
-    # Save QR code image
-    qr_image_path = frappe.utils.get_site_path(
-        "public", "files", f"{sales_invoice_doc.name}_qr.png"
-    )
-    qr.png(qr_image_path, scale=6)  # Adjust scale as needed
-
-    return qr_image_path
+    try:
+        qr = pyqrcode.create(verification_url)
+        qr_image_path = frappe.utils.get_site_path(
+            "public", "files", f"{sales_invoice_doc.name}_qr.png"
+        )
+        qr.png(qr_image_path, scale=6)
+        return qr_image_path
+    except Exception as e:
+        frappe.log_error(str(e), "QR Code Generation Failed")
+        return None  # ✅ skip if QR creation fa
 
 
 def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
-    """Attach the QR code image to the Purchase Invoice"""
-    # Read the file content
+    """Attach the QR code image to the Sales Invoice"""
+
+    if not qr_image_path or not os.path.exists(qr_image_path):
+        frappe.throw(f"QR file not found at path: {qr_image_path}")
+
     with open(qr_image_path, "rb") as qr_file:
         qr_content = qr_file.read()
 
-    # Create a File document and attach it to the Purchase Invoice
     qr_file_doc = frappe.get_doc(
         {
             "doctype": "File",
@@ -1327,8 +1336,54 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
         }
     )
     qr_file_doc.save(ignore_permissions=True)
+
     sales_invoice_doc.db_set("custom_einvoice_qr", qr_file_doc.file_url)
     sales_invoice_doc.notify_update()
 
 
-# print(f"QR Code generated and saved at {qr_image_path}")
+@frappe.whitelist(allow_guest=True)
+def delayed_qr_generation(sales_invoice_name):
+    """Background job: generate and attach QR after delay."""
+    try:
+        frappe.log_error(
+            f"Started delayed QR for: {sales_invoice_name}", "QR Job Triggered"
+        )
+
+        sales_invoice_doc = frappe.get_doc("Purchase Invoice", sales_invoice_name)
+        status = "delayed"
+
+        qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        if qr_image_path:
+            attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        else:
+            frappe.log_error(
+                "QR path None", f"QR not generated for {sales_invoice_name}"
+            )
+    except Exception as e:
+        frappe.log_error(str(e), "Delayed QR generation failed")
+
+
+def after_submit(sales_invoice_doc, method=None):
+    """Run QR generation after submit if no QR already attached."""
+    try:
+        existing_qr = frappe.get_all(
+            "File",
+            filters={
+                "attached_to_doctype": sales_invoice_doc.doctype,
+                "attached_to_name": sales_invoice_doc.name,
+                "file_name": ["like", f"QR_{sales_invoice_doc.name}.png"],
+            },
+        )
+        if not existing_qr:
+            frappe.log_error(
+                f"Enqueueing QR for {sales_invoice_doc.name}", "QR After Submit"
+            )
+            frappe.enqueue(
+                "myinvois_erpgulf.myinvois_erpgulf.purchase_invoice.delayed_qr_generation",
+                queue="long",
+                timeout=300,
+                now=False,
+                sales_invoice_name=sales_invoice_doc.name,
+            )
+    except Exception as e:
+        frappe.log_error(str(e), "QR After Submit Hook Error")

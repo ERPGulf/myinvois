@@ -333,19 +333,18 @@ def submission_url(sales_invoice_doc, company_abbr):
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
 
         token = company_doc.custom_bearer_token  # Fetch token from settings
+
         if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
             file_path = "/private/files/aftersignforsubmit.xml"
         else:
             file_path = "/private/files/beforesubmit1.xml"
-
         xml_path = frappe.local.site + file_path
 
         # Read XML data
         with open(xml_path, "rb") as file:
             xml_data = file.read()
-
         pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
-        # frappe.throw(f"XML data: {pretty_xml_string}")
+        # frappe.throw(pretty_xml_string)
         # file_path1 = "/private/files/signedxmlfile.xml"  # You can specify your desired file path here
         # xml_dat_path = frappe.local.site + file_path1
         # with open(xml_dat_path, "w", encoding="utf-8") as file:
@@ -356,8 +355,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         sha256_hash = hashlib.sha256(xml_data).hexdigest()
         encoded_xml = base64.b64encode(xml_data).decode("utf-8")
         invoice_number = sales_invoice_doc.name
-        # frappe.throw(f"Invoice number: {invoice_number}")
-        # frappe.throw(f"Encoded XML: {encoded_xml}")
+
         json_payload = {
             "documents": [
                 {
@@ -368,7 +366,7 @@ def submission_url(sales_invoice_doc, company_abbr):
                 }
             ]
         }
-        # frappe.throw(f"JSON payload: {json_payload}")
+
         headers = {
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
@@ -384,6 +382,7 @@ def submission_url(sales_invoice_doc, company_abbr):
             )
 
         response = submit_request()
+
         if response.status_code in [401, 500]:
             get_access_token(
                 company_doc.name
@@ -392,15 +391,33 @@ def submission_url(sales_invoice_doc, company_abbr):
             token = company_doc.custom_bearer_token  # Fetch updated token
             headers["Authorization"] = f"Bearer {token}"
             response = submit_request()
-        frappe.msgprint(f"Response body: {response.text}")
+
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
-        sales_invoice_doc.db_set("custom_submit_response", response.text)
+        # sales_invoice_doc.db_set("custom_submit_response", response.text)
+        # frappe.throw(response.text)
+        frappe.msgprint(f"Response body: {response.text}")
         sales_invoice_doc.db_set(
             "custom_submission_time",
             datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            commit=True,
+            update_modified=True,
         )
+        sales_invoice_doc.db_set(
+            "custom_submit_response",
+            response.text,
+            commit=True,
+            update_modified=True,
+        )  # Also update in-memory value
+
+        submission_time = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%SZ"
+        )
+        sales_invoice_doc.custom_submit_response = response.text
+        sales_invoice_doc.custom_submission_time = submission_time
         sales_invoice_doc.save(ignore_permissions=True)
+
+        sales_invoice_doc.reload()
         frappe.db.commit()
         existing_files = frappe.get_all(
             "File",
@@ -418,6 +435,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         # Format and save the XML
         # pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
         file_name = f"Submitted-{sales_invoice_doc.name}.xml"
+        # frappe.throw(f"Response body: {sales_invoice_doc.doctype}")
 
         xml_file = frappe.get_doc(
             {
@@ -431,13 +449,24 @@ def submission_url(sales_invoice_doc, company_abbr):
             }
         )
         xml_file.save()
+        # Generate and attach QR code
+        sales_invoice_doc.reload()
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
-        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        if qr_image_path:
+            attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        sales_invoice_doc.db_update()
+
         frappe.db.commit()
         sales_invoice_doc.reload()
-        # Generate and attach QR code
 
-    except (FileNotFoundError, requests.RequestException, ValueError, KeyError) as e:
+    except (
+        FileNotFoundError,
+        requests.RequestException,
+        ValueError,
+        KeyError,
+        Exception,
+    ) as e:
+        frappe.log_error(frappe.get_traceback(), "Error in submission_url")
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
 
 
@@ -537,32 +566,37 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         response_data = json.loads(submission_response_str)
         submission_uid = response_data.get("submissionUid")
 
+        # Case: No submission UID
         if not submission_uid:
-            frappe.throw(
-                f"As per LHDN Regulation,Submission UID not found.. not submitted due to an error in the response: "
+            if isinstance(sales_invoice_doc, dict):
+                sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+
+            sales_invoice_doc.custom_lhdn_status = "Failed"
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+
+            frappe.msgprint(
+                f"Submission UID not found.. not submitted due to an error in the response: "
                 f"{response_data}"
             )
+            return
 
+        # Prepare API URL and headers
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
         )
-
         headers = {"Authorization": f"Bearer {token}"}
-        status = "Unknown"
+
         response = requests.get(url, headers=headers, timeout=30)
         if response.status_code in [401, 500]:
-
-            get_access_token(company_doc)  # Refresh token
-
+            # Refresh token and retry
+            get_access_token(company_doc)
             company_doc.reload()
-
             token = company_doc.custom_bearer_token
-
             headers["Authorization"] = f"Bearer {token}"
-
             response = requests.get(url, headers=headers, timeout=30)
-        if response.status_code == 200:
 
+        if response.status_code == 200:
             response_data = response.json()
             document_summary = response_data.get("documentSummary", [])
 
@@ -571,7 +605,6 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
             else:
                 status = "Submitted"
 
-            # Always set and save status
             sales_invoice_doc.custom_lhdn_status = status
             sales_invoice_doc.save(ignore_permissions=True)
             frappe.db.commit()
@@ -584,9 +617,13 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
             frappe.db.commit()
 
             return status
-
         else:
+            # API returned error
+            sales_invoice_doc.custom_lhdn_status = "Failed"
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
             error_log()
+
     except Exception as e:
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
         frappe.throw(_(f"Error during status submission: {str(e)}"))
@@ -666,6 +703,9 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
         # Check if any item has a tax template but not all items have one
+        if not sales_invoice_doc.custom_is_submit_to_lhdn:  # 0 or False
+
+            return
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):

@@ -123,7 +123,7 @@ frappe.ui.form.on('Purchase Invoice', {
                     },
                     error: function () {
                         hide_loading_overlay();
-                        frappe.msgprint(__('Error occurred while submitting the invoice.'));
+                        // frappe.msgprint(__('Error occurred while submitting the invoice.'));
                     }
                 });
             });
