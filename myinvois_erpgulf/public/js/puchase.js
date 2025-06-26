@@ -180,7 +180,7 @@ frappe.ui.form.on('Purchase Invoice', {
                 }
             },
             error: function(err) {
-                frappe.msgprint(__('API call failed: ') + JSON.stringify(err));
+                // frappe.msgprint(__('API call failed: ') + JSON.stringify(err));
             }
         });
     }
