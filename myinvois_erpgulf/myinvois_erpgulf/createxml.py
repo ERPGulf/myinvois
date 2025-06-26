@@ -1296,6 +1296,9 @@ def item_data_with_template(invoice, sales_invoice_doc):
 def xml_structuring(invoice, sales_invoice_doc):
     """status_submit_success_log"""
     try:
+        
+        sanitize_xml_element(invoice)  # sanitize before serialization
+
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
@@ -1313,6 +1316,15 @@ def xml_structuring(invoice, sales_invoice_doc):
         return raw_xml
     except Exception as e:
         frappe.throw(_(f"Error in xml structuring: {str(e)}"))
+
+
+def sanitize_xml_element(elem):
+    if elem.text is not None:
+        elem.text = str(elem.text)
+    for key in elem.attrib:
+        elem.attrib[key] = str(elem.attrib[key])
+    for child in elem:
+        sanitize_xml_element(child)
 
 
 def get_api_url(company_abbr, base_url=""):
