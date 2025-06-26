@@ -1392,7 +1392,11 @@ def generate_qr_code(sales_invoice_doc, status):
         return
 
     # Build final verification URL and generate QR code
-    verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+    if company_doc.custom_integration_type == "Sandbox":    
+        verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+        
+    else:
+        verification_url = f"https://api.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
 
     qr_code_payload = json.dumps(verification_url)
     # Generate QR code

@@ -1302,15 +1302,24 @@ def generate_qr_code(sales_invoice_doc, status):
         )
         return None  # ✅ silently skip
 
-    # ✅ Generate QR
-    verification_url = f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+    if company_doc.custom_integration_type == "Sandbox":
+        verification_url = (
+            f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+        )
+
+    else:
+        verification_url = f"https://api.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+
     try:
-        qr = pyqrcode.create(verification_url)
+        qr_code_payload = json.dumps(verification_url)
+        qr = pyqrcode.create(qr_code_payload)
         qr_image_path = frappe.utils.get_site_path(
             "public", "files", f"{sales_invoice_doc.name}_qr.png"
         )
-        qr.png(qr_image_path, scale=6)
+        qr.png(qr_image_path, scale=6)  # Adjust scale as needed
+
         return qr_image_path
+
     except Exception as e:
         frappe.log_error(str(e), "QR Code Generation Failed")
         return None  # ✅ skip if QR creation fa

@@ -87,7 +87,6 @@ def status_submit(doc):
                 frappe.db.commit()
                 frappe.msgprint(response.text)  # Log the full response for debugging
                 frappe.msgprint(_("LHDN submission status updated: {0}").format(status))
-
             else:
                 frappe.msgprint(_("No document summary found in response."))
 
