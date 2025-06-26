@@ -232,7 +232,7 @@ def search_purchase_tin(sales_invoice_doc):
     query_url = get_api_url(
         company_abbr, endpoint
     )  # You must define get_api_url elsewhere
-    frappe.throw(query_url)
+    # frappe.throw(query_url)
     # Get bearer token from company
     token = company_doc.get("custom_bearer_token")
     if not token:
