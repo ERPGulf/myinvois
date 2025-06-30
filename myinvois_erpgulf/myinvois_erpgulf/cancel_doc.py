@@ -28,8 +28,10 @@ def cancel_document_wrapper(doc, method):
     if accepted_docs and "uuid" in accepted_docs[0]:
         uuid = accepted_docs[0]["uuid"]
     else:
-        frappe.throw(_("As per LHDN Regulation,UUID not found in accepted documents."))
-
+        frappe.msgprint(
+            _("As per LHDN Regulation,UUID not found in accepted documents.")
+        )
+        return
     if not submission_uid or not uuid:
         frappe.throw(
             _("Missing submission UID or UUID. Cannot proceed with cancellation.")

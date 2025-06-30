@@ -330,6 +330,43 @@ def merge_sales_invoices(invoice_numbers):
     if not sales_invoices:
         frappe.throw(_("No valid Sales Invoices found."))
 
+    sales_invoices = frappe.get_all(
+        "Sales Invoice",
+        filters={
+            "name": ["in", invoice_numbers],
+            "custom_consolidate_invoice_number": ["is", "not set"],
+        },
+        fields=[
+            "name",
+            "customer",
+            "company",
+            "currency",
+            "conversion_rate",
+            "posting_date",
+            "due_date",
+            "customer_name",
+            "customer_group",
+            "territory",
+            "is_pos",
+            "debit_to",
+            "docstatus",
+        ],
+    )
+
+    already_merged = [
+        name
+        for name in invoice_numbers
+        if name not in [inv["name"] for inv in sales_invoices]
+    ]
+
+    if already_merged:
+        frappe.throw(
+            _(
+                "The following invoices are already consolidated and cannot be merged again:"
+            )
+            + "<br>"
+            + "<br>".join(already_merged)
+        )
     base_invoice = sales_invoices[0]
 
     new_invoice = frappe.get_doc(
@@ -425,6 +462,7 @@ def merge_sales_invoices(invoice_numbers):
         row.custom_item_classification_codes = "004:Consolidated e-Invoice"
 
     new_invoice.insert()
+
     new_invoice.submit()
 
     # Update original invoices

@@ -193,7 +193,7 @@ def search_purchase_tin(sales_invoice_doc):
         else:
             frappe.throw("Invalid argument for sales_invoice_doc")
     except Exception as e:
-        frappe.log_error(f"Failed to load Purchase Invoice: {e}", "search_purchase_tin")
+        # frappe.log_error(f"Failed to load Purchase Invoice: {e}", "search_purchase_tin")
         frappe.throw(f"Failed to load Purchase Invoice: {e}")
     # frappe.throw(f"Loaded Purchase Invoice: {sales_invoice_doc.name}")
 
@@ -213,7 +213,7 @@ def search_purchase_tin(sales_invoice_doc):
         company_doc = frappe.get_doc("Company", company_name)
         company_abbr = company_doc.abbr
     except Exception as e:
-        frappe.log_error(f"Failed to load Company doc: {e}", "search_purchase_tin")
+        # frappe.log_error(f"Failed to load Company doc: {e}", "search_purchase_tin")
         frappe.throw(f"Failed to load Company doc: {e}")
     # frappe.throw(company_abbr)
     # frappe.throw(f"Company Abbreviation: {company_doc}")
@@ -232,7 +232,7 @@ def search_purchase_tin(sales_invoice_doc):
     query_url = get_api_url(
         company_abbr, endpoint
     )  # You must define get_api_url elsewhere
-    frappe.throw(query_url)
+    # frappe.throw(query_url)
     # Get bearer token from company
     token = company_doc.get("custom_bearer_token")
     if not token:
@@ -265,7 +265,7 @@ def search_purchase_tin(sales_invoice_doc):
             )
             frappe.throw(_("API request failed after token refresh: {0}").format(e))
 
-    frappe.log_error(f"API Response Status: {response.status_code}")
+    # frappe.log_error(f"API Response Status: {response.status_code}")
     frappe.log_error(f"API Response Text: {response.text}")
 
     if response.status_code != 200:

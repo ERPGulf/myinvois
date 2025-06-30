@@ -311,7 +311,7 @@ def ubl_extension_string(
 
 
 def get_api_url(company_abbr, base_url):
-    """There are many api susing in zatca which can be defined by a feild in settings"""
+    """There are many api susing in zatca which can be defined by a field in settings"""
     try:
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
         if company_doc.custom_integration_type == "Sandbox":
@@ -1104,21 +1104,26 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
-    company_name = doc.company
-    settings = frappe.get_doc("Company", company_name)
-    if not settings.custom_enable_lhdn_invoice:
-        frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
-    if not doc.custom_is_submit_to_lhdn:  # 0 or False
-        frappe.msgprint(
-            _(
-                "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
-            )
-        )
-        return
+    frappe.publish_realtime("show_lhdn_loader", {}, user=frappe.session.user)
+    try:
 
-    if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
-        # Call the submit_document function
-        # frappe.throw(f"Calling submit_document for {doc.name}")
-        submit_document(doc.name)
-    else:
-        pass
+        company_name = doc.company
+        settings = frappe.get_doc("Company", company_name)
+        if not settings.custom_enable_lhdn_invoice:
+            frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
+        if not doc.custom_is_submit_to_lhdn:  # 0 or False
+            frappe.msgprint(
+                _(
+                    "Invoice will *not* be sent to LHDN because “Submit to LHDN” is unticked."
+                )
+            )
+            return
+
+        if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
+            # Call the submit_document function
+            # frappe.throw(f"Calling submit_document for {doc.name}")
+            submit_document(doc.name)
+        else:
+            pass
+    finally:
+        frappe.publish_realtime("hide_lhdn_loader", {}, user=frappe.session.user)
