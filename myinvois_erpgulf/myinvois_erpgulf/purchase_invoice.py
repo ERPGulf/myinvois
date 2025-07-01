@@ -229,7 +229,19 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
                 invoice_type_code,
                 {"listVersionID": "1.0"},
             )
+        # try:
+        #     supplier_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
+        #     if int(frappe.__version__.split(".")[0]) == 13:
+        #         address = frappe.get_doc("Address", sales_invoice_doc.primary_address)
+        #     else:
+        #         address = frappe.get_doc(
+        #             "Address", supplier_doc.supplier_primary_address
+        #         )
 
+        #     if address.country != "Malaysia":
+        #         create_element(invoice, "SubType", "Foreign")
+        # except Exception as e:
+        #     frappe.throw(_("Error determining supplier country for SubType: ") + str(e))
         create_element(
             invoice, "cbc:DocumentCurrencyCode", "MYR"
         )  # or sales_invoice_doc.currency
@@ -310,7 +322,13 @@ def company_data(invoice, sales_invoice_doc):
         post_add = ET.SubElement(party_, "cac:PostalAddress")
         ET.SubElement(post_add, "cbc:CityName").text = address.city
         ET.SubElement(post_add, "cbc:PostalZone").text = address.pincode
-        statecode = (address.custom_state_code).split(":")[0]
+        # statecode = (address.custom_state_code).split(":")[0]
+        # ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
+        statecode_raw = address.custom_state_code or ""
+        statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "NA"
+        if not statecode:
+            statecode = "NA"
+
         ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
 
         # Address lines
@@ -334,7 +352,9 @@ def company_data(invoice, sales_invoice_doc):
             listAgencyID="6",
             listID="ISO3166-1",
         )
-        idntfn_cod.text = "MYS"
+        # if address.country == "Malaysia":
+        #     idntfn_cod.text = "MYS"
+        idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
 
         # PartyLegalEntity
         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")

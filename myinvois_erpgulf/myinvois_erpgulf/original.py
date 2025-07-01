@@ -335,8 +335,21 @@ def submission_url(sales_invoice_doc, company_abbr):
 
         if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
             file_path = "/private/files/aftersignforsubmit.xml"
-        else:
+        # else:
+        #     file_path = "/private/files/beforesubmit1.xml"
+
+        elif (
+            not company_doc.custom_certificate_file or company_doc.custom_certificate_file
+            and company_doc.custom_version == "1.0"
+        ):
+
             file_path = "/private/files/beforesubmit1.xml"
+        else:
+            frappe.throw(
+                _(
+                    "Unable to determine correct XML file path. Please check company settings."
+                )
+            )
         xml_path = frappe.local.site + file_path
 
         # Read XML data
@@ -762,6 +775,12 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+        if sales_invoice_doc.get("custom_is_consolidated_invoice"):
+            # Stop GL and ledger impact
+            sales_invoice_doc.flags.ignore_accounting_impact = True
+            sales_invoice_doc.db_set("status", "Consolidated")
+            sales_invoice_doc.db_set("outstanding_amount", 0.0)
+            sales_invoice_doc.save(ignore_permissions=True)
         # Check if any item has a tax template but not all items have one
         company_name = sales_invoice_doc.company
         settings = frappe.get_doc("Company", company_name)
