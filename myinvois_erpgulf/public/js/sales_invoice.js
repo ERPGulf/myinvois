@@ -53,6 +53,16 @@
 //     console.log('Custom "Merge and Consolidate Invoices" action added to Sales Invoice list view.');
 // });
 
+
+// frappe.listview_settings['Sales Invoice'] = frappe.listview_settings['Sales Invoice'] || {};
+
+// frappe.listview_settings['Sales Invoice'].get_indicator = function (doc) {
+//     if (doc.status === "Consolidated") {
+//         return [__("Consolidated"), "red", "status,=,Consolidated"];
+//     }
+//     return [__(doc.status), frappe.utils.guess_colour(doc.status), `status,=,${doc.status}`];
+// };
+
 // Helper to show loading overlay
 function show_loading_overlay() {
     if (!$('#custom-loading-overlay').length) {
@@ -138,3 +148,5 @@ extend_listview_event("Sales Invoice", "onload", function (listview) {
 
     console.log('Custom "Merge and Consolidate Invoices" action added to Sales Invoice list view.');
 });
+
+
