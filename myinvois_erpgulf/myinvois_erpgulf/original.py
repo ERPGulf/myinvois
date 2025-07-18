@@ -339,7 +339,8 @@ def submission_url(sales_invoice_doc, company_abbr):
         #     file_path = "/private/files/beforesubmit1.xml"
 
         elif (
-            not company_doc.custom_certificate_file or company_doc.custom_certificate_file
+            not company_doc.custom_certificate_file
+            or company_doc.custom_certificate_file
             and company_doc.custom_version == "1.0"
         ):
 
@@ -943,6 +944,8 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if sales_invoice_doc.get("custom_is_consolidated_invoice"):
+            sales_invoice_doc.flags.ignore_accounting_impact = True
         # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
