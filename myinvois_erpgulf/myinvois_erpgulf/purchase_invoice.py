@@ -371,7 +371,7 @@ def company_data(invoice, sales_invoice_doc):
 
         phone = address.get("phone")
         ET.SubElement(cont_ct, "cbc:Telephone").text = (
-            phone if not is_na(phone) else 60100000000
+            phone if not is_na(phone) else "60100000000"
         )
         email = address.get("email_id")
 
