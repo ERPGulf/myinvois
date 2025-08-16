@@ -7,6 +7,20 @@ from frappe import _
 import datetime
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
+def get_api_url(company_abbr, base_url):
+    """There are many api susing in zatca which can be defined by a field in settings"""
+    try:
+        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        if company_doc.custom_integration_type == "Sandbox":
+            url = company_doc.custom_sandbox_url + base_url
+        else:
+            url = company_doc.custom_production_url + base_url
+
+        return url
+
+    except (ValueError, TypeError, KeyError) as e:
+        frappe.throw(_(("get api url" f"error: {str(e)}")))
+        return None
 
 @frappe.whitelist(allow_guest=True)
 def cancel_document_wrapper(doc, method):
@@ -69,7 +83,8 @@ def cancel_document_wrapper(doc, method):
 
     token = company_doc.custom_bearer_token
 
-    url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/state/{uuid}/state"
+    # url = f"https://preprod-api.myinvois.hasil.gov.my/api/v1.0/documents/state/{uuid}/state"
+    url = get_api_url(company_doc.abbr, f"/api/v1.0/documents/state/{uuid}/state")
     headers = {
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",

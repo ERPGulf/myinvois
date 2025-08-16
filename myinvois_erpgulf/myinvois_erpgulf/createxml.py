@@ -180,8 +180,8 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         create_element(invoice, "cbc:ID", str(sales_invoice_doc.name))
 
         formatted_date, formatted_time = get_current_utc_datetime()
-        create_element(invoice, "cbc:IssueDate", formatted_date)
-        create_element(invoice, "cbc:IssueTime", formatted_time)
+        create_element(invoice, "cbc:IssueDate", str(formatted_date))
+        create_element(invoice, "cbc:IssueTime", str(formatted_time))
         if not sales_invoice_doc.custom_invoicetype_code:
             frappe.throw("Custom Invoice Type Code is missing! ")
 
@@ -372,7 +372,7 @@ def company_data(invoice, sales_invoice_doc):
 
         phone = address.get("phone")
         ET.SubElement(cont_ct, "cbc:Telephone").text = (
-            phone if not is_na(phone) else 60100000000
+            phone if not is_na(phone) else "60100000000"
         )
 
         email = address.get("email_id")
