@@ -415,6 +415,278 @@ def delivery_data_consolidate(invoice, sales_invoice_doc):
 #     return new_invoice.name
 
 
+# @frappe.whitelist(allow_guest=True)
+# def merge_sales_invoices(invoice_numbers):
+#     """
+#     Merge multiple Sales Invoices into a single consolidated invoice.
+#     Excludes items where amount > 10,000.
+#     Creates separate invoices for such items, preserving original customer and tax details.
+#     """
+#     import datetime
+
+#     if isinstance(invoice_numbers, str):
+#         invoice_numbers = frappe.parse_json(invoice_numbers)
+
+#     if not invoice_numbers or len(invoice_numbers) < 2:
+#         frappe.throw(_("Please select at least two Sales Invoices to merge."))
+
+#     sales_invoices = frappe.get_all(
+#         "Sales Invoice",
+#         filters={"name": ["in", invoice_numbers]},
+#         fields=[
+#             "name",
+#             "customer",
+#             "company",
+#             "currency",
+#             "conversion_rate",
+#             "posting_date",
+#             "due_date",
+#             "customer_name",
+#             "customer_group",
+#             "territory",
+#             "is_pos",
+#             "debit_to",
+#             "docstatus",
+#         ],
+#     )
+
+#     if not sales_invoices:
+#         frappe.throw(_("No valid Sales Invoices found."))
+
+#     sales_invoices = frappe.get_all(
+#         "Sales Invoice",
+#         filters={
+#             "name": ["in", invoice_numbers],
+#             "custom_consolidate_invoice_number": ["is", "not set"],
+#         },
+#         fields=[
+#             "name",
+#             "customer",
+#             "company",
+#             "currency",
+#             "conversion_rate",
+#             "posting_date",
+#             "due_date",
+#             "customer_name",
+#             "customer_group",
+#             "territory",
+#             "is_pos",
+#             "debit_to",
+#             "docstatus",
+#         ],
+#     )
+
+#     already_merged = [
+#         name
+#         for name in invoice_numbers
+#         if name not in [inv["name"] for inv in sales_invoices]
+#     ]
+
+#     if already_merged:
+#         frappe.throw(
+#             _(
+#                 "The following invoices are already consolidated and cannot be merged again:"
+#             )
+#             + "<br>"
+#             + "<br>".join(already_merged)
+#         )
+
+#     base_invoice = sales_invoices[0]
+
+#     new_invoice = frappe.get_doc(
+#         {
+#             "doctype": "Sales Invoice",
+#             "customer": "General Public",
+#             "customer_name": "General Public",
+#             "company": base_invoice["company"],
+#             "currency": base_invoice["currency"],
+#             "conversion_rate": base_invoice["conversion_rate"],
+#             "posting_date": min([inv["posting_date"] for inv in sales_invoices]),
+#             "due_date": max([inv["due_date"] for inv in sales_invoices]),
+#             "customer_group": base_invoice["customer_group"],
+#             "territory": base_invoice["territory"],
+#             "is_pos": base_invoice["is_pos"],
+#             "debit_to": base_invoice["debit_to"],
+#             "is_return": 0,
+#             "custom_is_submit_to_lhdn": 1,
+#             "custom_is_consolidated_invoice": 1,
+#             "items": [],
+#             "taxes": [],
+#             "remarks": f"Merged from invoices: {', '.join(invoice_numbers)}",
+#             "custom_submission_time": datetime.datetime.now(
+#                 datetime.timezone.utc
+#             ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+#         }
+#     )
+
+#     item_dict = {}
+#     excluded_items_map = []
+
+#     for inv in sales_invoices:
+#         invoice_items = frappe.get_all(
+#             "Sales Invoice Item",
+#             filters={"parent": inv["name"]},
+#             fields=[
+#                 "item_code",
+#                 "item_name",
+#                 "description",
+#                 "qty",
+#                 "rate",
+#                 "amount",
+#                 "income_account",
+#                 "cost_center",
+#                 "custom_item_classification_codes",
+#             ],
+#         )
+#         for item in invoice_items:
+#             if item["amount"] > 10000:
+#                 excluded_items_map.append({"invoice": inv, "item": item})
+#                 continue
+
+#             # Use invoice name in the key to avoid merging across invoices
+#             item_key = (item["item_code"], item["rate"], inv["name"])
+
+#             new_item = item.copy()
+#             new_item["custom_item_classification_codes"] = "004:Consolidated e-Invoice"
+#             new_item["custom_consolidated_invoice_refrence_copy"] = inv["name"]
+#             item_dict[item_key] = new_item
+
+#     if not item_dict:
+#         frappe.throw(
+#             _(
+#                 "All items were excluded because their amount exceeded 10,000. Consolidated invoice not created."
+#             )
+#         )
+
+#     for item in item_dict.values():
+#         new_invoice.append("items", item)
+
+#     # Consolidate taxes from original invoices
+#     tax_dict = {}
+#     for inv in sales_invoices:
+#         invoice_taxes = frappe.get_all(
+#             "Sales Taxes and Charges",
+#             filters={"parent": inv["name"]},
+#             fields=["charge_type", "account_head", "description", "rate", "tax_amount"],
+#         )
+#         for tax in invoice_taxes:
+#             tax_key = (tax["account_head"], tax["charge_type"])
+#             if tax_key in tax_dict:
+#                 tax_dict[tax_key]["tax_amount"] += tax["tax_amount"]
+#             else:
+#                 tax_dict[tax_key] = tax.copy()
+
+#     for tax in tax_dict.values():
+#         new_invoice.append("taxes", tax)
+
+#     # Set classification codes explicitly again
+#     for row in new_invoice.items:
+#         row.custom_item_classification_codes = "004:Consolidated e-Invoice"
+
+#     new_invoice.insert()
+#     if new_invoice.get("custom_is_consolidated_invoice"):
+#         new_invoice.db_set("status", "Consolidated")
+#         new_invoice.db_set("outstanding_amount", 0.0)
+#     new_invoice.flags.ignore_accounting_impact = True
+#     new_invoice.submit()
+#     if new_invoice.get("custom_is_consolidated_invoice"):
+#         new_invoice.db_set("status", "Consolidated")
+#         new_invoice.db_set("outstanding_amount", 0.0)
+
+#     # Update original invoices with reference to the new one
+#     for inv in sales_invoices:
+#         doc = frappe.get_doc("Sales Invoice", inv["name"])
+#         doc.custom_consolidate_invoice_number = new_invoice.name
+#         doc.save(ignore_permissions=True)
+
+#     # Create separate invoices for excluded items
+#     excluded_items_messages = []
+#     for entry in excluded_items_map:
+#         inv = entry["invoice"]
+#         item = entry["item"]
+
+#         original_taxes = frappe.get_all(
+#             "Sales Taxes and Charges",
+#             filters={"parent": inv["name"]},
+#             fields=["charge_type", "account_head", "description", "rate", "tax_amount"],
+#         )
+
+#         new_single_invoice = frappe.get_doc(
+#             {
+#                 "doctype": "Sales Invoice",
+#                 "customer": inv["customer"],
+#                 "customer_name": inv["customer_name"],
+#                 "company": inv["company"],
+#                 "currency": inv["currency"],
+#                 "conversion_rate": inv["conversion_rate"],
+#                 "posting_date": inv["posting_date"],
+#                 "due_date": inv["due_date"],
+#                 "customer_group": inv["customer_group"],
+#                 "territory": inv["territory"],
+#                 "is_pos": inv["is_pos"],
+#                 "debit_to": inv["debit_to"],
+#                 "is_return": 0,
+#                 # "custom_is_consolidated_invoice":1,
+#                 "custom_is_submit_to_lhdn": 1,
+#                 "items": [
+#                     {
+#                         "item_code": item["item_code"],
+#                         "item_name": item["item_name"],
+#                         "description": item["description"],
+#                         "qty": item["qty"],
+#                         "rate": item["rate"],
+#                         "amount": item["amount"],
+#                         "income_account": item["income_account"],
+#                         "cost_center": item["cost_center"],
+#                         "custom_item_classification_codes": item.get(
+#                             "custom_item_classification_codes", ""
+#                         ),
+#                         "consolidated_invoice_reference": inv["name"],
+#                     }
+#                 ],
+#                 "remarks": f"Auto-created from item exceeding 10,000 in invoice {inv['name']}",
+#                 "custom_submission_time": datetime.datetime.now(
+#                     datetime.timezone.utc
+#                 ).strftime("%Y-%m-%dT%H:%M:%SZ"),
+#             }
+#         )
+
+#         for tax in original_taxes:
+#             new_single_invoice.append(
+#                 "taxes",
+#                 {
+#                     "charge_type": tax["charge_type"],
+#                     "account_head": tax["account_head"],
+#                     "description": tax["description"],
+#                     "rate": tax["rate"],
+#                     "tax_amount": tax["tax_amount"],
+#                 },
+#             )
+
+#         new_single_invoice.insert()
+#         new_single_invoice.submit()
+
+#         excluded_items_messages.append(
+#             f"{item['item_code']} (Amount: {item['amount']}) from Invoice: {inv['name']} "
+#             f"moved to new invoice: {new_single_invoice.name}"
+#         )
+
+#     if excluded_items_messages:
+#         frappe.msgprint(
+#             _(
+#                 "The following items were excluded from the consolidated invoice because their amount exceeded 10,000. "
+#                 "Individual invoices were created:"
+#             )
+#             + "<br>"
+#             + "<br>".join(excluded_items_messages),
+#             title=_("Excluded Items"),
+#             indicator="orange",
+#         )
+
+#     return new_invoice.name
+
+
+
 @frappe.whitelist(allow_guest=True)
 def merge_sales_invoices(invoice_numbers):
     """
@@ -422,6 +694,7 @@ def merge_sales_invoices(invoice_numbers):
     Excludes items where amount > 10,000.
     Creates separate invoices for such items, preserving original customer and tax details.
     """
+
     import datetime
 
     if isinstance(invoice_numbers, str):
@@ -430,6 +703,7 @@ def merge_sales_invoices(invoice_numbers):
     if not invoice_numbers or len(invoice_numbers) < 2:
         frappe.throw(_("Please select at least two Sales Invoices to merge."))
 
+    # Fetch invoices
     sales_invoices = frappe.get_all(
         "Sales Invoice",
         filters={"name": ["in", invoice_numbers]},
@@ -493,6 +767,19 @@ def merge_sales_invoices(invoice_numbers):
 
     base_invoice = sales_invoices[0]
 
+    # ✅ Safe fallback for debit_to
+    debit_account = base_invoice.get("debit_to") or frappe.get_cached_value(
+        "Company", base_invoice["company"], "default_receivable_account"
+    )
+
+    if not debit_account:
+        frappe.throw(
+            _("No Receivable Account (debit_to) found for Company {0}").format(
+                base_invoice["company"]
+            )
+        )
+
+    # Create consolidated invoice
     new_invoice = frappe.get_doc(
         {
             "doctype": "Sales Invoice",
@@ -506,7 +793,7 @@ def merge_sales_invoices(invoice_numbers):
             "customer_group": base_invoice["customer_group"],
             "territory": base_invoice["territory"],
             "is_pos": base_invoice["is_pos"],
-            "debit_to": base_invoice["debit_to"],
+            "debit_to": debit_account,
             "is_return": 0,
             "custom_is_submit_to_lhdn": 1,
             "custom_is_consolidated_invoice": 1,
@@ -543,7 +830,7 @@ def merge_sales_invoices(invoice_numbers):
                 excluded_items_map.append({"invoice": inv, "item": item})
                 continue
 
-            # Use invoice name in the key to avoid merging across invoices
+            # Keep items separate per invoice
             item_key = (item["item_code"], item["rate"], inv["name"])
 
             new_item = item.copy()
@@ -561,7 +848,7 @@ def merge_sales_invoices(invoice_numbers):
     for item in item_dict.values():
         new_invoice.append("items", item)
 
-    # Consolidate taxes from original invoices
+    # Consolidate taxes
     tax_dict = {}
     for inv in sales_invoices:
         invoice_taxes = frappe.get_all(
@@ -579,27 +866,30 @@ def merge_sales_invoices(invoice_numbers):
     for tax in tax_dict.values():
         new_invoice.append("taxes", tax)
 
-    # Set classification codes explicitly again
+    # Classification code enforcement
     for row in new_invoice.items:
         row.custom_item_classification_codes = "004:Consolidated e-Invoice"
 
     new_invoice.insert()
+
+    # ✅ Avoid GL posting for consolidated invoice
     if new_invoice.get("custom_is_consolidated_invoice"):
-        new_invoice.db_set("status", "Consolidated")
-        new_invoice.db_set("outstanding_amount", 0.0)
-    new_invoice.flags.ignore_accounting_impact = True
-    new_invoice.submit()
-    if new_invoice.get("custom_is_consolidated_invoice"):
+        new_invoice.flags.ignore_accounting_impact = True
         new_invoice.db_set("status", "Consolidated")
         new_invoice.db_set("outstanding_amount", 0.0)
 
-    # Update original invoices with reference to the new one
+    try:
+        new_invoice.submit()
+    except Exception as e:
+        frappe.throw(_("Error during invoice merge submit: {0}").format(str(e)))
+
+    # Update original invoices
     for inv in sales_invoices:
         doc = frappe.get_doc("Sales Invoice", inv["name"])
         doc.custom_consolidate_invoice_number = new_invoice.name
         doc.save(ignore_permissions=True)
 
-    # Create separate invoices for excluded items
+    # Handle excluded items
     excluded_items_messages = []
     for entry in excluded_items_map:
         inv = entry["invoice"]
@@ -624,9 +914,11 @@ def merge_sales_invoices(invoice_numbers):
                 "customer_group": inv["customer_group"],
                 "territory": inv["territory"],
                 "is_pos": inv["is_pos"],
-                "debit_to": inv["debit_to"],
+                "debit_to": inv["debit_to"]
+                or frappe.get_cached_value(
+                    "Company", inv["company"], "default_receivable_account"
+                ),
                 "is_return": 0,
-                # "custom_is_consolidated_invoice":1,
                 "custom_is_submit_to_lhdn": 1,
                 "items": [
                     {
