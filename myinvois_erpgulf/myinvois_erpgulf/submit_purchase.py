@@ -569,7 +569,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         # Case: No submission UID
         if not submission_uid:
             if isinstance(sales_invoice_doc, dict):
-                sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)
+                sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
 
             sales_invoice_doc.custom_lhdn_status = "Failed"
             sales_invoice_doc.save(ignore_permissions=True)
