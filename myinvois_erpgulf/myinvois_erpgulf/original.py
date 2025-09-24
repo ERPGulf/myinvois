@@ -75,7 +75,7 @@ def certificate_data(company_abbr):
         file_doc = frappe.get_doc("File", {"file_url": attached_file})
         pfx_path = file_doc.get_full_path()
 
-        pfx_password = company_doc.custom_pfx_cert_password
+        pfx_password = company_doc.get_password('custom_pfx_cert_password')
         pem_output_path = frappe.local.site + "/private/files/certificate.pem"
         pem_encryption_password = pfx_password.encode()
         with open(pfx_path, "rb") as f:
@@ -157,7 +157,7 @@ def sign_data(line_xml, company_abbr):
 
         company_doc = frappe.get_doc("Company", company_name)
 
-        pass_file = company_doc.custom_pfx_cert_password
+        pass_file = company_doc.get_password('custom_pfx_cert_password')
         private_key = serialization.load_pem_private_key(
             cert_pem.encode(),
             password=pass_file.encode(),
