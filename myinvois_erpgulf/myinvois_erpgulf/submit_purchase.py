@@ -73,8 +73,7 @@ def certificate_data(company_abbr):
             frappe.throw("No PFX file attached in the settings.")
         file_doc = frappe.get_doc("File", {"file_url": attached_file})
         pfx_path = file_doc.get_full_path()
-
-        pfx_password = company_doc.custom_pfx_cert_password
+        pfx_password = company_doc.get_password('custom_pfx_cert_password')
         pem_output_path = frappe.local.site + "/private/files/certificate.pem"
         pem_encryption_password = pfx_password.encode()
         with open(pfx_path, "rb") as f:
@@ -156,7 +155,7 @@ def sign_data(line_xml, company_abbr):
             frappe.throw(_(f"Company with abbreviation {company_abbr} not found."))
 
         company_doc = frappe.get_doc("Company", company_name)
-        pass_file = company_doc.custom_pfx_cert_password
+        pass_file =company_doc.get_password('custom_pfx_cert_password')
         private_key = serialization.load_pem_private_key(
             cert_pem.encode(),
             password=pass_file.encode(),
@@ -451,10 +450,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         xml_file.save()
         # Generate and attach QR code
         sales_invoice_doc.reload()
-        qr_image_path = generate_qr_code(sales_invoice_doc, status)
-        if qr_image_path:
-            attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
-        sales_invoice_doc.db_update()
+        
 
         frappe.db.commit()
         sales_invoice_doc.reload()

@@ -5,6 +5,7 @@ import hashlib
 import base64
 import datetime
 import json
+import os
 import xml.dom.minidom as minidom
 import frappe
 import requests
@@ -57,7 +58,7 @@ def xml_hash():
         return line_xml, doc_hash
     except (OSError, etree.XMLSyntaxError, base64.binascii.Error) as e:
         frappe.throw(_(f"Error in xml hash: {str(e)}"))
-
+import os
 
 def certificate_data(company_abbr):
     """defining the certificate data"""
@@ -80,6 +81,9 @@ def certificate_data(company_abbr):
         pem_encryption_password = pfx_password.encode()
         with open(pfx_path, "rb") as f:
             pfx_data = f.read()
+        if not pfx_path or not os.path.exists(pfx_path):
+            frappe.throw(f"PFX file not found at {pfx_path}")
+        
         private_key, certificate, additional_certificates = (
             pkcs12.load_key_and_certificates(
                 pfx_data, pfx_password.encode(), backend=default_backend()
@@ -429,7 +433,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         sales_invoice_doc.save(ignore_permissions=True)
 
         # sales_invoice_doc.reload()
-        frappe.db.commit()
+        # frappe.db.commit()
         existing_files = frappe.get_all(
             "File",
             filters={
@@ -461,8 +465,21 @@ def submission_url(sales_invoice_doc, company_abbr):
         xml_file.save()
 
         # Generate and attach QR code
-        qr_image_path = generate_qr_code(sales_invoice_doc, status)
-        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        # qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        # if (
+        #     not company_doc.custom_certificate_file
+        #     or company_doc.custom_certificate_file
+        #     and company_doc.custom_version == "1.0"
+        # ):
+            # qr_image_path = generate_qr_code(sales_invoice_doc, status)
+            # if not qr_image_path or not os.path.exists(qr_image_path):
+            #     frappe.log_error(
+            #         f"QR code path invalid: {qr_image_path}", 
+            #         title="QR Generation Error"
+            #     )
+            # else:
+            #     attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+        # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
         sales_invoice_doc.db_update()
 
         frappe.db.commit()
@@ -634,9 +651,12 @@ def error_log(custom_error_submission=None):
 #     except Exception as e:
 #         frappe.log_error(_(f"Error during status submission: {str(e)}"))
 #         frappe.throw(_(f"Error during status submission: {str(e)}"))
+
+
 def status_submission(invoice_number, sales_invoice_doc, company_abbr):
     """Fetching the status of the submission"""
     try:
+        # frappe.throw("hi")
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
         token = company_doc.custom_bearer_token
         submission_response_str = sales_invoice_doc.get("custom_submit_response", "{}")
@@ -673,11 +693,29 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
             token = company_doc.custom_bearer_token
             headers["Authorization"] = f"Bearer {token}"
             response = requests.get(url, headers=headers, timeout=30)
+            response_data = response.json()
+            document_summary = response_data.get("documentSummary", [])
+            frappe.throw(response_data.text)
+            if document_summary:
+                status = document_summary[0].get("status", "Submitted")
+            else:
+                status = "Submitted"
+
+            sales_invoice_doc.custom_lhdn_status = status
+            sales_invoice_doc.save(ignore_permissions=True)
+            frappe.db.commit()
+            doc = success_log(
+                response.json(), submission_uid, status, invoice_number, company_doc
+            )
+            doc.save(ignore_permissions=True)
+            doc.reload()
+            frappe.db.commit()
+
 
         if response.status_code == 200:
             response_data = response.json()
             document_summary = response_data.get("documentSummary", [])
-
+            # frappe.throw(response_data.text)
             if document_summary:
                 status = document_summary[0].get("status", "Submitted")
             else:
@@ -933,6 +971,7 @@ def validate_before_submit(doc, method=None):
     """validating the invoice before submission"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
     validate_before(doc.name)
+import traceback
 
 
 @frappe.whitelist(allow_guest=True)
@@ -1026,19 +1065,29 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 )
 
                 submission_url(sales_invoice_doc, company_abbr)
+                
                 response_data = json.loads(sales_invoice_doc.custom_submit_response)
                 submission_uid = response_data.get("submissionUid")
-
-                if not submission_uid:
+                
+                if submission_uid:
+    # Update the status safely
+                    status = status_submission(invoice_number, sales_invoice_doc, company_abbr)
+                    qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    if not qr_image_path or not os.path.exists(qr_image_path):
+                        frappe.log_error(
+                            f"QR code path invalid: {qr_image_path}", 
+                            title="QR Generation Error"
+                        )
+                    else:
+                        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+                    frappe.msgprint(f"LHDN submission status updated: {status}")
+                else:
                     sales_invoice_doc.custom_lhdn_status = "Failed"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
                     frappe.throw(
-                        f"As per LHDN Regulation,Submission UID not found.. not submitted due to an error in the response: "
-                        f"{response_data}"
+                        f"As per LHDN Regulation, Submission UID not found. Response: {response_data}"
                     )
-                else:
-                    status_submission(invoice_number, sales_invoice_doc, company_abbr)
                     # qr_image_path = generate_qr_code(sales_invoice_doc, status)
                     # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
                     # frappe.db.commit()
@@ -1093,10 +1142,20 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     )
                 # else:
                 else:
-                    sales_invoice_doc.custom_lhdn_status = "Submitted"
+                    status= status_submission(invoice_number, sales_invoice_doc, company_abbr)
+                    qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    if not qr_image_path or not os.path.exists(qr_image_path):
+                        frappe.log_error(
+                            f"QR code path invalid: {qr_image_path}", 
+                            title="QR Generation Error"
+                        )
+                    else:
+                        attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
+                    frappe.msgprint(f"LHDN submission status updated: {status}")
+                    # sales_invoice_doc.custom_lhdn_status = "Submitted"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
-                    status_submission(invoice_number, sales_invoice_doc, company_abbr)
+                    
 
                 # status_submission(invoice_number, sales_invoice_doc)
 
@@ -1120,7 +1179,11 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         TypeError,
         frappe.ValidationError,
     ) as e:
-        frappe.throw(_(f"Error in submit document: {str(e)}"))
+        frappe.log_error(_(f"Error in submit document: {str(e)}"))
+    #     tb = traceback.format_exc()
+    # # Option 1: Log it to server log and show message
+    #     frappe.log_error(tb, title="Submit Document Error")
+    #     frappe.throw(_(f"Error in submit document:\n{tb}"))
 
 
 def submit_document_wrapper(doc, method=None):
