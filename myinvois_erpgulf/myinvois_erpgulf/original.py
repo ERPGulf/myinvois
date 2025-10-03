@@ -542,35 +542,63 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
         frappe.throw(_(f"Error in success log: {str(e)}"))
 
 
+# def error_log(custom_error_submission=None):
+#     """
+#     Logs errors during LHDN invoice submission.
+#     Includes full traceback and optional custom submission details.
+#     """
+#     try:
+#         # Capture the full traceback of the error
+#         error_message = frappe.get_traceback()
+#         frappe.log(f"Captured error traceback: {error_message}")
+
+#         # Create a new error log document
+#         error_doc = frappe.get_doc(
+#             {
+#                 "doctype": "LHDN Error Log",
+#                 "title": "LHDN INVOICE SUBMISSION Failed",
+#                 "error": error_message,
+#             }
+#         )
+
+#         # Save the error log
+#         error_doc.insert(ignore_permissions=True)
+
+#         # Log a success message in the server logs
+#         frappe.log(
+#             f"Error logged successfully with custom details: {custom_error_submission}"
+#         )
+
+#     except Exception as e:
+#         # If logging fails, log the exception and throw a descriptive message
+#         frappe.log_error(f"Failed to log error: {frappe.get_traceback()}")
+#         frappe.throw(_(f"Error while logging the error: {str(e)}"))
+
+
 def error_log(custom_error_submission=None):
     """
     Logs errors during LHDN invoice submission.
-    Includes full traceback and optional custom submission details.
+    Saves into Frappe's built-in Error Log doctype with traceback
+    and optional custom submission details.
     """
     try:
         # Capture the full traceback of the error
         error_message = frappe.get_traceback()
-        frappe.log(f"Captured error traceback: {error_message}")
 
-        # Create a new error log document
-        error_doc = frappe.get_doc(
-            {
-                "doctype": "LHDN Error Log",
-                "title": "LHDN INVOICE SUBMISSION Failed",
-                "error": error_message,
-            }
+        # Add optional extra details if provided
+        if custom_error_submission:
+            error_message = f"{error_message}\n\nCustom Details:\n{custom_error_submission}"
+
+        # Save directly to Frappe Error Log
+        frappe.log_error(
+            title="LHDN INVOICE SUBMISSION Failed",
+            message=error_message
         )
 
-        # Save the error log
-        error_doc.insert(ignore_permissions=True)
-
-        # Log a success message in the server logs
-        frappe.log(
-            f"Error logged successfully with custom details: {custom_error_submission}"
-        )
+        frappe.log("Error logged successfully in Frappe Error Log")
 
     except Exception as e:
-        # If logging fails, log the exception and throw a descriptive message
+        # If logging itself fails, record the failure
         frappe.log_error(f"Failed to log error: {frappe.get_traceback()}")
         frappe.throw(_(f"Error while logging the error: {str(e)}"))
 
