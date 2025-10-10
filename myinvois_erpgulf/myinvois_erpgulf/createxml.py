@@ -613,6 +613,10 @@ def customer_data(invoice, sales_invoice_doc):
             address = frappe.get_doc("Address", sales_invoice_doc.customer_address)
         else:
             address = frappe.get_doc("Address", customer_doc.customer_primary_address)
+
+        if not address.address_line1 or not address.address_line2:
+            frappe.throw(_("Customer address must have both Address Line 1 and Address Line 2 filled."))
+            
         posta_address = ET.SubElement(cac_Party, "cac:PostalAddress")
         name_city = ET.SubElement(posta_address, "cbc:CityName")
         name_city.text = address.city
