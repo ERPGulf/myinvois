@@ -700,7 +700,8 @@ def delivery_data(invoice, sales_invoice_doc):
 
         postal_zone = ET.SubElement(postal_address, "cbc:PostalZone")
 
-        postal_zone.text = str(address.custom_state_code).split(":", 1)[1].strip()
+        postal_zone.text = address.pincode
+        # str(address.custom_state_code).split(":", 1)[1].strip()
 
         country_subentity_code = ET.SubElement(
             postal_address, "cbc:CountrySubentityCode"

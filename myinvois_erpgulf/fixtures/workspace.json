@@ -1,7 +1,7 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">LHDN Malaysia</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Invoices\",\"col\":4}},{\"id\":\"R_ogDYfo2i\",\"type\":\"card\",\"data\":{\"card_name\":\"Shortcuts\",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"Configurations\",\"col\":4}},{\"id\":\"yF4E9lAQL9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"VAT Report on LHDN for Sales and Purchase\",\"col\":3}}]",
+  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">LHDN Malaysia</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Invoices\",\"col\":4}},{\"id\":\"R_ogDYfo2i\",\"type\":\"card\",\"data\":{\"card_name\":\"Shortcuts\",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"Configurations\",\"col\":4}},{\"id\":\"Yud7Xdaykc\",\"type\":\"card\",\"data\":{\"card_name\":\"VAT Report\",\"col\":4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -96,9 +96,43 @@
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 0,
+    "label": "VAT Report",
+    "link_count": 1,
+    "link_to": null,
+    "link_type": "DocType",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "LHDN Malaysia",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "type": "Card Break"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 1,
+    "label": "LHDN VAT Report on Sales & Purchase",
+    "link_count": 0,
+    "link_to": "LHDN VAT Report on Sales & Purchase",
+    "link_type": "Report",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "LHDN Malaysia",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "type": "Link"
    }
   ],
-  "modified": "2025-09-22 14:04:20.874192",
+  "modified": "2025-10-15 14:27:47.106696",
   "module": "Myinvois Erpgulf",
   "name": "LHDN Malaysia",
   "number_cards": [],
@@ -132,22 +166,6 @@
     "restrict_to_domain": null,
     "stats_filter": null,
     "type": "Page",
-    "url": null
-   },
-   {
-    "color": "Grey",
-    "doc_view": "List",
-    "format": null,
-    "icon": null,
-    "kanban_board": null,
-    "label": "VAT Report on LHDN for Sales and Purchase",
-    "link_to": "VAT Report on LHDN for Sales and Purchase",
-    "parent": "LHDN Malaysia",
-    "parentfield": "shortcuts",
-    "parenttype": "Workspace",
-    "restrict_to_domain": null,
-    "stats_filter": null,
-    "type": "Report",
     "url": null
    }
   ],
