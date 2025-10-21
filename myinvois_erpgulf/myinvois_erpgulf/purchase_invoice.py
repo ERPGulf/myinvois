@@ -325,9 +325,9 @@ def company_data(invoice, sales_invoice_doc):
         # statecode = (address.custom_state_code).split(":")[0]
         # ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
         statecode_raw = address.custom_state_code or ""
-        statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "NA"
+        statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "17"
         if not statecode:
-            statecode = "NA"
+            statecode = "17"
 
         ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
 
@@ -478,7 +478,11 @@ def customer_data(invoice, sales_invoice_doc):
         post_zone = ET.SubElement(posta_address, "cbc:PostalZone")
         post_zone.text = address.pincode
         cntry_sub_cod = ET.SubElement(posta_address, "cbc:CountrySubentityCode")
-        statecode = (address.custom_state_code).split(":")[0]
+        statecode = (
+            address.custom_state_code.split(":")[0]
+            if address.custom_state_code
+            else "17"
+        )
         cntry_sub_cod.text = statecode
 
         add_cust_line1 = ET.SubElement(posta_address, "cac:AddressLine")
@@ -576,7 +580,12 @@ def delivery_data(invoice, sales_invoice_doc):
         country_subentity_code = ET.SubElement(
             postal_address, "cbc:CountrySubentityCode"
         )
-        statecode = (address.custom_state_code).split(":")[0]
+        # (address.custom_state_code).split(":")[0]
+        statecode = (
+            address.custom_state_code.split(":")[0]
+            if address.custom_state_code
+            else "17"
+        )
         country_subentity_code.text = statecode
 
         address_line1 = ET.SubElement(
