@@ -1,16 +1,16 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">LHDN Malaysia</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"Configurations\",\"col\":4}},{\"id\":\"Yud7Xdaykc\",\"type\":\"card\",\"data\":{\"card_name\":\"VAT Report\",\"col\":4}},{\"id\":\"lv2zpbll3t\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN Status Custom Reports\",\"col\":4}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Sales Invoices\",\"col\":4}},{\"id\":\"YspTisQzkE\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Purchase Invoices\",\"col\":4}}]",
+  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Malaysia compliance</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN setup\",\"col\":4}},{\"id\":\"Yud7Xdaykc\",\"type\":\"card\",\"data\":{\"card_name\":\"VAT Report\",\"col\":4}},{\"id\":\"mF0ZRKynXL\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN Status Reports\",\"col\":4}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Sales Invoices\",\"col\":4}},{\"id\":\"YspTisQzkE\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Purchase Invoices\",\"col\":4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
   "for_user": "",
   "hide_custom": 0,
-  "icon": null,
-  "indicator_color": "green",
+  "icon": "",
+  "indicator_color": "",
   "is_hidden": 0,
-  "label": "LHDN Malaysia",
+  "label": "Malaysia compliance",
   "links": [
    {
     "dependencies": null,
@@ -24,7 +24,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Card Break"
@@ -41,7 +41,7 @@
     "link_type": "Report",
     "onboard": 0,
     "only_for": null,
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -52,13 +52,13 @@
     "hidden": 0,
     "icon": null,
     "is_query_report": 0,
-    "label": "Configurations",
+    "label": "LHDN setup",
     "link_count": 2,
     "link_to": null,
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Card Break"
@@ -75,7 +75,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -92,15 +92,66 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "type": "Link"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 0,
+    "label": "LHDN Status Reports",
+    "link_count": 2,
+    "link_to": null,
+    "link_type": "DocType",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "Malaysia compliance",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "type": "Card Break"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 1,
+    "label": "LHDN Sales Status Report",
+    "link_count": 0,
+    "link_to": "LHDN Sales Status Report",
+    "link_type": "Report",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "Malaysia compliance",
+    "parentfield": "links",
+    "parenttype": "Workspace",
+    "type": "Link"
+   },
+   {
+    "dependencies": null,
+    "description": null,
+    "hidden": 0,
+    "icon": null,
+    "is_query_report": 1,
+    "label": "LHDN Purchase Status Report",
+    "link_count": 0,
+    "link_to": "LHDN Purchase Status Report",
+    "link_type": "Report",
+    "onboard": 0,
+    "only_for": null,
+    "parent": "Malaysia compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
    }
   ],
-  "modified": "2025-10-21 11:26:14.969221",
+  "modified": "2025-10-22 08:34:55.695324",
   "module": "Myinvois Erpgulf",
-  "name": "LHDN Malaysia",
+  "name": "Malaysia compliance",
   "number_cards": [],
   "parent_page": "",
   "public": 1,
@@ -108,7 +159,7 @@
    {
     "document_type": "Purchase Invoice",
     "label": "New Purchase Invoices",
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
     "quick_list_filter": "[[\"Purchase Invoice\",\"custom_lhdn_status\",\"like\",\"%Valid%\",false]]"
@@ -116,7 +167,7 @@
    {
     "document_type": "Sales Invoice",
     "label": "New Sales Invoices",
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
     "quick_list_filter": "[[\"Sales Invoice\",\"custom_lhdn_status\",\"like\",\"%Valid%\",false]]"
@@ -134,7 +185,7 @@
     "kanban_board": null,
     "label": "LHDN Detailed Dashboard ",
     "link_to": "lhdn-dashboard",
-    "parent": "LHDN Malaysia",
+    "parent": "Malaysia compliance",
     "parentfield": "shortcuts",
     "parenttype": "Workspace",
     "restrict_to_domain": null,
@@ -143,6 +194,6 @@
     "url": null
    }
   ],
-  "title": "LHDN Malaysia"
+  "title": "Malaysia compliance"
  }
 ]
