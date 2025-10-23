@@ -1174,7 +1174,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     qr_image_path = generate_qr_code(sales_invoice_doc, status)
                     if not qr_image_path or not os.path.exists(qr_image_path):
                         frappe.log_error(
-                            f"QR code path invalid: {qr_image_path}", 
+                            message=f"QR code path invalid: {qr_image_path}", 
                             title="QR Generation Error"
                         )
                     else:
