@@ -1110,7 +1110,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
                     frappe.msgprint(f"LHDN submission status updated: {status}")
                 else:
-                    sales_invoice_doc.custom_lhdn_status = "Submission UID not found"
+                    sales_invoice_doc.custom_lhdn_status = "Failed"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
                     frappe.throw(
