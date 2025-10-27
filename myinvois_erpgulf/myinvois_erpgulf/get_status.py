@@ -88,7 +88,7 @@ def status_submit(doc):
                 frappe.db.commit()
                 frappe.msgprint(response.text)  # Log the full response for debugging
                 frappe.msgprint(_("LHDN submission status updated: {0}").format(status))
-                if status == "Valid":
+                if status.strip().lower() == "valid":
                     # Check for existing QR attachment
                     qr_filename_prefix = f"startQR_{invoice.name}.png"
                     existing_attachments = frappe.get_all(
