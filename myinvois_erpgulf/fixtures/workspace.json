@@ -1,7 +1,7 @@
 [
  {
   "charts": [],
-  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Malaysia compliance</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN setup\",\"col\":4}},{\"id\":\"Yud7Xdaykc\",\"type\":\"card\",\"data\":{\"card_name\":\"VAT Report\",\"col\":4}},{\"id\":\"mF0ZRKynXL\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN Status Reports\",\"col\":4}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Sales Invoices\",\"col\":4}},{\"id\":\"YspTisQzkE\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Purchase Invoices\",\"col\":4}}]",
+  "content": "[{\"id\":\"zbqk_ugEBj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Malaysia Compliance</span>\",\"col\":12}},{\"id\":\"MdfVTQpbYN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"LHDN Detailed Dashboard \",\"col\":4}},{\"id\":\"_BbQEzQPjh\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN setup\",\"col\":4}},{\"id\":\"Yud7Xdaykc\",\"type\":\"card\",\"data\":{\"card_name\":\"VAT Report\",\"col\":4}},{\"id\":\"mF0ZRKynXL\",\"type\":\"card\",\"data\":{\"card_name\":\"LHDN Status Reports\",\"col\":4}},{\"id\":\"e-GdBqydJB\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b></b></span>\",\"col\":12}},{\"id\":\"Whuda70tL6\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Sales Invoices\",\"col\":4}},{\"id\":\"YspTisQzkE\",\"type\":\"quick_list\",\"data\":{\"quick_list_name\":\"New Purchase Invoices\",\"col\":4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -10,7 +10,7 @@
   "icon": "",
   "indicator_color": "",
   "is_hidden": 0,
-  "label": "Malaysia compliance",
+  "label": "Malaysia Compliance",
   "links": [
    {
     "dependencies": null,
@@ -24,7 +24,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Card Break"
@@ -41,7 +41,7 @@
     "link_type": "Report",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -58,7 +58,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Card Break"
@@ -75,7 +75,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -92,7 +92,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -109,7 +109,7 @@
     "link_type": "DocType",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Card Break"
@@ -126,7 +126,7 @@
     "link_type": "Report",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
@@ -143,15 +143,15 @@
     "link_type": "Report",
     "onboard": 0,
     "only_for": null,
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
     "type": "Link"
    }
   ],
-  "modified": "2025-10-22 08:34:55.695324",
+  "modified": "2025-10-27 15:37:05.000546",
   "module": "Myinvois Erpgulf",
-  "name": "Malaysia compliance",
+  "name": "Malaysia Compliance",
   "number_cards": [],
   "parent_page": "",
   "public": 1,
@@ -159,7 +159,7 @@
    {
     "document_type": "Purchase Invoice",
     "label": "New Purchase Invoices",
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
     "quick_list_filter": "[[\"Purchase Invoice\",\"custom_lhdn_status\",\"like\",\"%Valid%\",false]]"
@@ -167,7 +167,7 @@
    {
     "document_type": "Sales Invoice",
     "label": "New Sales Invoices",
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
     "quick_list_filter": "[[\"Sales Invoice\",\"custom_lhdn_status\",\"like\",\"%Valid%\",false]]"
@@ -185,7 +185,7 @@
     "kanban_board": null,
     "label": "LHDN Detailed Dashboard ",
     "link_to": "lhdn-dashboard",
-    "parent": "Malaysia compliance",
+    "parent": "Malaysia Compliance",
     "parentfield": "shortcuts",
     "parenttype": "Workspace",
     "restrict_to_domain": null,
@@ -194,6 +194,6 @@
     "url": null
    }
   ],
-  "title": "Malaysia compliance"
+  "title": "Malaysia Compliance"
  }
 ]
