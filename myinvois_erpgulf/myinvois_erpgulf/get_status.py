@@ -3,10 +3,11 @@
 import json
 import frappe
 import requests
+import os
 from frappe import _
 from myinvois_erpgulf.myinvois_erpgulf.original import get_api_url
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
-
+from myinvois_erpgulf.myinvois_erpgulf.createxml import generate_qr_code, attach_qr_code_to_sales_invoice
 
 @frappe.whitelist(allow_guest=True)
 def status_submit(doc):
@@ -87,8 +88,37 @@ def status_submit(doc):
                 frappe.db.commit()
                 frappe.msgprint(response.text)  # Log the full response for debugging
                 frappe.msgprint(_("LHDN submission status updated: {0}").format(status))
-            else:
-                frappe.msgprint(_("No document summary found in response."))
+                if status == "Valid":
+                    # Check for existing QR attachment
+                    qr_filename_prefix = f"startQR_{invoice.name}.png"
+                    existing_attachments = frappe.get_all(
+                        "File",
+                        filters={
+                            "attached_to_doctype": invoice_doctype,
+                            "attached_to_name": invoice.name,
+                            "file_name": ["like", qr_filename_prefix],
+                        },
+                        fields=["file_name", "file_url"],
+                    )
+
+                    if not existing_attachments:
+                        try:
+                            qr_image_path = generate_qr_code(invoice, status)
+                            if not qr_image_path or not os.path.exists(qr_image_path):
+                                frappe.log_error(
+                                    message=f"QR code path invalid: {qr_image_path}",
+                                    title="QR Generation Error",
+                                )
+                            else:
+                                attach_qr_code_to_sales_invoice(invoice, qr_image_path)
+                                frappe.msgprint(_("QR code generated and attached successfully."))
+                        except Exception:
+                            frappe.log_error(
+                                message=frappe.get_traceback(),
+                                title="Error Generating/Attaching QR Code",
+                            )
+                else:
+                    frappe.msgprint(_("No document summary found in response."))
 
             return response_data
         else:
