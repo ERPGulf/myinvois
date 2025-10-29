@@ -35,35 +35,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "LHDN setup",
-   "link_count": 2,
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "LHDN Setup for Company",
-   "link_count": 0,
-   "link_to": "Company",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Item Tax Templates",
-   "link_count": 0,
-   "link_to": "Item Tax Template",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "LHDN Status Reports",
    "link_count": 2,
    "link_type": "DocType",
@@ -89,9 +60,38 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "LHDN setup",
+   "link_count": 2,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "LHDN Setup for Company",
+   "link_count": 0,
+   "link_to": "Company",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Item Tax Templates",
+   "link_count": 0,
+   "link_to": "Item Tax Template",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2025-10-27 15:37:05.000546",
+ "modified": "2025-10-29 16:13:59.995211",
  "modified_by": "Administrator",
  "module": "Myinvois Erpgulf",
  "name": "Malaysia Compliance",
@@ -112,7 +112,7 @@
   }
  ],
  "roles": [],
- "sequence_id": 28.0,
+ "sequence_id": 6.0,
  "shortcuts": [
   {
    "color": "Grey",

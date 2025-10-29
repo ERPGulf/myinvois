@@ -119,8 +119,8 @@ render_cards() {
         ];
 
         const reportName = doctype === "Sales Invoice"
-            ? "LHDN Status Report"
-            : "LHDN Status Report2";
+            ? "LHDN Sales Status Report"
+            : "LHDN Purchase Status Report";
 
         return `
             <a href="/app/query-report/${encodeURIComponent(reportName)}?&status=${encodeURIComponent(title)}" style="color: inherit;">
