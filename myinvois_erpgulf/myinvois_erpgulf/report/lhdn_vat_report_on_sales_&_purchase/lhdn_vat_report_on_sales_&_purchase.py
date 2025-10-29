@@ -24,7 +24,7 @@ def process_sales_invoices(filters=None):
 
     # --- Items-level totals ---
     query_items = """
-        SELECT si.name AS invoice, sit.custom_zatca_tax_category AS code,
+        SELECT si.name AS invoice, sit.custom_malaysia_tax_category AS code,
                sii.amount, sii.net_amount,
                IFNULL(st.tax_rate, 0) AS tax_rate,
                si.is_return
@@ -63,7 +63,7 @@ def process_sales_invoices(filters=None):
     # --- Invoice-level fallback (no item tax template) ---
     query_invoice = """
         SELECT si.name, si.grand_total, si.total_taxes_and_charges,
-               si.custom_zatca_tax_category, si.is_return
+               si.custom_malaysia_tax_category, si.is_return
         FROM `tabSales Invoice` si
         WHERE si.docstatus = 1
     """
@@ -94,7 +94,7 @@ def process_sales_invoices(filters=None):
             continue  # Already included in item-level totals
 
         key_amount = "adjustment" if doc.is_return else "amount"
-        raw_code = doc.custom_zatca_tax_category or "E"
+        raw_code = doc.custom_malaysia_tax_category or "E"
         code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
         if code not in TAX_CATEGORIES:
             code = "E"
@@ -113,7 +113,7 @@ def process_purchase_invoices(filters=None):
 
     # --- Items-level totals ---
     query_items = """
-        SELECT pi.name AS invoice, pit.custom_zatca_tax_category AS code,
+        SELECT pi.name AS invoice, pit.custom_malaysia_tax_category AS code,
                pii.amount, pii.net_amount,
                IFNULL(pt.tax_rate, 0) AS tax_rate,
                pi.is_return
@@ -152,7 +152,7 @@ def process_purchase_invoices(filters=None):
     # --- Invoice-level fallback ---
     query_invoice = """
         SELECT pi.name, pi.grand_total, pi.total_taxes_and_charges,
-               pi.custom_zatca_tax_category, pi.is_return
+               pi.custom_malaysia_tax_category, pi.is_return
         FROM `tabPurchase Invoice` pi
         WHERE pi.docstatus = 1
     """
@@ -180,7 +180,7 @@ def process_purchase_invoices(filters=None):
         if item_check:
             continue  # Already included
         key_amount = "adjustment" if doc.is_return else "amount"
-        raw_code = doc.custom_zatca_tax_category or "E"
+        raw_code = doc.custom_malaysia_tax_category or "E"
         code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
         if code not in TAX_CATEGORIES:
             code = "E"

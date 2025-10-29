@@ -33,7 +33,7 @@ def process_sales_invoices(filters=None):
     invoices = frappe.get_all(
         "Sales Invoice",
         filters=base_filters,
-        fields=["name", "grand_total", "is_return", "total_taxes_and_charges", "custom_zatca_tax_category"]
+        fields=["name", "grand_total", "is_return", "total_taxes_and_charges", "custom_malaysia_tax_category"]
     )
 
     for inv in invoices:
@@ -47,7 +47,7 @@ def process_sales_invoices(filters=None):
             if template_id:
                 item_has_template = True
                 template = frappe.get_doc("Item Tax Template", template_id)
-                code = template.custom_zatca_tax_category
+                code = template.custom_malaysia_tax_category
                 if code not in TAX_CATEGORIES:
                     continue
                 amount = item.amount or 0
@@ -58,7 +58,7 @@ def process_sales_invoices(filters=None):
 
         # --- Fallback to invoice-level category ---
         if not item_has_template:
-            raw_code = getattr(doc, "custom_zatca_tax_category", None)
+            raw_code = getattr(doc, "custom_malaysia_tax_category", None)
             if not raw_code:
                 raw_code = "E"
             code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
@@ -88,7 +88,7 @@ def process_purchase_invoices(filters=None):
     invoices = frappe.get_all(
         "Purchase Invoice",
         filters=base_filters,
-        fields=["name", "grand_total", "is_return", "total_taxes_and_charges", "custom_zatca_tax_category"]
+        fields=["name", "grand_total", "is_return", "total_taxes_and_charges", "custom_malaysia_tax_category"]
     )
 
     for inv in invoices:
@@ -102,7 +102,7 @@ def process_purchase_invoices(filters=None):
             if template_id:
                 item_has_template = True
                 template = frappe.get_doc("Item Tax Template", template_id)
-                code = template.custom_zatca_tax_category
+                code = template.custom_malaysia_tax_category
                 if code not in TAX_CATEGORIES:
                     continue
                 amount = item.amount or 0
@@ -113,7 +113,7 @@ def process_purchase_invoices(filters=None):
 
         # --- Fallback to invoice-level category ---
         if not item_has_template:
-            raw_code = getattr(doc, "custom_zatca_tax_category", None)
+            raw_code = getattr(doc, "custom_malaysia_tax_category", None)
             if not raw_code:
                 raw_code = "E"
             code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code

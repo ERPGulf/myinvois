@@ -879,7 +879,7 @@ def tax_total(invoice, sales_invoice_doc):
         )
 
         cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
-        raw_item_id_code = sales_invoice_doc.custom_zatca_tax_category
+        raw_item_id_code = sales_invoice_doc.custom_malaysia_tax_category
         cat_id_val = ET.SubElement(cac_TaxCategory, "cbc:ID")
         # cat_id_val.text = str(sales_invoice_doc.custom_zatca_tax_category)
         cat_id_val.text = raw_item_id_code.split(":")[0].strip()
@@ -887,7 +887,7 @@ def tax_total(invoice, sales_invoice_doc):
         prct = ET.SubElement(cac_TaxCategory, "cbc:Percent")
         prct.text = str(sales_invoice_doc.taxes[0].rate)
         exemption = ET.SubElement(cac_TaxCategory, "cbc:TaxExemptionReason")
-        if (sales_invoice_doc.custom_zatca_tax_category) == "E":
+        if (sales_invoice_doc.custom_malaysia_tax_category) == "E":
             exemption.text = sales_invoice_doc.custom_exemption_code
         else:
             exemption.text = "NA"
@@ -912,7 +912,7 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             item_tax_template = frappe.get_doc(
                 "Item Tax Template", item.item_tax_template
             )
-            zatca_tax_category = item_tax_template.custom_zatca_tax_category
+            zatca_tax_category = item_tax_template.custom_malaysia_tax_category
 
             if zatca_tax_category not in tax_category_totals:
                 tax_category_totals[zatca_tax_category] = {
@@ -1132,7 +1132,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
 
             tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
-            raw_invoice_type_code = sales_invoice_doc.custom_zatca_tax_category
+            raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
 
             cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
             # cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
@@ -1261,7 +1261,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 abs(round(item_tax_percentage * single_item.amount / 100, 2))
             )
 
-            zatca_tax_category = item_tax_template.custom_zatca_tax_category
+            zatca_tax_category = item_tax_template.custom_malaysia_tax_category
             cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
             cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
             cbc_ID.text = str(zatca_tax_category)
