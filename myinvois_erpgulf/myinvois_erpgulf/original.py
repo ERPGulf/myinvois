@@ -315,7 +315,7 @@ def ubl_extension_string(
 
 
 def get_api_url(company_abbr, base_url):
-    """There are many api susing in zatca which can be defined by a field in settings"""
+    """There are many api susing in malaysia which can be defined by a field in settings"""
     try:
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
         if company_doc.custom_integration_type == "Sandbox":

@@ -751,7 +751,7 @@ def tax_total(invoice, sales_invoice_doc):
         cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
         raw_item_id_code = sales_invoice_doc.custom_malaysia_tax_category
         cat_id_val = ET.SubElement(cac_TaxCategory, "cbc:ID")
-        # cat_id_val.text = str(sales_invoice_doc.custom_zatca_tax_category)
+        # cat_id_val.text = str(sales_invoice_doc.custom_malaysia_tax_category)
         cat_id_val.text = raw_item_id_code.split(":")[0].strip()
         # <cbc:Percent>0.00</cbc:Percent><cbc:TaxExemptionReason>NA</cbc:TaxExemptionReason>
         prct = ET.SubElement(cac_TaxCategory, "cbc:Percent")
@@ -782,10 +782,10 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             item_tax_template = frappe.get_doc(
                 "Item Tax Template", item.item_tax_template
             )
-            zatca_tax_category = item_tax_template.custom_malaysia_tax_category
+            malaysia_tax_category = item_tax_template.custom_malaysia_tax_category
 
-            if zatca_tax_category not in tax_category_totals:
-                tax_category_totals[zatca_tax_category] = {
+            if malaysia_tax_category not in tax_category_totals:
+                tax_category_totals[malaysia_tax_category] = {
                     "taxable_amount": 0,
                     "tax_amount": 0,
                     "tax_rate": (
@@ -797,11 +797,11 @@ def tax_total_with_template(invoice, sales_invoice_doc):
                 }
 
             if sales_invoice_doc.currency == "SAR":
-                tax_category_totals[zatca_tax_category]["taxable_amount"] += abs(
+                tax_category_totals[malaysia_tax_category]["taxable_amount"] += abs(
                     item.base_amount
                 )
             else:
-                tax_category_totals[zatca_tax_category]["taxable_amount"] += abs(
+                tax_category_totals[malaysia_tax_category]["taxable_amount"] += abs(
                     item.amount
                 )
 
@@ -811,10 +811,10 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             "taxable_amount"
         ] -= base_discount_amount
 
-        for zatca_tax_category in tax_category_totals:
-            taxable_amount = tax_category_totals[zatca_tax_category]["taxable_amount"]
-            tax_rate = tax_category_totals[zatca_tax_category]["tax_rate"]
-            tax_category_totals[zatca_tax_category]["tax_amount"] = abs(
+        for malaysia_tax_category in tax_category_totals:
+            taxable_amount = tax_category_totals[malaysia_tax_category]["taxable_amount"]
+            tax_rate = tax_category_totals[malaysia_tax_category]["tax_rate"]
+            tax_category_totals[malaysia_tax_category]["tax_amount"] = abs(
                 round(taxable_amount * tax_rate / 100, 2)
             )
 
@@ -825,7 +825,7 @@ def tax_total_with_template(invoice, sales_invoice_doc):
         cbc_TaxAmount = ET.SubElement(cac_TaxTotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
         cbc_TaxAmount.text = str(tax_amount_without_retention_sar)
 
-        for zatca_tax_category, totals in tax_category_totals.items():
+        for malaysia_tax_category, totals in tax_category_totals.items():
             cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
             cbc_TaxableAmount = ET.SubElement(
                 cac_TaxSubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
@@ -839,7 +839,7 @@ def tax_total_with_template(invoice, sales_invoice_doc):
 
             cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
             cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
-            cbc_ID.text = zatca_tax_category
+            cbc_ID.text = malaysia_tax_category
 
             cbc_Percent = ET.SubElement(cac_TaxCategory, "cbc:Percent")
             cbc_Percent.text = f"{totals['tax_rate']:.2f}"
@@ -847,7 +847,7 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             cbc_TaxExemptionReason = ET.SubElement(
                 cac_TaxCategory, "cbc:TaxExemptionReason"
             )
-            if zatca_tax_category == "E":
+            if malaysia_tax_category == "E":
                 cbc_TaxExemptionReason.text = (
                     item_tax_template.custom_exemption_reason_code
                 )
@@ -1005,7 +1005,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
             raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
 
             cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
-            # cat_item_id.text = str(sales_invoice_doc.custom_zatca_tax_category)
+            # cat_item_id.text = str(sales_invoice_doc.custom_malaysia_tax_category)
             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
             # frappe.msgprint(
@@ -1128,10 +1128,10 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 abs(round(item_tax_percentage * single_item.amount / 100, 2))
             )
 
-            zatca_tax_category = item_tax_template.custom_malaysia_tax_category
+            malaysia_tax_category = item_tax_template.custom_malaysia_tax_category
             cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
             cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
-            cbc_ID.text = str(zatca_tax_category)
+            cbc_ID.text = str(malaysia_tax_category)
             cbc_Percent = ET.SubElement(cac_TaxCategory, "cbc:Percent")
             cbc_Percent.text = f"{float(item_tax_percentage):.2f}"
             cac_TaxScheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
