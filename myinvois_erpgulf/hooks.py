@@ -136,6 +136,9 @@ from . import __version__ as app_version
 # override_doctype_class = {
 # 	"ToDo": "custom_app.overrides.CustomToDo"
 # }
+override_doctype_class = {
+    "Sales Invoice": "myinvois_erpgulf.overrides.sales_invoice_override.CustomSalesInvoice"
+}
 
 # Document Events
 # ---------------
