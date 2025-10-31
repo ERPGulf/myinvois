@@ -1,7 +1,7 @@
 [project]
 name = "myinvois_erpgulf"
 authors = [
-    { name = "ERPGulf", email = "support@erpgulf.com"}
+    { name = "Matiyas Solutions LLP", email = "business@matiyas.com"}
 ]
 description = "MyInvoice - E-Invoice for Malaysia"
 requires-python = ">=3.10"

@@ -1,9 +1,9 @@
 # from frappe import _
 app_name = "myinvois_erpgulf"
-app_title = "Myinvois Erpgulf"
-app_publisher = "ERPGulf"
+app_title = "Myinvois"
+app_publisher = "Matiyas Solutions LLP"
 app_description = "MyInvoice - E-Invoice for Malaysia"
-app_email = "support@erpgulf.com"
+app_email = "business@matiyas.com"
 app_license = "mit"
 
 
@@ -19,7 +19,7 @@ from . import __version__ as app_version
 # 	{
 # 		"name": "myinvois_erpgulf",
 # 		"logo": "/assets/myinvois_erpgulf/logo.png",
-# 		"title": "Myinvois Erpgulf",
+# 		"title": "Myinvois",
 # 		"route": "/myinvois_erpgulf",
 # 		"has_permission": "myinvois_erpgulf.api.permission.has_app_permission"
 # 	}
