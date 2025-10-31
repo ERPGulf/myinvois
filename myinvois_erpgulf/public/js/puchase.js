@@ -59,9 +59,9 @@
 //     }
 // });
 
-
 frappe.ui.form.on('Purchase Invoice', {
     refresh: function(frm) {
+        set_invoice_type_code(frm);
         // Always show "Get Status" button
         frm.add_custom_button(__('Get Status of SubmittedDoc'), function () {
             frappe.call({
@@ -128,7 +128,13 @@ frappe.ui.form.on('Purchase Invoice', {
                 });
             });
         }
-    }
+    },
+    is_return: function(frm) {
+        set_invoice_type_code(frm);
+    },
+    custom_is_return_refund: function(frm) {
+        set_invoice_type_code(frm);
+    },
 });
 
 // 🔧 Utility: Show loading overlay
@@ -155,8 +161,12 @@ function hide_loading_overlay() {
     $('#custom-loading-overlay').remove();
 }
 
-
 frappe.ui.form.on('Purchase Invoice', {
+    after_save(frm) {
+        if (frm.doc.docstatus == 1) {
+            frm.reload_doc();
+        }
+    },
     refresh: function(frm) {
         // Optional: call on refresh or via button
     },
@@ -186,11 +196,6 @@ frappe.ui.form.on('Purchase Invoice', {
     }
 });
 
-
-
-
-
-
 frappe.realtime.on('show_lhdn_loader', () => {
     show_loading_overlay();
 });
@@ -219,4 +224,14 @@ function show_loading_overlay() {
 
 function hide_loading_overlay() {
     $('#custom-loading-overlay').remove();
+}
+
+function set_invoice_type_code(frm) {
+    if (frm.doc.is_return) {
+        frm.set_value('custom_invoicetype_code', '13 : Self-billed Debit Note');
+    } else if (frm.doc.custom_is_return_refund){
+        frm.set_value('custom_invoicetype_code', '14 : Self-billed Refund Note');
+    } else {
+        frm.set_value('custom_invoicetype_code', '11 : Self-billed Invoice');
+    }
 }

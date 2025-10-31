@@ -113,9 +113,18 @@ def cancel_document_wrapper(doc, method):
             frappe.msgprint(_(response.text))
             doc.custom_lhdn_status = "Cancelled"
             doc.db_update()
+            if doc.doctype == 'Sales Invoice':
+                remove_consolidated_invoice_ref(doc,method)
         else:
             frappe.throw(_("LHDN cancellation failed: {0}").format(response.text))
 
     except Exception as e:
 
         frappe.throw(_("Error cancelling document from LHDN: {0}").format(str(e)))
+
+
+def remove_consolidated_invoice_ref(doc,method):
+    if doc.custom_is_consolidated_invoice:
+        for i in doc.items:
+            frappe.db.set_value('Sales Invoice',i.custom_consolidated_invoice_refrence_copy,'custom_consolidate_invoice_number','')
+            frappe.db.commit()

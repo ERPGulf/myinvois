@@ -1,0 +1,13 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Sales Invoice",
+  "enabled": 1,
+  "modified": "2025-10-27 18:45:57.890063",
+  "module": "Myinvois Erpgulf",
+  "name": "Set tax and charges",
+  "script": "frappe.ui.form.on('Sales Invoice', {\n\trefresh(frm) {\n\t\tfrm.trigger('set_tax_applicable')\n\t},\n    set_tax_applicable: function(frm) {\n        frm.clear_table('taxes');\n\n        if (frm.doc.company === 'NCIG (M) Sdn Bhd') {\n\n            let row = frm.add_child('taxes');\n            row.charge_type = \"On Net Total\";\n            row.account_head = \"VAT Exempted - NCIG\";\n            row.rate = 0;\n        }else if (frm.doc.company === 'Nsty Holding Sdn Bhd'){\n            let row = frm.add_child('taxes');\n            row.charge_type = \"On Net Total\";\n            row.account_head = \"VAT Exempted - NHSB\";\n            row.rate = 0;\n        }\n        frm.refresh_field('taxes');\n    },\n    custom_zatca_tax_category(frm){\n        frm.trigger('set_tax_applicable')\n    },\n    company(frm){\n        frm.trigger('set_tax_applicable')\n    }\n\n})",
+  "view": "Form"
+ }
+]

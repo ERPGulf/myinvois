@@ -1,1 +1,50 @@
-[]
+[
+ {
+  "default_value": null,
+  "doc_type": "Purchase Invoice",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "taxes",
+  "is_system_generated": 0,
+  "modified": "2025-08-29 17:03:37.197788",
+  "module": "Myinvois Erpgulf",
+  "name": "Purchase Invoice-taxes-reqd",
+  "property": "reqd",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Sales Invoice",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "taxes",
+  "is_system_generated": 0,
+  "modified": "2025-08-29 17:05:05.774512",
+  "module": "Myinvois Erpgulf",
+  "name": "Sales Invoice-taxes-reqd",
+  "property": "reqd",
+  "property_type": "Check",
+  "row_name": null,
+  "value": "1"
+ },
+ {
+  "default_value": null,
+  "doc_type": "Sales Invoice",
+  "docstatus": 0,
+  "doctype": "Property Setter",
+  "doctype_or_field": "DocField",
+  "field_name": "status",
+  "is_system_generated": 1,
+  "modified": "2025-10-03 09:13:33.287737",
+  "module": "Myinvois Erpgulf",
+  "name": "Sales Invoice-status-options",
+  "property": "options",
+  "property_type": "Small Text",
+  "row_name": null,
+  "value": "\nDraft\nReturn\nCredit Note Issued\nSubmitted\nPaid\nPartly Paid\nUnpaid\nUnpaid and Discounted\nPartly Paid and Discounted\nOverdue and Discounted\nOverdue\nCancelled\nInternal Transfer\nConsolidated"
+ }
+]

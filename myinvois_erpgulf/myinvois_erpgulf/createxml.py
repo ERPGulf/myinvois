@@ -292,7 +292,7 @@ def company_data(invoice, sales_invoice_doc):
             ("TIN", company_doc.custom_company_tin_number),
             (
                 company_doc.custom_company_registrationicpassport_type,
-                company_doc.custom_company__registrationicpassport_number,
+                '201701030352' if company_doc.abbr == 'NHSB' else company_doc.custom_company__registrationicpassport_number,
             ),
             ("SST", getattr(company_doc, "custom_sst_number", "NA") or "NA"),
             ("TTX", getattr(company_doc, "custom_tourism_tax_number", "NA") or "NA"),
@@ -317,7 +317,7 @@ def company_data(invoice, sales_invoice_doc):
                 "phone",
                 "email_id",
             ],
-            order_by="creation asc",  # Ensures a consistent selection
+            order_by="creation desc",  # Ensures a consistent selection
         )
 
         if not address_list:

@@ -354,12 +354,13 @@ def company_data(invoice, sales_invoice_doc):
         )
         # if address.country == "Malaysia":
         #     idntfn_cod.text = "MYS"
-        idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
+        country_code = frappe.get_value("Country", address.country, "code")
+        idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country_code
 
         # PartyLegalEntity
         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
         ET.SubElement(party_legal_entity, "cbc:RegistrationName").text = (
-            sales_invoice_doc.supplier
+            sales_invoice_doc.supplier_name
         )
 
         # Contact Information
@@ -461,7 +462,7 @@ def customer_data(invoice, sales_invoice_doc):
                 "phone",
                 "email_id",
             ],
-            order_by="creation asc",  # Ensures a consistent selection
+            order_by="creation desc",  # Ensures a consistent selection
         )
 
         if not address_list:
@@ -556,7 +557,7 @@ def delivery_data(invoice, sales_invoice_doc):
                 "phone",
                 "email_id",
             ],
-            order_by="creation asc",  # Ensures a consistent selection
+            order_by="creation desc",  # Ensures a consistent selection
         )
 
         if not address_list:
