@@ -131,7 +131,10 @@ function hide_loading_overlay() {
 
 frappe.ui.form.on('Sales Invoice', { 
     refresh: function(frm) {
-        set_invoice_type_code(frm);
+        if(frm.is_new()){
+             set_invoice_type_code(frm);
+        }
+       
         // Add the custom button
         frm.add_custom_button(__('Get Status of SubmittedDoc'), function() {
             // Call the backend method to get the status
@@ -210,10 +213,10 @@ function hide_loading_overlay() {
 
 function set_invoice_type_code(frm) {
     if (frm.doc.is_return) {
-        frm.set_value('custom_invoicetype_code', '13 : Self-billed Debit Note');
-    } else if (frm.doc.custom_is_return_refund){
-        frm.set_value('custom_invoicetype_code', '14 : Self-billed Refund Note');
+        frm.set_value('custom_invoicetype_code', '02 : Credit Note');
+    } else if (frm.doc.is_debit_note){
+        frm.set_value('custom_invoicetype_code', '03 :  Debit Note');
     } else {
-        frm.set_value('custom_invoicetype_code', '11 : Self-billed Invoice');
+        frm.set_value('custom_invoicetype_code', '01 :  Invoice');
     }
 }

@@ -100,7 +100,7 @@ def cancel_document_wrapper(doc, method):
 
         # Retry if token expired or internal server error
         if response.status_code in [401, 500]:
-            get_access_token(company_doc)
+            get_access_token(company_doc.name)
             settings.reload()
             token = company_doc.custom_bearer_token
             headers["Authorization"] = f"Bearer {token}"
