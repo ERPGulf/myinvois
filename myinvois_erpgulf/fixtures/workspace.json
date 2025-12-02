@@ -159,6 +159,7 @@
    {
     "document_type": "Purchase Invoice",
     "label": "New Purchase Invoices",
+    "type": "DocType",
     "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
@@ -167,6 +168,7 @@
    {
     "document_type": "Sales Invoice",
     "label": "New Sales Invoices",
+     "type": "DocType",
     "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
