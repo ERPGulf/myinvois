@@ -11,6 +11,7 @@
   "indicator_color": "",
   "is_hidden": 0,
   "label": "Malaysia Compliance",
+   "type": "Workspace",
   "links": [
    {
     "dependencies": null,
