@@ -11,7 +11,6 @@
   "indicator_color": "",
   "is_hidden": 0,
   "label": "Malaysia Compliance",
-   "type": "Workspace",
   "links": [
    {
     "dependencies": null,
@@ -28,6 +27,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Card Break"
    },
    {
@@ -45,6 +45,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Link"
    },
    {
@@ -62,6 +63,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Card Break"
    },
    {
@@ -79,6 +81,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Link"
    },
    {
@@ -96,6 +99,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Link"
    },
    {
@@ -113,6 +117,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Card Break"
    },
    {
@@ -130,6 +135,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Link"
    },
    {
@@ -147,6 +153,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "links",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "type": "Link"
    }
   ],
@@ -160,7 +167,6 @@
    {
     "document_type": "Purchase Invoice",
     "label": "New Purchase Invoices",
-    "type": "DocType",
     "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
@@ -169,7 +175,6 @@
    {
     "document_type": "Sales Invoice",
     "label": "New Sales Invoices",
-     "type": "DocType",
     "parent": "Malaysia Compliance",
     "parentfield": "quick_lists",
     "parenttype": "Workspace",
@@ -191,6 +196,7 @@
     "parent": "Malaysia Compliance",
     "parentfield": "shortcuts",
     "parenttype": "Workspace",
+    "report_ref_doctype": null,
     "restrict_to_domain": null,
     "stats_filter": null,
     "type": "Page",
