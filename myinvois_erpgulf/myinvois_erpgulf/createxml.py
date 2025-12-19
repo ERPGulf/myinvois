@@ -304,21 +304,32 @@ def company_data(invoice, sales_invoice_doc):
             id_element.text = str(value) if value else "NA"
 
         # Retrieve the first valid company address
+        # address_list = frappe.get_list(
+        #     "Address",
+        #     filters={"is_your_company_address": "1"},
+        #     fields=[
+        #         "address_line1",
+        #         "address_line2",
+        #         "city",
+        #         "pincode",
+        #         "state",
+        #         "custom_state_code",
+        #         "phone",
+        #         "email_id",
+        #     ],
+        #     order_by="creation asc",  # Ensures a consistent selection
+        # )
+        
         address_list = frappe.get_list(
-            "Address",
-            filters={"is_your_company_address": "1"},
-            fields=[
-                "address_line1",
-                "address_line2",
-                "city",
-                "pincode",
-                "state",
-                "custom_state_code",
-                "phone",
-                "email_id",
-            ],
-            order_by="creation asc",  # Ensures a consistent selection
-        )
+		"Address",
+		filters=[
+			["Dynamic Link", "link_doctype", "=", "Company"],
+			["Dynamic Link", "link_name", "=", sales_invoice_doc.company],
+			["Dynamic Link", "parenttype", "=", "Address"],
+		],
+		fields=["*"],
+		order_by="`tabAddress`.creation asc",
+        ) 
 
         if not address_list:
             frappe.throw(
