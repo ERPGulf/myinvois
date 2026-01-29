@@ -1362,7 +1362,7 @@ def generate_qr_code(sales_invoice_doc, status):
         )
 
     else:
-        verification_url = f"https://api.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
+        verification_url = f"https://myinvois.hasil.gov.my/{uuid}/share/{long_id}"
 
     try:
         qr_code_payload = json.dumps(verification_url)
