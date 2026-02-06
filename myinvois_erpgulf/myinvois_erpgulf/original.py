@@ -848,12 +848,17 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             sales_invoice_doc.db_set("status", "Consolidated")
             sales_invoice_doc.db_set("outstanding_amount", 0.0)
             sales_invoice_doc.save(ignore_permissions=True)
-        # Check if any item has a tax template but not all items have one
+
         company_name = sales_invoice_doc.company
+        
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
         if not sales_invoice_doc.custom_is_submit_to_lhdn:  # 0 or False
             return
+        company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+        msic_code_full = company_doc.custom_msic_code_ 
+        if not msic_code_full:
+            frappe.throw("Please fill the MSIC Code in Company before submitting the Invoice.")
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
