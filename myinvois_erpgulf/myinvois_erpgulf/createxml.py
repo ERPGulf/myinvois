@@ -567,7 +567,7 @@ def is_valid_email(email):
 def customer_data(invoice, sales_invoice_doc):
     """Adds the Customer data to the invoice"""
     try:
-
+        company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
         accounting_customer_party = ET.SubElement(
             invoice, "cac:AccountingCustomerParty"
@@ -668,7 +668,11 @@ def customer_data(invoice, sales_invoice_doc):
 
         party_legalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
         reg_name_val = ET.SubElement(party_legalEntity, "cbc:RegistrationName")
-        reg_name_val.text = sales_invoice_doc.customer
+        # reg_name_val.text = sales_invoice_doc.customer
+        if company_doc.custom_send_customer_code_to_lhdn:
+            reg_name_val.text = sales_invoice_doc.customer
+        else:
+            reg_name_val.text = customer_doc.customer_name
 
         cont_customer = ET.SubElement(cac_Party, "cac:Contact")
         tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
