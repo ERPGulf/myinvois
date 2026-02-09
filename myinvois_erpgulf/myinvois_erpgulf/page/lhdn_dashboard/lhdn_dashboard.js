@@ -5,6 +5,11 @@ frappe.pages['lhdn-dashboard'].on_page_load = function (wrapper) {
         single_column: true
     });
     new LhdnDashboard(page);
+        $(page.wrapper).find('.page-body').css({
+        'max-width': '100%',
+        'padding-left': '0',
+        'padding-right': '0'
+    });
 };
 
 class LhdnDashboard {
@@ -89,7 +94,8 @@ render_cards() {
         let cardHtml = '';
 
         for (let i = 0; i < results.length; i += 3) {
-            cardHtml += `<div class="status-row" style="display: flex; gap: 30px; margin-bottom: 30px;">`;
+            // cardHtml += `<div class="status-row" style="display: flex; gap: 30px; margin-bottom: 30px;">`;
+            cardHtml += `<div class="status-row" style="display:flex; flex-wrap:wrap; gap:30px; margin-bottom:30px;">`;
 
             for (let j = i; j < i + 3 && j < results.length; j++) {
                 const res = results[j];
@@ -126,7 +132,7 @@ render_cards() {
             <a href="/app/query-report/${encodeURIComponent(reportName)}?&status=${encodeURIComponent(title)}" style="color: inherit;">
                 <div 
                     style="flex: 0 0 22%; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; 
-                    padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1); min-width: 180px; 
+                    padding: 16px; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.1);
                     cursor: pointer; transition: transform 0.2s ease;"
                     onmouseover="this.style.transform='scale(1.02)'"
                     onmouseout="this.style.transform='scale(1)'"
