@@ -4,12 +4,20 @@ frappe.pages['lhdn-dashboard'].on_page_load = function (wrapper) {
         title: 'LHDN Dashboard',
         single_column: true
     });
+
+    const frappe_major_version = parseInt(
+        (frappe.boot?.versions?.frappe || "0").split(".")[0]
+    );
+
+    if (frappe_major_version >= 16) {
+        $(page.wrapper).find('.page-body').css({
+            'max-width': '100%',
+            'padding-left': '0',
+            'padding-right': '0'
+        });
+    }
+
     new LhdnDashboard(page);
-    //     $(page.wrapper).find('.page-body').css({
-    //     'max-width': '100%',
-    //     'padding-left': '0',
-    //     'padding-right': '0'
-    // });
 };
 
 class LhdnDashboard {
