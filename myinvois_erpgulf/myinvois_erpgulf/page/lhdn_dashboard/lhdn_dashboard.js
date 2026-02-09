@@ -5,11 +5,11 @@ frappe.pages['lhdn-dashboard'].on_page_load = function (wrapper) {
         single_column: true
     });
     new LhdnDashboard(page);
-        $(page.wrapper).find('.page-body').css({
-        'max-width': '100%',
-        'padding-left': '0',
-        'padding-right': '0'
-    });
+    //     $(page.wrapper).find('.page-body').css({
+    //     'max-width': '100%',
+    //     'padding-left': '0',
+    //     'padding-right': '0'
+    // });
 };
 
 class LhdnDashboard {
