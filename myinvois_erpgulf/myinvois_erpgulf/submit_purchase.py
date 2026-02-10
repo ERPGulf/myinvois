@@ -504,7 +504,7 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
                     "invoice_number": invoice_number,
                     "time": current_time,
                     "lhdn_response": response_str,
-                    "custom_company_data": company_doc,
+                    "custom_company_data": company_doc.name,
                 }
             )
             doc_instance.insert(ignore_permissions=True)
