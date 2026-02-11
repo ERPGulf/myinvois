@@ -8,7 +8,15 @@ app_license = "mit"
 
 
 from . import __version__ as app_version
-
+add_to_apps_screen = [
+    {
+        "name": app_name,
+        "logo": "/assets/myinvois_erpgulf/images/ERPGulf.png",
+        "title": app_title,
+        "route": "malaysia-compliance",
+        # "has_permission": "zatca_erpgulf.check_app_permission",
+    }
+]
 # Apps
 # ------------------
 
@@ -281,4 +289,12 @@ fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Print Format", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Property Setter", "filters": [["module", "=", "Myinvois Erpgulf"]]},
+]
+fixtures = [
+    {
+        "dt": "Desktop Icon",
+        "filters": [
+            ["label", "=", "Malaysia Compliance"]
+        ]
+    }
 ]

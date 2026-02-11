@@ -1,0 +1,23 @@
+[
+ {
+  "app": "myinvois_erpgulf",
+  "docstatus": 0,
+  "doctype": "Desktop Icon",
+  "hidden": 0,
+  "icon": "",
+  "icon_image": null,
+  "icon_type": "Link",
+  "label": "Malaysia Compliance",
+  "link": null,
+  "link_to": "Malaysia Compliance",
+  "link_type": "Workspace Sidebar",
+  "logo_url": "/assets/myinvois_erpgulf/images/ERPGulf.png",
+  "modified": "2026-02-11 15:31:50.603655",
+  "name": "Malaysia Compliance",
+  "parent_icon": null,
+  "restrict_removal": 0,
+  "roles": [],
+  "sidebar": null,
+  "standard": 1
+ }
+]
