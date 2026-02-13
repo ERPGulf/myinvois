@@ -22,7 +22,6 @@ def get_api_url(company_abbr, base_url):
         frappe.throw(_(("get api url" f"error: {str(e)}")))
         return None
 
-@frappe.whitelist(allow_guest=True)
 def cancel_document_wrapper(doc, method):
     """Wrapper function to handle document cancellation via LHDN."""
 
@@ -100,7 +99,11 @@ def cancel_document_wrapper(doc, method):
 
         # Retry if token expired or internal server error
         if response.status_code in [401, 500]:
-            get_access_token(company_doc)
+            token=get_access_token(
+                company_doc.name
+            )  # Refresh the token and save it in settings
+            company_doc.reload() 
+            # frappe.throw(str(token))
             settings.reload()
             token = company_doc.custom_bearer_token
             headers["Authorization"] = f"Bearer {token}"
