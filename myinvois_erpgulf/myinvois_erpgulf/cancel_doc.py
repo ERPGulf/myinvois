@@ -5,6 +5,7 @@ import requests
 import frappe
 from frappe import _
 import datetime
+from frappe.model.document import Document
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
 def get_api_url(company_abbr, base_url):
@@ -22,7 +23,7 @@ def get_api_url(company_abbr, base_url):
         frappe.throw(_(("get api url" f"error: {str(e)}")))
         return None
 
-def cancel_document_wrapper(doc, method):
+def cancel_document_wrapper(doc: Document, method: str):
     """Wrapper function to handle document cancellation via LHDN."""
 
     if not doc.custom_submit_response:

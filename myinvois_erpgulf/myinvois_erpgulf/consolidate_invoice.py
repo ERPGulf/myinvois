@@ -687,8 +687,8 @@ def delivery_data_consolidate(invoice, sales_invoice_doc):
 
 
 
-@frappe.whitelist(allow_guest=True)
-def merge_sales_invoices(invoice_numbers):
+@frappe.whitelist(allow_guest=False)
+def merge_sales_invoices(invoice_numbers: str):
     """
     Merge multiple Sales Invoices into a single consolidated invoice.
     Excludes items where amount > 10,000.

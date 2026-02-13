@@ -183,7 +183,7 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         create_element(invoice, "cbc:IssueDate", str(formatted_date))
         create_element(invoice, "cbc:IssueTime", str(formatted_time))
         if not sales_invoice_doc.custom_invoicetype_code:
-            frappe.throw("Custom Invoice Type Code is missing! ")
+            frappe.throw(_("Custom Invoice Type Code is missing! "))
 
         if (
             sales_invoice_doc.is_return == 1
@@ -1395,7 +1395,7 @@ def generate_qr_code(sales_invoice_doc, status):
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        frappe.throw("Getting error from lhdn ,pls check submit response field")
+        frappe.throw(_("Getting error from LHDN, please check the submit response field"))
         # return
 
     uuid = None
