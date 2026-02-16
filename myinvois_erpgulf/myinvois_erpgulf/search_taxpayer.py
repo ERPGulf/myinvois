@@ -21,7 +21,7 @@ def get_api_url(company_abbr, endpoint_path=""):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def search_company_tin(company_name):
     """Search for TIN using company name, ID type, and ID value."""
     company = frappe.get_doc("Company", company_name)
@@ -88,7 +88,7 @@ def search_company_tin(company_name):
 from urllib.parse import quote
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def search_sales_tin(sales_invoice_doc):
     """Search for TIN using Sales Invoice's customer details (ID type/value or name)."""
 
@@ -174,14 +174,11 @@ import requests
 from urllib.parse import quote
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def search_purchase_tin(sales_invoice_doc):
     """
     Search for TIN using Purchase Invoice's customer details (ID type/value or name).
     """
-
-    # frappe.logger().info(f"search_purchase_tin called with: {sales_invoice_doc}")
-
     # Load full Purchase Invoice doc
     try:
         if isinstance(sales_invoice_doc, dict):
@@ -191,20 +188,16 @@ def search_purchase_tin(sales_invoice_doc):
         elif isinstance(sales_invoice_doc, str):
             sales_invoice_doc = frappe.get_doc("Purchase Invoice", sales_invoice_doc)
         else:
-            frappe.throw("Invalid argument for sales_invoice_doc")
+            frappe.throw(_("Invalid argument for sales_invoice_doc"))
     except Exception as e:
         # frappe.log_error(f"Failed to load Purchase Invoice: {e}", "search_purchase_tin")
-        frappe.throw(f"Failed to load Purchase Invoice: {e}")
-    # frappe.throw(f"Loaded Purchase Invoice: {sales_invoice_doc.name}")
+        frappe.throw(_(f"Failed to load Purchase Invoice: {e}"))
 
     # Fix potential typo in field names here:
     id_type = sales_invoice_doc.get("custom_customer__registrationicpassport_type")
     id_value = sales_invoice_doc.get("custom_customer_registrationicpassport_number")
     taxpayer_name = sales_invoice_doc.get("custom_supplier_taxpayer_name")
     company_name = sales_invoice_doc.company
-    # frappe.throw(id_type)
-    # frappe.throw(id_value)
-    # frappe.throw(taxpayer_name)
     if not company_name:
         frappe.throw(_("Company must be specified in the Purchase Invoice."))
 
@@ -213,10 +206,7 @@ def search_purchase_tin(sales_invoice_doc):
         company_doc = frappe.get_doc("Company", company_name)
         company_abbr = company_doc.abbr
     except Exception as e:
-        # frappe.log_error(f"Failed to load Company doc: {e}", "search_purchase_tin")
-        frappe.throw(f"Failed to load Company doc: {e}")
-    # frappe.throw(company_abbr)
-    # frappe.throw(f"Company Abbreviation: {company_doc}")
+        frappe.throw(_(f"Failed to load Company doc: {e}"))
     # Construct API endpoint URL
     if id_type and id_value:
         endpoint = f"api/v1.0/taxpayer/search/tin?idType={quote(id_type)}&idValue={quote(id_value)}"
@@ -232,7 +222,6 @@ def search_purchase_tin(sales_invoice_doc):
     query_url = get_api_url(
         company_abbr, endpoint
     )  # You must define get_api_url elsewhere
-    # frappe.throw(query_url)
     # Get bearer token from company
     token = company_doc.get("custom_bearer_token")
     if not token:
@@ -265,7 +254,6 @@ def search_purchase_tin(sales_invoice_doc):
             )
             frappe.throw(_("API request failed after token refresh: {0}").format(e))
 
-    # frappe.log_error(f"API Response Status: {response.status_code}")
     frappe.log_error(f"API Response Text: {response.text}")
 
     if response.status_code != 200:

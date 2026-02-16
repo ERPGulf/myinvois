@@ -1387,7 +1387,7 @@ def generate_qr_code(sales_invoice_doc, status):
     submit_response = json.loads(sales_invoice_doc.custom_submit_response or "{}")
     token = company_doc.get("custom_bearer_token")
     if not token:
-        frappe.throw("Bearer token not found in Company document.")
+        frappe.throw(_("Bearer token not found in Company document."))
 
     submission_uid = submit_response.get("submissionUid")
     if not submission_uid:

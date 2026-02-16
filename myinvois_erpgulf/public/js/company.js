@@ -120,10 +120,10 @@ frappe.ui.form.on("Company", {
             },
             callback: function(r) {
                 if (!r.exc) {
-                    frappe.msgprint("Access token fetched successfully!");
+                    frappe.msgprint(__("Access token fetched successfully!"));
                     frm.reload_doc();  // Reload to show updated token
                 } else {
-                    frappe.msgprint("Failed to fetch access token.");
+                    frappe.msgprint(_("Failed to fetch access token."));
                 }
             },
             error: function(err) {

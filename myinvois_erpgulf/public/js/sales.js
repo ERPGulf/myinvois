@@ -155,7 +155,8 @@ frappe.ui.form.on('Sales Invoice', {
             callback: function(r) {
                 if (!r.exc) {
                     if (r.message?.taxpayerTIN) {
-                        frappe.msgprint(__('TIN Fetched Successfully: ') + r.message.taxpayerTIN);
+                        frappe.msgprint(__('TIN Fetched Successfully: {0}', [r.message.taxpayerTIN]));
+
                     } else {
                         frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
                     }

@@ -70,7 +70,7 @@ def certificate_data(company_abbr):
         attached_file = company_doc.custom_certificate_file
 
         if not attached_file:
-            frappe.throw("No PFX file attached in the settings.")
+            frappe.throw(_("No PFX file attached in the settings."))
         file_doc = frappe.get_doc("File", {"file_url": attached_file})
         pfx_path = file_doc.get_full_path()
         pfx_password = company_doc.get_password('custom_pfx_cert_password')
@@ -149,7 +149,6 @@ def sign_data(line_xml, company_abbr):
         if cert_pem is None:
             raise ValueError("cert_pem cannot be None")
         cert = load_pem_x509_certificate(cert_pem.encode(), default_backend())
-        # print(cert.issuer)
         company_name = frappe.db.get_value("Company", {"abbr": company_abbr}, "name")
         if not company_name:
             frappe.throw(_(f"Company with abbreviation {company_abbr} not found."))
@@ -172,9 +171,8 @@ def sign_data(line_xml, company_abbr):
             )
             base64_bytes = base64.b64encode(signed_data)
             base64_string = base64_bytes.decode("ascii")
-            # print(f"Encoded string: {base64_string}")
         except (ValueError, TypeError) as e:
-            frappe.throw(f"An error occurred while signing the data.: {str(e)}")
+            frappe.throw(_(f"An error occurred while signing the data.: {str(e)}"))
 
         return base64_string
     except (ValueError, TypeError) as e:
@@ -190,10 +188,9 @@ def signed_properties_hash(
         single_line_xml = f"""<xades:SignedProperties Id="id-xades-signed-props" xmlns:xades="http://uri.etsi.org/01903/v1.3.2#"><xades:SignedSignatureProperties><xades:SigningTime>{signing_time}</xades:SigningTime><xades:SigningCertificate><xades:Cert><xades:CertDigest><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256" xmlns:ds="http://www.w3.org/2000/09/xmldsig#"></ds:DigestMethod><ds:DigestValue xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{cert_digest}</ds:DigestValue></xades:CertDigest><xades:IssuerSerial><ds:X509IssuerName xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{formatted_issuer_name}</ds:X509IssuerName><ds:X509SerialNumber xmlns:ds="http://www.w3.org/2000/09/xmldsig#">{x509_serial_number}</ds:X509SerialNumber></xades:IssuerSerial></xades:Cert></xades:SigningCertificate></xades:SignedSignatureProperties></xades:SignedProperties>"""
         prop_cert_hash = hashlib.sha256(single_line_xml.encode("utf-8")).digest()
         prop_cert_base64 = base64.b64encode(prop_cert_hash).decode("utf-8")
-        # print(f"SHA-256 Hash in Base64 (propCert): {prop_cert_base64}")
         return prop_cert_base64
     except (ValueError, TypeError) as e:
-        frappe.throw(f"Error signed properties hash: {str(e)}")
+        frappe.throw(_(f"Error signed properties hash: {str(e)}"))
 
 
 def ubl_extension_string(
@@ -343,7 +340,6 @@ def submission_url(sales_invoice_doc, company_abbr):
         with open(xml_path, "rb") as file:
             xml_data = file.read()
         pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
-        # frappe.throw(pretty_xml_string)
         # file_path1 = "/private/files/signedxmlfile.xml"  # You can specify your desired file path here
         # xml_dat_path = frappe.local.site + file_path1
         # with open(xml_dat_path, "w", encoding="utf-8") as file:
@@ -393,8 +389,6 @@ def submission_url(sales_invoice_doc, company_abbr):
 
         response_data = response.json()
         status = "Approved" if response_data.get("submissionUid") else "Rejected"
-        # sales_invoice_doc.db_set("custom_submit_response", response.text)
-        # frappe.throw(response.text)
         frappe.msgprint(f"Response body: {response.text}")
         sales_invoice_doc.db_set(
             "custom_submission_time",
@@ -432,9 +426,7 @@ def submission_url(sales_invoice_doc, company_abbr):
             ):  # Check if XML or QR file
                 frappe.delete_doc("File", file["name"], ignore_permissions=True)
         # Format and save the XML
-        # pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
         file_name = f"Submitted-{sales_invoice_doc.name}.xml"
-        # frappe.throw(f"Response body: {sales_invoice_doc.doctype}")
 
         xml_file = frappe.get_doc(
             {
@@ -517,39 +509,6 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
     except Exception as e:
         frappe.log_error(_(f"Error in success_log: {str(e)}"))
         frappe.throw(_(f"Error in success log: {str(e)}"))
-
-
-# def error_log(custom_error_submission=None):
-#     """
-#     Logs errors during LHDN invoice submission.
-#     Includes full traceback and optional custom submission details.
-#     """
-#     try:
-#         # Capture the full traceback of the error
-#         error_message = frappe.get_traceback()
-#         frappe.log(f"Captured error traceback: {error_message}")
-
-#         # Create a new error log document
-#         error_doc = frappe.get_doc(
-#             {
-#                 "doctype": "LHDN Error Log",
-#                 "title": "LHDN INVOICE SUBMISSION Failed",
-#                 "error": error_message,
-#             }
-#         )
-
-#         # Save the error log
-#         error_doc.insert(ignore_permissions=True)
-
-#         # Log a success message in the server logs
-#         frappe.log(
-#             f"Error logged successfully with custom details: {custom_error_submission}"
-#         )
-
-#     except Exception as e:
-#         # If logging fails, log the exception and throw a descriptive message
-#         frappe.log_error(_(f"Failed to log error: {frappe.get_traceback()}"))
-#         frappe.throw(_(f"Error while logging the error: {str(e)}"))
 
 
 def error_log(custom_error_submission=None):
@@ -654,7 +613,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         frappe.throw(_(f"Error during status submission: {str(e)}"))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def status_submit_success_log(doc):
     """Defining the status submit success log"""
 
@@ -669,7 +628,7 @@ def status_submit_success_log(doc):
         token = company_doc.custom_bearer_token
         submission_uid = doc.get("submission_uuid")
         if not submission_uid:
-            frappe.throw("Submission UID is missing from the document.")
+            frappe.throw(_("Submission UID is missing from the document."))
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
         )
@@ -718,10 +677,9 @@ def status_submit_success_log(doc):
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
-    # frappe.throw("hi")
     try:
         sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
         company_name = sales_invoice_doc.company
@@ -735,13 +693,13 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         msic_code_full = company_doc.custom_msic_code_ 
         if not msic_code_full:
-            frappe.throw("Please fill the MSIC Code in Company before submitting the Invoice.")
+            frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
-            frappe.throw(
+            frappe.throw(_(
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            )
+            ))
         else:
             # Set to True if all items have a tax template
             any_item_has_tax_template = all(
@@ -752,14 +710,8 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
 
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
-
             invoice = company_data(invoice, sales_invoice_doc)
-            # frappe.throw(
-            #     f"Fetched from DB: {customer_doc.customer_name} {sales_invoice_doc.supplier}"
-            # )
-
             invoice = customer_data(invoice, sales_invoice_doc)
-
             invoice = delivery_data(invoice, sales_invoice_doc)
             invoice = payment_data(invoice, sales_invoice_doc)
             # Call appropriate tax total function
@@ -818,16 +770,12 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
-            # frappe.throw("hi1")
             invoice = company_data(invoice, sales_invoice_doc)
-            # # frappe.throw("hi2")
             # customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
 
             invoice = customer_data(invoice, sales_invoice_doc)
-            # frappe.throw("hi3")
 
             invoice = delivery_data(invoice, sales_invoice_doc)
-            # frappe.throw("hi4")
             invoice = payment_data(invoice, sales_invoice_doc)
             # # Call appropriate tax total function
             invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -845,17 +793,8 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 invoice = item_data_with_template(invoice, sales_invoice_doc)
 
             xml_structuring(invoice, sales_invoice_doc)
-            # frappe.throw("hi")
             line_xml, doc_hash = xml_hash()
-            # submission_url(sales_invoice_doc)
-            # response_data = json.loads(sales_invoice_doc.custom_submit_response)
-            # submission_uid = response_data.get("submissionUid")
-
-            # if not submission_uid:
-            #     frappe.throw(
-            #         f"Submission UID not found.. not submitted due to an error in the response: "
-            #         f"{response_data}"
-            #     )
+        
     except (
         frappe.DoesNotExistError,
         OSError,
@@ -869,11 +808,10 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
 
 def validate_before_submit(doc, method=None):
     """validating the invoice before submission"""
-    # frappe.throw(f"Triggered submit_document for {doc.name}")
     validate_before(doc.name)
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
@@ -882,14 +820,13 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
         company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
-        # frappe.throw(f"Fetched from DB: {sales_invoice_doc}")
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
-            frappe.throw(
+            frappe.throw(_(
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            )
+            ))
         else:
             # Set to True if all items have a tax template
             any_item_has_tax_template = all(
@@ -904,13 +841,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 
                 invoice = create_invoice_with_extensions()
                 invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
-
                 invoice = company_data(invoice, sales_invoice_doc)
-
                 invoice = customer_data(invoice, sales_invoice_doc)
-
                 invoice = delivery_data(invoice, sales_invoice_doc)
-
                 invoice = payment_data(invoice, sales_invoice_doc)
                 # Call appropriate tax total function
                 invoice = allowance_charge_data(invoice, sales_invoice_doc)
@@ -918,10 +851,7 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     invoice = tax_total(invoice, sales_invoice_doc)
                 else:
                     invoice = tax_total_with_template(invoice, sales_invoice_doc)
-
                 invoice = legal_monetary_total(invoice, sales_invoice_doc)
-
-                # Call appropriate item data function
                 if not any_item_has_tax_template:
                     invoice = invoice_line_item(invoice, sales_invoice_doc)
                 else:
@@ -958,13 +888,23 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
 
                 submission_url(sales_invoice_doc, company_abbr)
                 response_data = json.loads(sales_invoice_doc.custom_submit_response)
+                sales_invoice_doc.db_set(
+                    "custom_submit_response",
+                    response.text,
+                    commit=True,
+                    update_modified=True,
+                ) 
                 submission_uid = response_data.get("submissionUid")
 
                 if not submission_uid:
-                    frappe.throw(
+                    sales_invoice_doc.custom_lhdn_status = "Failed"
+                    sales_invoice_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
+                    frappe.msgprint(
                         f"Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
                     )
+        
                 else:
                     status_submission(invoice_number, sales_invoice_doc, company_abbr)
                     # qr_image_path = generate_qr_code(sales_invoice_doc, status)
@@ -1004,15 +944,14 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 submission_uid = response_data.get("submissionUid")
 
                 if not submission_uid:
-                    frappe.throw(
+                    frappe.msgprint(
                         f"Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
                     )
+
                 else:
                     status_submission(invoice_number, sales_invoice_doc, company_abbr)
-                #     qr_image_path = generate_qr_code(sales_invoice_doc, status)
-                #     attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
-                # # status_submission(invoice_number, sales_invoice_doc)
+            
         else:
             if not settings.custom_enable_lhdn_invoice:
                 frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
@@ -1020,9 +959,6 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                 frappe.throw(
                     _(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
                 )
-                # frappe.throw(
-                #     f"Invoice {invoice_number} is not marked for submission to LHDN."
-                # )
                 pass
 
     except (
@@ -1053,7 +989,6 @@ def submit_document_wrapper(doc, method=None):
         if not settings.custom_enable_lhdn_invoice:
             frappe.msgprint(" LHDN Invoice Submission is not enabled in settings ")
         if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
-            # frappe.throw(f"Triggered submit_document for {doc.name}")
 
             submit_document(doc.name)
 

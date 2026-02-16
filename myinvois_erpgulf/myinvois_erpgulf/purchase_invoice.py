@@ -7,6 +7,7 @@ import re
 import frappe
 import pyqrcode
 from frappe import _
+import os
 import requests
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 
@@ -19,7 +20,7 @@ def get_icv_code(invoice_number):
         )  # taking the number part only from doc name
         return icv_code
     except TypeError as e:
-        frappe.throw("Type error in getting ICV number: " + str(e))
+        frappe.throw(_("Type error in getting ICV number: " + str(e)))
         return None
     except re.error as e:
         frappe.throw(_("Regex error in getting ICV number: " + str(e)))
@@ -109,9 +110,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
                     frappe.throw(
                         _("Error parsing custom_submit_response: {0}").format(str(e))
                     )
-
-        # else:
-        #     frappe.throw(_("custom_submit_response is missing or empty."))
     except (
         frappe.DoesNotExistError,
         frappe.ValidationError,
@@ -121,7 +119,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
         frappe.throw(_(f"Error in add billing reference: {str(e)}"))
         return None
 
-        # Use the `uuid` to create the element
 
 
 def add_additional_document_reference(invoice, document_references):
@@ -185,7 +182,7 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         create_element(invoice, "cbc:IssueDate", formatted_date)
         create_element(invoice, "cbc:IssueTime", formatted_time)
         if not sales_invoice_doc.custom_invoicetype_code:
-            frappe.throw("As per LHDN Regulation,Custom Invoice Type Code is missing! ")
+            frappe.throw(_("As per LHDN Regulation,Custom Invoice Type Code is missing! "))
         if (
             sales_invoice_doc.custom_is_return_refund == 1
             and sales_invoice_doc.is_return == 1
@@ -195,9 +192,9 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
                 sales_invoice_doc.custom_invoicetype_code
                 != "14 : Self-billed Refund Note"
             ):
-                frappe.throw(
+                frappe.throw(_(
                     "As per LHDN Regulation, the invoice type code as '14 : Self-billed Refund Note'"
-                )
+                ))
         if (
             sales_invoice_doc.is_return == 1
             and sales_invoice_doc.custom_is_return_refund == 0
@@ -207,9 +204,9 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
                 "12 : Self-billed Credit Note",
                 "13 : Self-billed Debit Note",
             ]:
-                frappe.throw(
+                frappe.throw(_(
                     "As per LHDN Regulation,Choose the invoice type code as Self-billed Credit Note or Self-billed Debit Note"
-                )
+                ))
 
         raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
 
@@ -271,23 +268,18 @@ def company_data(invoice, sales_invoice_doc):
     """Adds the Company data to the invoice"""
     try:
         company_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
-        # frappe.throw(f"Company loaded: {company_doc.name}")
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
-        # frappe.throw(f"Company 1loaded: {company_doc.name}")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-
         # Extract MSIC code and name
         msic_code_full = (
             company_doc.custom_msic_code_
         )  # e.g., "01111: Growing of maize"
-        # frappe.throw(f"Company loaded: {msic_code_full}")
         if ":" in msic_code_full:
             msic_code_code, msic_code_name = [
                 s.strip() for s in msic_code_full.split(":", 1)
             ]
         else:
             msic_code_code, msic_code_name = msic_code_full.strip(), ""
-
         # Create the cbc:IndustryClassificationCode element
         cbc_indclacode = ET.SubElement(
             party_, "cbc:IndustryClassificationCode", name=msic_code_name
@@ -317,22 +309,17 @@ def company_data(invoice, sales_invoice_doc):
             address = frappe.get_doc(
                 "Address", company_doc.supplier_primary_address
             )  # Select the first address only
-        # frappe.throw(f"Address loaded: {address.name}")
         # Create PostalAddress Element
         post_add = ET.SubElement(party_, "cac:PostalAddress")
         ET.SubElement(post_add, "cbc:CityName").text = address.city
         ET.SubElement(post_add, "cbc:PostalZone").text = address.pincode
-        # statecode = (address.custom_state_code).split(":")[0]
         # ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
         statecode_raw = address.custom_state_code or ""
         statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "17"
         if not statecode:
             statecode = "17"
-
         ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
-
         # Address lines
-
         add_line1 = ET.SubElement(post_add, "cac:AddressLine")
         ET.SubElement(add_line1, "cbc:Line").text = address.address_line1
 
@@ -393,14 +380,13 @@ def company_data(invoice, sales_invoice_doc):
 
 
 def is_na(value):
-
+    """is na"""
     return value is None or str(value).strip().lower() in ["n/a", "na", ""]
 
 
 def is_valid_email(email):
-
+    """valid email"""
     email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-
     return re.match(email_regex, email) is not None
 
 
@@ -447,23 +433,6 @@ def customer_data(invoice, sales_invoice_doc):
             if str(customer_doc.custom_tourism_tax_number)
             else "NA"
         )
-
-        # address_list = frappe.get_list(
-        #     "Address",
-        #     filters={"is_your_company_address": "1"},
-        #     fields=[
-        #         "address_line1",
-        #         "address_line2",
-        #         "city",
-        #         "pincode",
-        #         "state",
-        #         "custom_state_code",
-        #         "phone",
-        #         "email_id",
-        #     ],
-        #     order_by="creation asc",  # Ensures a consistent selection
-        # )
-        
         address_list = frappe.get_list(
 		"Address",
 		filters=[
@@ -764,7 +733,6 @@ def tax_total(invoice, sales_invoice_doc):
         cat_id_val = ET.SubElement(cac_TaxCategory, "cbc:ID")
         # cat_id_val.text = str(sales_invoice_doc.custom_malaysia_tax_category)
         cat_id_val.text = raw_item_id_code.split(":")[0].strip()
-        # <cbc:Percent>0.00</cbc:Percent><cbc:TaxExemptionReason>NA</cbc:TaxExemptionReason>
         prct = ET.SubElement(cac_TaxCategory, "cbc:Percent")
         prct.text = str(sales_invoice_doc.taxes[0].rate)
         exemption = ET.SubElement(cac_TaxCategory, "cbc:TaxExemptionReason")
@@ -936,13 +904,8 @@ def get_Tax_for_Item(full_string, item):
 def invoice_line_item(invoice, sales_invoice_doc):
     """Adds InvoiceLine elements to the invoice"""
     try:
-        # frappe.msgprint("Entering invoice_line_item function")
         for single_item in sales_invoice_doc.items:
-            # frappe.msgprint(f"Processing item: {single_item.item_code}")
-
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
-            # frappe.msgprint(f"Created InvoiceLine element: {invoice_line}")
-
             item_id = ET.SubElement(invoice_line, "cbc:ID")
             item_id.text = str(single_item.idx)
             # frappe.msgprint(f"Set item ID: {item_id.text}")
@@ -953,19 +916,12 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 unitCode="H87",
             )
             item_qty.text = str(abs(single_item.qty))
-            # frappe.msgprint(f"Set item quantity: {item_qty.text}")
-
             item_line_exte_amnt = ET.SubElement(
                 invoice_line, "cbc:LineExtensionAmount", currencyID=sales_invoice_doc.currency
             )
             item_line_exte_amnt.text = str(abs(single_item.amount))
-            # frappe.msgprint(f"Set LineExtensionAmount: {item_line_exte_amnt.text}")
-
             discount_amount = abs(single_item.get("discount_amount", 0.0))
-            # frappe.msgprint(f"Discount amount: {discount_amount}")
-
             if discount_amount > 0:
-                # frappe.msgprint("Adding discount elements")
                 allw_chrge = ET.SubElement(invoice_line, "cac:AllowanceCharge")
                 chrg_indic = ET.SubElement(allw_chrge, "cbc:ChargeIndicator")
                 chrg_indic.text = "false"
@@ -977,10 +933,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 multi_fac.text = "1"
                 amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID=sales_invoice_doc.currency)
                 amnt.text = str(discount_amount)
-                # frappe.msgprint(
-                #     f"Added discount elements for item: {single_item.item_code}"
-                # # )
-
             tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
             tax_amount_item = ET.SubElement(
                 tax_total_item, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency
@@ -992,8 +944,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
-            # frappe.msgprint(f"Set tax amount: {tax_amount_item.text}")
-
             tax_subtot_item = ET.SubElement(tax_total_item, "cac:TaxSubtotal")
             taxable_amnt_item = ET.SubElement(
                 tax_subtot_item, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
@@ -1007,10 +957,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
-            # frappe.msgprint(
-            # f"Set tax subtotal: TaxableAmount={taxable_amnt_item.text}, TaxAmount={tax_amnt.text}"
-            # )
-
             tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
             raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
@@ -1019,10 +965,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             # cat_item_id.text = str(sales_invoice_doc.custom_malaysia_tax_category)
             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
-            # frappe.msgprint(
-            #     f"Set tax category: ID={cat_item_id.text}, Percent={item_prct.text}"
-            # # )
-
             tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
             tax_id_scheme_item = ET.SubElement(
                 tax_scheme_item, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
@@ -1041,8 +983,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 desc = str(single_item.item_name)
 
             descp_item.text = desc
-            # frappe.msgprint(f"Set item description: {descp_item.text}")
-
             comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
@@ -1052,8 +992,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 single_item.custom_item_classification_codes
             ).split(":")[0]
             item_class_cod.text = classification_code
-            # frappe.msgprint(f"Set classification code: {item_class_cod.text}")
-
             price_item = ET.SubElement(invoice_line, "cac:Price")
             pri_amnt_item = ET.SubElement(
                 price_item, "cbc:PriceAmount", currencyID=sales_invoice_doc.currency
@@ -1061,14 +999,9 @@ def invoice_line_item(invoice, sales_invoice_doc):
             pri_amnt_item.text = str(
                 abs(single_item.base_price_list_rate) - discount_amount
             )
-            # frappe.msgprint(f"Set price amount: {pri_amnt_item.text}")
-
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
             item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID=sales_invoice_doc.currency)
             item_val_amnt.text = str(abs(single_item.base_amount))
-            # frappe.msgprint(f"Set item price extension: {item_val_amnt.text}")
-
-        # frappe.msgprint("Completed processing all items")
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error in invoice_line_item: {str(e)}"))
@@ -1223,53 +1156,6 @@ def xml_structuring(invoice, sales_invoice_doc):
         frappe.throw(_(f"Error in xml structuring: {str(e)}"))
 
 
-# def generate_qr_code(sales_invoice_doc, status):
-#     """Generate QR code for the given Purchase Invoice"""
-#     # Extract required fields
-#     customer_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
-#     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-#     verification_url = (
-#         "https://verify.hasil.gov.my/einvoice?ref=" + sales_invoice_doc.name
-#     )
-#     # qr_data = {
-#     #     "uin": sales_invoice_doc.name,  # Invoice number
-#     #     "seller_tin": company_doc.custom_company_tin_number,
-#     #     "buyer_tin": customer_doc.custom_customer_tin_number,
-#     #     "date": sales_invoice_doc.posting_date.strftime("%Y-%m-%d"),
-#     #     "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
-#     #     "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
-#     #     "status": status,  # Example status, modify as needed
-#     #     "verification_url": verification_url,
-#     # }
-#     posting_date = sales_invoice_doc.posting_date
-#     if isinstance(posting_date, str):
-#         posting_date = datetime.strptime(posting_date, "%Y-%m-%d").date()
-
-#     qr_data = {
-#         "uin": sales_invoice_doc.name,
-#         "seller_tin": company_doc.custom_company_tin_number,
-#         "buyer_tin": customer_doc.custom_customer_tin_number,
-#         "date": posting_date.strftime("%Y-%m-%d"),
-#         "total_amount": f"{sales_invoice_doc.base_grand_total:.2f}",
-#         "tax_amount": f"{sales_invoice_doc.total_taxes_and_charges:.2f}",
-#         "status": status,
-#         "verification_url": verification_url,
-#     }
-#     # frappe.throw(f"QR Code generated and saved at {qr_data}")
-#     # Serialize to JSON
-#     qr_code_payload = json.dumps(qr_data)
-#     # Generate QR code
-#     qr = pyqrcode.create(qr_code_payload)
-
-#     # Save QR code image
-#     qr_image_path = frappe.utils.get_site_path(
-#         "public", "files", f"{sales_invoice_doc.name}_qr.png"
-#     )
-#     qr.png(qr_image_path, scale=6)  # Adjust scale as needed
-
-#     return qr_image_path
-
-
 def get_api_url(company_abbr, base_url=""):
     """Return full API URL based on integration type and base URL"""
     try:
@@ -1284,10 +1170,7 @@ def get_api_url(company_abbr, base_url=""):
         return (base.rstrip("/") + "/" + base_url.lstrip("/")).rstrip("/")
 
     except Exception as e:
-        frappe.throw(f"Error generating API URL: {e}")
-
-
-import os
+        frappe.throw(_(f"Error generating API URL: {e}"))
 
 
 def generate_qr_code(sales_invoice_doc, status):
@@ -1300,20 +1183,20 @@ def generate_qr_code(sales_invoice_doc, status):
     submit_response = json.loads(sales_invoice_doc.custom_submit_response or "{}")
     token = company_doc.get("custom_bearer_token")
     if not token:
-        frappe.throw("Bearer token not found in Company document.")
+        frappe.throw(_("Bearer token not found in Company document."))
 
     submission_uid = submit_response.get("submissionUid")
     if not submission_uid:
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        frappe.throw("Getting error from LHDN, please check 'Submit Response' field")
+        frappe.throw(_("Getting error from LHDN, please check 'Submit Response' field"))
 
     uuid = None
     if submit_response.get("acceptedDocuments"):
         uuid = submit_response["acceptedDocuments"][0].get("uuid")
     if not uuid:
-        frappe.throw("UUID not found in acceptedDocuments from LHDN response.")
+        frappe.throw(_("UUID not found in acceptedDocuments from LHDN response."))
 
     # 🔗 Build longId API URL
     longid_api = get_api_url(
@@ -1360,7 +1243,6 @@ def generate_qr_code(sales_invoice_doc, status):
         verification_url = (
             f"https://preprod.myinvois.hasil.gov.my/{uuid}/share/{long_id}"
         )
-
     else:
         verification_url = f"https://myinvois.hasil.gov.my/{uuid}/share/{long_id}"
 
@@ -1371,7 +1253,6 @@ def generate_qr_code(sales_invoice_doc, status):
             "public", "files", f"{sales_invoice_doc.name}_qr.png"
         )
         qr.png(qr_image_path, scale=6)  # Adjust scale as needed
-
         return qr_image_path
 
     except Exception as e:
@@ -1383,11 +1264,9 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
     """Attach the QR code image to the Sales Invoice"""
 
     if not qr_image_path or not os.path.exists(qr_image_path):
-        frappe.throw(f"QR file not found at path: {qr_image_path}")
-
+        frappe.throw(_(f"QR file not found at path: {qr_image_path}"))
     with open(qr_image_path, "rb") as qr_file:
         qr_content = qr_file.read()
-
     qr_file_doc = frappe.get_doc(
         {
             "doctype": "File",
@@ -1399,12 +1278,11 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
         }
     )
     qr_file_doc.save(ignore_permissions=True)
-
     sales_invoice_doc.db_set("custom_einvoice_qr", qr_file_doc.file_url)
     sales_invoice_doc.notify_update()
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def delayed_qr_generation(sales_invoice_name):
     """Background job: generate and attach QR after delay."""
     try:
@@ -1414,7 +1292,6 @@ def delayed_qr_generation(sales_invoice_name):
 
         sales_invoice_doc = frappe.get_doc("Purchase Invoice", sales_invoice_name)
         status = "delayed"
-
         qr_image_path = generate_qr_code(sales_invoice_doc, status)
         if qr_image_path:
             attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)

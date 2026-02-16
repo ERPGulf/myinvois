@@ -127,7 +127,7 @@ extend_listview_event("Sales Invoice", "onload", function (listview) {
                         hide_loading_overlay();
 
                         if (response.message) {
-                            frappe.msgprint(__('Invoices successfully merged into one consolidated invoice: ') + response.message);
+                            frappe.msgprint(_('Invoices successfully merged into one consolidated invoice:') + ' ' + response.message);
                             listview.refresh();
                             listview.check_all(false);
                         } else {

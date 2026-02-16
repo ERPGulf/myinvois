@@ -19,8 +19,8 @@ def get_api_url(company_abbr, base_url):
         return None
 
 
-@frappe.whitelist(allow_guest=True)
-def get_access_token(doc):
+@frappe.whitelist(allow_guest=False)
+def get_access_token(doc: str):
     """Fetches the access token from the LHDN API for the specified company."""
     # Determine company name
     if isinstance(doc, str):

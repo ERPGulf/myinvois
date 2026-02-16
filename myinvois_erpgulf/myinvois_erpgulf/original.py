@@ -72,7 +72,7 @@ def certificate_data(company_abbr):
         attached_file = company_doc.custom_certificate_file
 
         if not attached_file:
-            frappe.throw("No PFX file attached in the settings.")
+            frappe.throw(_("No PFX file attached in the settings."))
         file_doc = frappe.get_doc("File", {"file_url": attached_file})
         pfx_path = file_doc.get_full_path()
 
@@ -82,7 +82,7 @@ def certificate_data(company_abbr):
         with open(pfx_path, "rb") as f:
             pfx_data = f.read()
         if not pfx_path or not os.path.exists(pfx_path):
-            frappe.throw(f"PFX file not found at {pfx_path}")
+            frappe.throw(_(f"PFX file not found at {pfx_path}"))
         
         private_key, certificate, additional_certificates = (
             pkcs12.load_key_and_certificates(
@@ -178,7 +178,7 @@ def sign_data(line_xml, company_abbr):
             base64_string = base64_bytes.decode("ascii")
             # print(f"Encoded string: {base64_string}")
         except (ValueError, TypeError) as e:
-            frappe.throw(f"An error occurred while signing the data.: {str(e)}")
+            frappe.throw(_(f"An error occurred while signing the data.: {str(e)}"))
 
         return base64_string
     except (ValueError, TypeError) as e:
@@ -723,7 +723,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
             response = requests.get(url, headers=headers, timeout=30)
             response_data = response.json()
             document_summary = response_data.get("documentSummary", [])
-            frappe.throw(response_data.text)
+            # frappe.throw(response_data.text)
             if document_summary:
                 status = document_summary[0].get("status", "Submitted")
             else:
@@ -773,7 +773,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         frappe.throw(_(f"Error during status submission: {str(e)}"))
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def status_submit_success_log(doc):
     """Defining the status submit success log"""
 
@@ -789,7 +789,7 @@ def status_submit_success_log(doc):
         submission_uid = doc.get("submission_uuid")
         if not submission_uid:
 
-            frappe.throw("Submission UID is missing from the document.")
+            frappe.throw(_("Submission UID is missing from the document."))
         url = get_api_url(
             company_abbr, base_url=f"/api/v1.0/documentsubmissions/{submission_uid}"
         )
@@ -858,13 +858,13 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         msic_code_full = company_doc.custom_msic_code_ 
         if not msic_code_full:
-            frappe.throw("Please fill the MSIC Code in Company before submitting the Invoice.")
+            frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
-            frappe.throw(
+            frappe.throw(_(
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            )
+            ))
         else:
             # Set to True if all items have a tax template
             any_item_has_tax_template = all(
@@ -1007,7 +1007,7 @@ def validate_before_submit(doc, method=None):
 import traceback
 
 
-@frappe.whitelist(allow_guest=True)
+@frappe.whitelist(allow_guest=False)
 def submit_document(invoice_number, any_item_has_tax_template=False):
     """defining the submit document"""
     try:
@@ -1023,9 +1023,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
-            frappe.throw(
+            frappe.throw(_(
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            )
+            ))
         else:
             # Set to True if all items have a tax template
             any_item_has_tax_template = all(
@@ -1118,9 +1118,9 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     sales_invoice_doc.custom_lhdn_status = "Failed"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
-                    frappe.throw(
+                    frappe.throw(_(
                         f"As per LHDN Regulation, Submission UID not found. Response: {response_data}"
-                    )
+                    ))
                     # qr_image_path = generate_qr_code(sales_invoice_doc, status)
                     # attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
                     # frappe.db.commit()
@@ -1169,10 +1169,10 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     sales_invoice_doc.custom_lhdn_status = "Failed"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
-                    frappe.throw(
+                    frappe.throw(_(
                         f"Submission UID not found.. not submitted due to an error in the response: "
                         f"{response_data}"
-                    )
+                    ))
                 # else:
                 else:
                     status= status_submission(invoice_number, sales_invoice_doc, company_abbr)
@@ -1188,20 +1188,15 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
                     # sales_invoice_doc.custom_lhdn_status = "Submitted"
                     sales_invoice_doc.save(ignore_permissions=True)
                     frappe.db.commit()
-                    
-
                 # status_submission(invoice_number, sales_invoice_doc)
 
         else:
             if not settings.custom_enable_lhdn_invoice:
-                frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
+                frappe.throw(_("LHDN Invoice Submission is not enabled in settings"))
             if sales_invoice_doc.custom_is_submit_to_lhdn == 0:
                 frappe.throw(
                     _(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
                 )
-                # frappe.throw(
-                #     f"Invoice {invoice_number} is not marked for submission to LHDN."
-                # )
                 pass
 
     except (
@@ -1213,22 +1208,16 @@ def submit_document(invoice_number, any_item_has_tax_template=False):
         frappe.ValidationError,
     ) as e:
         frappe.log_error(_(f"Error in submit document: {str(e)}"))
-    #     tb = traceback.format_exc()
-    # # Option 1: Log it to server log and show message
-    #     frappe.log_error(tb, title="Submit Document Error")
-    #     frappe.throw(_(f"Error in submit document:\n{tb}"))
 
 
 def submit_document_wrapper(doc, method=None):
     """submit_document_wrapper"""
-    # frappe.throw(f"Triggered submit_document for {doc.name}")
     frappe.publish_realtime("show_lhdn_loader", {}, user=frappe.session.user)
     try:
-
         company_name = doc.company
         settings = frappe.get_doc("Company", company_name)
         if not settings.custom_enable_lhdn_invoice:
-            frappe.throw(_(" LHDN Invoice Submission is not enabled in settings "))
+            frappe.throw(_("LHDN Invoice Submission is not enabled in settings"))
         if not doc.custom_is_submit_to_lhdn:  # 0 or False
             frappe.msgprint(
                 _(
@@ -1236,10 +1225,7 @@ def submit_document_wrapper(doc, method=None):
                 )
             )
             return
-
         if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
-            # Call the submit_document function
-            # frappe.throw(f"Calling submit_document for {doc.name}")
             submit_document(doc.name)
         else:
             pass
