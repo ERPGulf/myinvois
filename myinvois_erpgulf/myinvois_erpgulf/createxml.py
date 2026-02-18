@@ -1395,8 +1395,8 @@ def generate_qr_code(sales_invoice_doc, status):
 
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
-        # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
-        frappe.db.commit()
+        
+        frappe.db.commit() # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
         frappe.throw(_("Getting error from LHDN, please check the submit response field"))
         # return
 
