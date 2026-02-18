@@ -49,7 +49,8 @@ from frappe import _
 def xml_hash():
     """defining the xml hash"""
     try:
-        with open(frappe.local.site + "/private/files/beforesubmit1.xml", "rb") as file: # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
+        # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
+        with open(frappe.local.site + "/private/files/beforesubmit1.xml", "rb") as file:
             xml_content = file.read()
         root = etree.fromstring(xml_content)
         line_xml = etree.tostring(root, pretty_print=False, encoding="UTF-8")
@@ -357,7 +358,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         xml_path = frappe.local.site + file_path
 
         # Read XML data
-        with open(xml_path, "rb") as file: # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
+        with open(xml_path, "rb") as file:  # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
             xml_data = file.read()
         pretty_xml_string = minidom.parseString(xml_data).toprettyxml(indent="  ")
         # file_path1 = "/private/files/signedxmlfile.xml"  # You can specify your desired file path here
