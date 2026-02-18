@@ -1339,7 +1339,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
 
 
 def xml_structuring(invoice, sales_invoice_doc):
-    """status_submit_success_log"""
+    """xml structuring of Sales Invoice"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
         # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal

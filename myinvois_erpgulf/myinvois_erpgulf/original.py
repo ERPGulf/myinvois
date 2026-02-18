@@ -9,6 +9,7 @@ import os
 import xml.dom.minidom as minidom
 import frappe
 import requests
+import typing
 from lxml import etree
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.x509 import load_pem_x509_certificate
@@ -775,7 +776,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
 
 
 @frappe.whitelist(allow_guest=False)
-def status_submit_success_log(doc):
+def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any]]):
     """Defining the status submit success log"""
 
     try:
@@ -1009,7 +1010,7 @@ import traceback
 
 
 @frappe.whitelist(allow_guest=False)
-def submit_document(invoice_number, any_item_has_tax_template=False):
+def submit_document(invoice_number: str, any_item_has_tax_template:typing.Optional[bool]=False):
     """defining the submit document"""
     try:
         sales_invoice_doc = frappe.get_doc("Sales Invoice", invoice_number)

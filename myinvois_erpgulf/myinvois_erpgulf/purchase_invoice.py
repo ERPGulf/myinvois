@@ -1132,7 +1132,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
 
 
 def xml_structuring(invoice, sales_invoice_doc):
-    """status_submit_success_log"""
+    """xml structuring of purchase invoice"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
         # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
@@ -1190,8 +1190,7 @@ def generate_qr_code(sales_invoice_doc, status):
     if not submission_uid:
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
-        # Required: We must commit before sending data to external API (ZATCA/LHDN) to ensure log persistence. # nosemgrep
-        frappe.db.commit()
+        frappe.db.commit() # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
         frappe.throw(_("Getting error from LHDN, please check 'Submit Response' field"))
 
     uuid = None
@@ -1284,7 +1283,7 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
     sales_invoice_doc.notify_update()
 
 
-@frappe.whitelist(allow_guest=False)
+
 def delayed_qr_generation(sales_invoice_name):
     """Background job: generate and attach QR after delay."""
     try:

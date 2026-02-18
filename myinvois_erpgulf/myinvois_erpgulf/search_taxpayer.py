@@ -22,7 +22,7 @@ def get_api_url(company_abbr, endpoint_path=""):
 
 
 @frappe.whitelist(allow_guest=False)
-def search_company_tin(company_name):
+def search_company_tin(company_name: str):
     """Search for TIN using company name, ID type, and ID value."""
     company = frappe.get_doc("Company", company_name)
     company_abbr = company.abbr
