@@ -5,6 +5,7 @@ import frappe
 from frappe import _
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 from urllib.parse import quote
+from typing import Union, Dict, Any
 
 
 def get_api_url(company_abbr, endpoint_path=""):
@@ -89,7 +90,7 @@ from urllib.parse import quote
 
 
 @frappe.whitelist(allow_guest=False)
-def search_sales_tin(sales_invoice_doc):
+def search_sales_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
     """Search for TIN using Sales Invoice's customer details (ID type/value or name)."""
 
     # Load full Sales Invoice doc
@@ -175,7 +176,7 @@ from urllib.parse import quote
 
 
 @frappe.whitelist(allow_guest=False)
-def search_purchase_tin(sales_invoice_doc):
+def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
     """
     Search for TIN using Purchase Invoice's customer details (ID type/value or name).
     """

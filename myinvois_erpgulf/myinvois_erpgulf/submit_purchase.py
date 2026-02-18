@@ -678,7 +678,6 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
 
 
-@frappe.whitelist(allow_guest=False)
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
     try:
