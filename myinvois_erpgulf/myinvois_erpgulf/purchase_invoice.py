@@ -1135,7 +1135,7 @@ def xml_structuring(invoice, sales_invoice_doc):
     """status_submit_success_log"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
-        # Safe: internal framework-controlled path, not user-controlled. # nosemgrep
+        # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
 
@@ -1267,8 +1267,7 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
 
     if not qr_image_path or not os.path.exists(qr_image_path):
         frappe.throw(_(f"QR file not found at path: {qr_image_path}"))
-    # Safe: internal framework-controlled path. # nosemgrep
-    with open(qr_image_path, "rb") as qr_file:
+    with open(qr_image_path, "rb") as qr_file:  # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         qr_content = qr_file.read()
     qr_file_doc = frappe.get_doc(
         {

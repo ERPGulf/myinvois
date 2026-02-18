@@ -146,9 +146,10 @@ def sign_data(line_xml, company_abbr):
     try:
         # print(single_line_ xml1)
         hashdata = line_xml.decode().encode()
+        # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         f = open(
             frappe.local.site + "/private/files/certificate.pem", "r", encoding="utf-8"
-        ) # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
+        )
         cert_pem = f.read()
         if hashdata is None:
             raise ValueError("hashdata cannot be None")
