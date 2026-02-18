@@ -68,7 +68,7 @@ def get_data_and_chart(filters):
             custom_lhdn_status, 
             docstatus
         FROM `tabPurchase Invoice`
-        WHERE {base_conditions}
+        WHERE {base_conditions} 
     """
 
     invoices = frappe.db.sql(query, as_dict=True)

@@ -182,7 +182,7 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         create_element(invoice, "cbc:IssueDate", formatted_date)
         create_element(invoice, "cbc:IssueTime", formatted_time)
         if not sales_invoice_doc.custom_invoicetype_code:
-            frappe.throw(_("As per LHDN Regulation,Custom Invoice Type Code is missing! "))
+            frappe.throw(_("As per LHDN Regulation,Custom Invoice Type Code is missing!"))
         if (
             sales_invoice_doc.custom_is_return_refund == 1
             and sales_invoice_doc.is_return == 1
