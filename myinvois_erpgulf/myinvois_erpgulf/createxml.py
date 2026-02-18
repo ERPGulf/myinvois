@@ -1342,7 +1342,7 @@ def xml_structuring(invoice, sales_invoice_doc):
     """status_submit_success_log"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
-        # Safe: path is controlled by the framework and not user input. # nosemgrep
+        # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
         # try:
@@ -1395,7 +1395,7 @@ def generate_qr_code(sales_invoice_doc, status):
 
         sales_invoice_doc.custom_lhdn_status = "Failed"
         sales_invoice_doc.save(ignore_permissions=True)
-        # Required: We must commit before sending data to external API (ZATCA/LHDN) to ensure log persistence. # nosemgrep
+        # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         frappe.db.commit()
         frappe.throw(_("Getting error from LHDN, please check the submit response field"))
         # return
@@ -1461,7 +1461,7 @@ def generate_qr_code(sales_invoice_doc, status):
 def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
     """Attach the QR code image to the Sales Invoice"""
     # Read the file content
-    # Path is generated framework and not user-controlled. Safe to open. # nosemgrep
+    # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
     with open(qr_image_path, "rb") as qr_file:
         qr_content = qr_file.read()
 
