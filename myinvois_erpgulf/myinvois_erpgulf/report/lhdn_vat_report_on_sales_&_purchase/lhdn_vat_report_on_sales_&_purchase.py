@@ -1,5 +1,5 @@
 import frappe
-
+from frappe import _
 # -----------------------------
 # Tax categories
 # -----------------------------
@@ -194,10 +194,10 @@ def process_purchase_invoices(filters=None):
 # -----------------------------
 def execute(filters=None):
     columns = [
-        {"label": "Category", "fieldname": "category", "fieldtype": "Data", "width": 380},
-        {"label": "Amount (SAR)", "fieldname": "amount", "fieldtype": "Currency", "width": 180},
-        {"label": "Adjustment (SAR)", "fieldname": "adjustment", "fieldtype": "Currency", "width": 180},
-        {"label": "VAT Amount (SAR)", "fieldname": "vat", "fieldtype": "Currency", "width": 180},
+        {"label": _("Category"), "fieldname": "category", "fieldtype": "Data", "width": 380},
+        {"label": _("Amount (SAR)"), "fieldname": "amount", "fieldtype": "Currency", "width": 180},
+        {"label": _("Adjustment (SAR)"), "fieldname": "adjustment", "fieldtype": "Currency", "width": 180},
+        {"label": _("Adjustment (SAR)"), "fieldname": "vat", "fieldtype": "Currency", "width": 180},
     ]
     data = []
 

@@ -63,7 +63,7 @@ def search_company_tin(company_name):
         headers["Authorization"] = f"Bearer {token}"
         response = requests.get(query_url, headers=headers, timeout=10)
 
-    frappe.msgprint(f"Response body: {response.text}")
+    frappe.msgprint(_(f"Response body: {response.text}"))
 
     if response.status_code != 200:
         frappe.throw(_("API request failed: {0}").format(response.text))
@@ -141,7 +141,7 @@ def search_sales_tin(sales_invoice_doc):
         headers["Authorization"] = f"Bearer {token}"
         response = requests.get(query_url, headers=headers, timeout=10)
 
-    frappe.msgprint(f"Response body: {response.text}")
+    frappe.msgprint(_(f"Response body: {response.text}"))
 
     if response.status_code != 200:
         frappe.throw(

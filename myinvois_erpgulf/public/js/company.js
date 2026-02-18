@@ -95,7 +95,7 @@ frappe.ui.form.on('Company', {
             callback: function(r) {
                 if (!r.exc) {
                     if (r.message?.taxpayerTIN) {
-                        frappe.msgprint(__('TIN Fetched Successfully: ') + r.message.taxpayerTIN);
+                        frappe.msgprint(__('TIN Fetched Successfully:') + r.message.taxpayerTIN);
                     } else {
                         frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
                     }
@@ -127,7 +127,7 @@ frappe.ui.form.on("Company", {
                 }
             },
             error: function(err) {
-                frappe.msgprint("Error: " + err.message);
+                frappe.msgprint(_("Error: " + err.message));
             }
         });
     }
