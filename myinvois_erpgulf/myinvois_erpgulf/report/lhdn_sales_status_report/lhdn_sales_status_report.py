@@ -57,7 +57,6 @@ def get_data_and_chart(filters):
     dt_to = filters.get("dt_to")
     status = filters.get("status")
 
-    # Build safe SQL conditions
     conditions = []
     params = {}
 
@@ -66,9 +65,9 @@ def get_data_and_chart(filters):
         params["dt_from"] = dt_from
         params["dt_to"] = dt_to
 
-    # Default WHERE 1=1 if no conditions
     where_clause = " AND ".join(conditions) if conditions else "1=1"
 
+    # 🚫 NEVER use format() inside SQL  
     query = """
         SELECT
             name,
@@ -78,24 +77,18 @@ def get_data_and_chart(filters):
             custom_lhdn_status,
             docstatus
         FROM `tabSales Invoice`
-        WHERE {where_clause}
-    """.format(where_clause=where_clause)
+        WHERE """ + where_clause
 
     invoices = frappe.db.sql(query, params, as_dict=True)
 
-    # Status filter
     if status == "Not Submitted":
         filtered = [
             inv for inv in invoices
             if inv.get("docstatus") == 0 or not inv.get("custom_lhdn_status")
         ]
     elif status:
-        filtered = [
-            inv for inv in invoices
-            if inv.get("custom_lhdn_status") == status
-        ]
+        filtered = [inv for inv in invoices if inv.get("custom_lhdn_status") == status]
     else:
         filtered = invoices
-
 
     return filtered
