@@ -97,4 +97,5 @@ def get_data_and_chart(filters):
     else:
         filtered = invoices
 
+
     return filtered
