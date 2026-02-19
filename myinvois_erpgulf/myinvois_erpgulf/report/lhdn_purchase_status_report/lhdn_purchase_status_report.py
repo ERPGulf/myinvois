@@ -47,23 +47,23 @@ def get_columns():
         }
     ]
 
+
 def get_data_and_chart(filters):
-    dt_from = filters.get('dt_from')
-    dt_to = filters.get('dt_to')
-    status = filters.get('status')
+    dt_from = filters.get("dt_from")
+    dt_to = filters.get("dt_to")
+    status = filters.get("status")
 
     conditions = []
     params = {}
 
-    # Date filters
     if dt_from and dt_to:
         conditions.append("posting_date BETWEEN %(dt_from)s AND %(dt_to)s")
         params["dt_from"] = dt_from
         params["dt_to"] = dt_to
 
-    # Build final condition string
     where_clause = " AND ".join(conditions) if conditions else "1=1"
 
+    # 🚫 NO `.format()` and NO f-string
     query = """
         SELECT
             name,
@@ -73,22 +73,18 @@ def get_data_and_chart(filters):
             custom_lhdn_status,
             docstatus
         FROM `tabPurchase Invoice`
-        WHERE {where}
-    """.format(where=where_clause)
+        WHERE """ + where_clause
 
     invoices = frappe.db.sql(query, params, as_dict=True)
 
-    # Status Filter
+    # status filtering
     if status == "Not Submitted":
         filtered = [
             inv for inv in invoices
             if inv.get("docstatus") == 0 or not inv.get("custom_lhdn_status")
         ]
     elif status:
-        filtered = [
-            inv for inv in invoices
-            if inv.get("custom_lhdn_status") == status
-        ]
+        filtered = [inv for inv in invoices if inv.get("custom_lhdn_status") == status]
     else:
         filtered = invoices
 
