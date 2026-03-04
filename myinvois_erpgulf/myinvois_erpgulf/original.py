@@ -1106,6 +1106,9 @@ def submit_document(invoice_number: str, any_item_has_tax_template:typing.Option
                 
                 if submission_uid:
     # Update the status safely
+                    sales_invoice_doc.custom_lhdn_status = "Submitted"
+                    sales_invoice_doc.save(ignore_permissions=True)
+                    frappe.db.commit()
                     status = status_submission(invoice_number, sales_invoice_doc, company_abbr)
                     qr_image_path = generate_qr_code(sales_invoice_doc, status)
                     if not qr_image_path or not os.path.exists(qr_image_path):
