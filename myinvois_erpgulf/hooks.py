@@ -289,12 +289,13 @@ fixtures = [
     {"dt": "Custom Field", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Print Format", "filters": [["module", "=", "Myinvois Erpgulf"]]},
     {"dt": "Property Setter", "filters": [["module", "=", "Myinvois Erpgulf"]]},
+    {"dt": "Desktop Icon", "filters": [["label", "=", "Malaysia Compliance"]]},
 ]
-fixtures = [
-    {
-        "dt": "Desktop Icon",
-        "filters": [
-            ["label", "=", "Malaysia Compliance"]
-        ]
-    }
-]
+# fixtures = [
+#     {
+#         "dt": "Desktop Icon",
+#         "filters": [
+#             ["label", "=", "Malaysia Compliance"]
+#         ]
+#     }
+# ]
