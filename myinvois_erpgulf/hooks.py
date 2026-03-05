@@ -13,7 +13,7 @@ add_to_apps_screen = [
         "name": app_name,
         "logo": "/assets/myinvois_erpgulf/images/ERPGulf.png",
         "title": app_title,
-        "route": "malaysia-compliance",
+        "route": "/desk/malaysia-compliance",
         # "has_permission": "zatca_erpgulf.check_app_permission",
     }
 ]
