@@ -253,7 +253,7 @@ def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
             frappe.log_error(
                 f"Token refresh or retry failed: {e}", "search_purchase_tin"
             )
-            frappe.throw(_("API request failed after token refresh: {0}").format(e))
+            frappe.throw(_("API request failed after token refresh: {0}").format(str(e)))
 
     frappe.log_error(f"API Response Text: {response.text}")
 
