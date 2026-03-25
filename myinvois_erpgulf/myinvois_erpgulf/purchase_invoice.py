@@ -313,7 +313,7 @@ def company_data(invoice, sales_invoice_doc):
         post_add = ET.SubElement(party_, "cac:PostalAddress")
         ET.SubElement(post_add, "cbc:CityName").text = address.city
         ET.SubElement(post_add, "cbc:PostalZone").text = address.pincode
-        # ET.SubElement(post_add, "cbc:CountrySubentityCode").text = statecode
+       
         statecode_raw = address.custom_state_code or ""
         statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "17"
         if not statecode:
@@ -351,10 +351,7 @@ def company_data(invoice, sales_invoice_doc):
 
         # Contact Information
         cont_ct = ET.SubElement(party_, "cac:Contact")
-        # if address.get("phone"):
-        #     ET.SubElement(cont_ct, "cbc:Telephone").text = address.phone
-        # if address.get("email_id"):
-        #     ET.SubElement(cont_ct, "cbc:ElectronicMail").text = address.email_id
+       
 
         phone = address.get("phone")
         ET.SubElement(cont_ct, "cbc:Telephone").text = (
@@ -635,18 +632,7 @@ def payment_data(invoice, sales_invoice_doc):
         payment_note = ET.SubElement(payment_terms, "cbc:Note")
         payment_note.text = f"Payment method is {payment_mode}"
 
-        # prepaid_payment = ET.SubElement(invoice, "cac:PrepaidPayment")
-        # prepaid_id = ET.SubElement(prepaid_payment, "cbc:ID")
-        # prepaid_id.text = "E12345678912"
-
-        # paid_amount = ET.SubElement(prepaid_payment, "cbc:PaidAmount", currencyID=sales_invoice_doc.currency)
-        # paid_amount.text = "1.00"
-
-        # paid_date = ET.SubElement(prepaid_payment, "cbc:PaidDate")
-        # paid_date.text = "2024-07-23"
-
-        # paid_time = ET.SubElement(prepaid_payment, "cbc:PaidTime")
-        # paid_time.text = "00:30:00Z"
+        
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error adding payment data: {str(e)}"))
@@ -675,16 +661,6 @@ def allowance_charge_data(invoice, sales_invoice_doc):
                 )
                 amount_1.text = str(discount_amount)
 
-                # Second AllowanceCharge with ChargeIndicator = true only use when there shipping like charge
-                # allowance_charge_2 = ET.SubElement(invoice, "cac:AllowanceCharge")
-                # charge_indicator_2 = ET.SubElement(allowance_charge_2, "cbc:ChargeIndicator")
-                # charge_indicator_2.text = "true"
-
-                # allowance_charge_reason_2 = ET.SubElement(allowance_charge_2, "cbc:AllowanceChargeReason")
-                # allowance_charge_reason_2.text = "Service charge"
-
-                # amount_2 = ET.SubElement(allowance_charge_2, "cbc:Amount", currencyID="MYR")
-                # amount_2.text = "100"
         if sales_invoice_doc.currency and sales_invoice_doc.currency != "MYR":
             tax_exchange_rate = ET.SubElement(invoice, "cac:TaxExchangeRate")
 
@@ -908,7 +884,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             invoice_line = ET.SubElement(invoice, "cac:InvoiceLine")
             item_id = ET.SubElement(invoice_line, "cbc:ID")
             item_id.text = str(single_item.idx)
-            # frappe.msgprint(f"Set item ID: {item_id.text}")
 
             item_qty = ET.SubElement(
                 invoice_line,
@@ -962,7 +937,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
 
             cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
-            # cat_item_id.text = str(sales_invoice_doc.custom_malaysia_tax_category)
             item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
             tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
@@ -973,7 +947,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
 
             item_data = ET.SubElement(invoice_line, "cac:Item")
             descp_item = ET.SubElement(item_data, "cbc:Description")
-            # descp_item.text = str(single_item.description)
             desc = ""
             if single_item.description and single_item.item_name:
                 desc = f"{single_item.description} - {single_item.item_name}"
@@ -987,7 +960,6 @@ def invoice_line_item(invoice, sales_invoice_doc):
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
             )
-            # item_doc = frappe.get_doc("Item", single_item.item_code)
             classification_code = str(
                 single_item.custom_item_classification_codes
             ).split(":")[0]
