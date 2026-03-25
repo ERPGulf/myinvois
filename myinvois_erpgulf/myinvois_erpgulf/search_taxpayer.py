@@ -183,6 +183,7 @@ def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
     # Load full Purchase Invoice doc
     try:
         if isinstance(sales_invoice_doc, dict):
+            
             sales_invoice_doc = frappe.get_doc(
                 "Purchase Invoice", sales_invoice_doc.get("name")
             )
