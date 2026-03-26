@@ -66,13 +66,16 @@ jobs:
       - name: Install App
         working-directory: /home/runner/frappe-bench
         run: |
-          # 1. Get ERPNext normally
+          # 1. Get ERPNext
           bench get-app erpnext --branch version-15
           
-          # 2. Link your code directly (this replaces bench get-app)
+          # 2. Link your code and register it
           mkdir -p apps/myinvois_erpgulf
           cp -r $GITHUB_WORKSPACE/* apps/myinvois_erpgulf/
           ./env/bin/python -m pip install -e apps/myinvois_erpgulf
+          
+          # CRITICAL STEP: Add app to apps.txt so Bench recognizes it
+          echo "myinvois_erpgulf" >> sites/apps.txt
           
           # 3. Standard Setup
           bench setup requirements --dev
