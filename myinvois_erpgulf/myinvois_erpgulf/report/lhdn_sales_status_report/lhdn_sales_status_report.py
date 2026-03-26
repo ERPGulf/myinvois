@@ -1,10 +1,8 @@
-
 import frappe
 from frappe import _
 
 def execute(filters=None):
-    if not filters:
-        filters = {}
+    filters = filters or {}
 
     columns = get_columns()
     data = get_data_and_chart(filters)
@@ -48,6 +46,7 @@ def get_columns():
         }
     ]
 
+
 def get_data_and_chart(filters):
     dt_from = filters.get("dt_from")
     dt_to = filters.get("dt_to")
@@ -58,12 +57,10 @@ def get_data_and_chart(filters):
 
     if dt_from and dt_to:
         conditions.append("posting_date BETWEEN %(dt_from)s AND %(dt_to)s")
-        params["dt_from"] = dt_from
-        params["dt_to"] = dt_to
+        params.update({"dt_from": dt_from, "dt_to": dt_to})
 
     where_clause = " AND ".join(conditions) if conditions else "1=1"
 
-    # 🚫 NEVER use format() inside SQL  
     query = """
         SELECT
             name,
@@ -83,7 +80,10 @@ def get_data_and_chart(filters):
             if inv.get("docstatus") == 0 or not inv.get("custom_lhdn_status")
         ]
     elif status:
-        filtered = [inv for inv in invoices if inv.get("custom_lhdn_status") == status]
+        filtered = [
+            inv for inv in invoices
+            if inv.get("custom_lhdn_status") == status
+        ]
     else:
         filtered = invoices
 
