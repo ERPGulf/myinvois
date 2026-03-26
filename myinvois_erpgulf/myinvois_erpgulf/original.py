@@ -411,7 +411,6 @@ def submission_url(sales_invoice_doc, company_abbr):
             headers["Authorization"] = f"Bearer {token}"
             response = submit_request()
         frappe.msgprint(_(f"Response body: {response.text}"))
-        response_data = response.json()
         # sales_invoice_doc.db_set("custom_submit_response", response.text)
 
         sales_invoice_doc.db_set(
