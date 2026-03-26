@@ -238,7 +238,7 @@ def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
         response = requests.get(query_url, headers=headers, timeout=10)
     except requests.exceptions.RequestException as e:
         frappe.log_error(f"API request exception: {e}", "search_purchase_tin")
-        frappe.throw(_("API request failed: {0}").format(e))
+        frappe.throw(_("API request failed: {0}").format(str(e)))
 
     # Handle token expiration or server error (try refresh once)
     if response.status_code in [401, 500]:
