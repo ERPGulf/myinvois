@@ -9,7 +9,32 @@ import frappe
 import requests
 import pyqrcode
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
-
+PARTY_IDENTIFICATION = "cac:PartyIdentification"
+DESCRIPTION = "cbc:Description"
+DYANAMIC_LINK = "Dynamic Link"
+POSTAL_ADDRESS = "cac:PostalAddress"
+CITY_NAME = "cbc:CityName"
+POSTAL_ZONE =  "cbc:PostalZone"
+SUBENTITY="cbc:CountrySubentityCode"
+ADDRESS_LINE = "cac:AddressLine"
+LINE ="cbc:Line"
+COUNTRY="cac:Country"
+IDENTIFICATION_CODE ="cbc:IdentificationCode"
+PARTY_LEGAL = "cac:PartyLegalEntity"
+REG_NAME = "cbc:RegistrationName"
+ALLOW_CHARGE = "cac:AllowanceCharge"
+CHARGE_INDI= "cbc:ChargeIndicator"
+ALLOW_REASON = "cbc:AllowanceChargeReason"
+AMOUNT = "cbc:Amount"
+TAX_TOTAL = "cac:TaxTotal"
+TAX_AMOUNT = "cbc:TaxAmount"
+TAX_SUB= "cac:TaxSubtotal"
+TAXABLE_AMOUNT = "cbc:TaxableAmount"
+TAX_CATE = "cac:TaxCategory"
+CBC_PERCENT = "cbc:Percent"
+TAX_SCHE = "cac:TaxScheme"
+UN_ECE = "UN/ECE 5153"
+LINE_EXTENSION = "cbc:LineExtensionAmount"
 
 def get_icv_code(invoice_number):
     """Extracts the numeric part from the invoice number to generate the ICV code"""
@@ -246,7 +271,7 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         inv_period = create_element(invoice, "cac:InvoicePeriod")
         create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
-        create_element(inv_period, "cbc:Description", "Monthly")
+        create_element(inv_period, DESCRIPTION, "Monthly")
         # if sales_invoice_doc.custom_invoicetype_code != "02 : Credit Note":
         invoice_number = sales_invoice_doc.name
         add_billing_reference(invoice, invoice_number, sales_invoice_doc)
@@ -299,33 +324,17 @@ def company_data(invoice, sales_invoice_doc):
         ]
 
         for scheme_id, value in identifiers:
-            party_id = ET.SubElement(party_, "cac:PartyIdentification")
+            party_id = ET.SubElement(party_, PARTY_IDENTIFICATION)
             id_element = ET.SubElement(party_id, "cbc:ID", schemeID=scheme_id)
             id_element.text = str(value) if value else "NA"
 
-        # Retrieve the first valid company address
-        # address_list = frappe.get_list(
-        #     "Address",
-        #     filters={"is_your_company_address": "1"},
-        #     fields=[
-        #         "address_line1",
-        #         "address_line2",
-        #         "city",
-        #         "pincode",
-        #         "state",
-        #         "custom_state_code",
-        #         "phone",
-        #         "email_id",
-        #     ],
-        #     order_by="creation asc",  # Ensures a consistent selection
-        # )
-        
+       
         address_list = frappe.get_list(
 		"Address",
 		filters=[
-			["Dynamic Link", "link_doctype", "=", "Company"],
-			["Dynamic Link", "link_name", "=", sales_invoice_doc.company],
-			["Dynamic Link", "parenttype", "=", "Address"],
+			[DYANAMIC_LINK, "link_doctype", "=", "Company"],
+			[DYANAMIC_LINK, "link_name", "=", sales_invoice_doc.company],
+			[DYANAMIC_LINK, "parenttype", "=", "Address"],
 		],
 		fields=["*"],
 		order_by="`tabAddress`.creation asc",
@@ -341,10 +350,10 @@ def company_data(invoice, sales_invoice_doc):
         address = address_list[0]  # Select the first address only
 
         # Create PostalAddress Element
-        post_add = ET.SubElement(party_, "cac:PostalAddress")
-        ET.SubElement(post_add, "cbc:CityName").text = address.city
-        ET.SubElement(post_add, "cbc:PostalZone").text = address.pincode
-        ET.SubElement(post_add, "cbc:CountrySubentityCode").text = (
+        post_add = ET.SubElement(party_, POSTAL_ADDRESS)
+        ET.SubElement(post_add, CITY_NAME).text = address.city
+        ET.SubElement(post_add, POSTAL_ZONE).text = address.pincode
+        ET.SubElement(post_add, SUBENTITY).text = (
             address.custom_state_code.split(":")[0].strip()
             if address.custom_state_code
             else "17"
@@ -352,31 +361,31 @@ def company_data(invoice, sales_invoice_doc):
 
         # Address lines
         if address.address_line1:
-            add_line1 = ET.SubElement(post_add, "cac:AddressLine")
-            ET.SubElement(add_line1, "cbc:Line").text = address.address_line1
+            add_line1 = ET.SubElement(post_add,ADDRESS_LINE)
+            ET.SubElement(add_line1, LINE).text = address.address_line1
 
         if address.address_line2:
-            add_line2 = ET.SubElement(post_add, "cac:AddressLine")
-            ET.SubElement(add_line2, "cbc:Line").text = address.address_line2
+            add_line2 = ET.SubElement(post_add, ADDRESS_LINE)
+            ET.SubElement(add_line2, LINE).text = address.address_line2
 
         # Combined city and postal code
         combined_city_pincode = f"{address.city}, {address.pincode}"
-        add_line3 = ET.SubElement(post_add, "cac:AddressLine")
-        ET.SubElement(add_line3, "cbc:Line").text = combined_city_pincode
+        add_line3 = ET.SubElement(post_add, ADDRESS_LINE)
+        ET.SubElement(add_line3,LINE).text = combined_city_pincode
 
         # Country
-        cntry = ET.SubElement(post_add, "cac:Country")
+        cntry = ET.SubElement(post_add, COUNTRY)
         idntfn_cod = ET.SubElement(
             cntry,
-            "cbc:IdentificationCode",
+            IDENTIFICATION_CODE,
             listAgencyID="6",
             listID="ISO3166-1",
         )
         idntfn_cod.text = "MYS"
 
         # PartyLegalEntity
-        party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
-        ET.SubElement(party_legal_entity, "cbc:RegistrationName").text = (
+        party_legal_entity = ET.SubElement(party_, PARTY_LEGAL)
+        ET.SubElement(party_legal_entity, REG_NAME).text = (
             sales_invoice_doc.company
         )
 
@@ -416,153 +425,6 @@ def is_valid_email(email):
     return re.match(email_regex, email) is not None
 
 
-# def company_data(invoice, sales_invoice_doc):
-#     """Adds the Company data to the invoice"""
-#     try:
-
-#         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-#         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
-#         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-#         # additional_account_id = ET.SubElement(party_, "cbc:AdditionalAccountID", schemeAgencyName="CertEX")
-#         # additional_account_id.text = "CPT-CCN-W-211111-KL-000002"
-#         msic_code_full = (
-#             company_doc.custom_msic_code_
-#         )  # e.g., "01111: Growing of maize"
-#         if ":" in msic_code_full:
-#             msic_code_code = msic_code_full.split(":")[
-#                 0
-#             ].strip()  # Extract the part before the colon (code)
-#             msic_code_name = msic_code_full.split(":")[
-#                 1
-#             ].strip()  # Extract the part after the colon (name)
-#         else:
-#             msic_code_code = (
-#                 msic_code_full.strip()
-#             )  # Use the full value if no colon is present
-#             msic_code_name = ""  # No name available
-
-#         # Create the cbc:IndustryClassificationCode element with the name attribute and code text
-#         cbc_indclacode = ET.SubElement(
-#             party_, "cbc:IndustryClassificationCode", name=msic_code_name
-#         )
-#         cbc_indclacode.text = msic_code_code
-
-#         # cbc_indclacode = ET.SubElement(party_, "cbc:IndustryClassificationCode", name=str(company_doc.custom_business_activities))
-#         # cbc_indclacode.text = company_doc.custom_msic_code_            #"62099"
-#         party_identification_1 = ET.SubElement(party_, "cac:PartyIdentification")
-#         id_val_1 = ET.SubElement(party_identification_1, "cbc:ID", schemeID="TIN")
-#         id_val_1.text = str(company_doc.custom_company_tin_number)
-
-#         partyid_2 = ET.SubElement(party_, "cac:PartyIdentification")
-#         value_id = ET.SubElement(
-#             partyid_2,
-#             "cbc:ID",
-#             schemeID=str(company_doc.custom_company_registrationicpassport_type),
-#         )
-#         value_id.text = str(company_doc.custom_company__registrationicpassport_number)
-
-#         partyid_3 = ET.SubElement(party_, "cac:PartyIdentification")
-#         value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
-#         company_doc.custom_sst_number = (
-#             getattr(company_doc, "custom_sst_number", "NA") or "NA"
-#         )
-
-#         value_id3.text = (
-#             str(company_doc.custom_sst_number)
-#             if str(company_doc.custom_sst_number)
-#             else "NA"
-#         )
-
-#         partyid_4 = ET.SubElement(party_, "cac:PartyIdentification")
-#         value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
-#         value_id4.text = (
-#             str(company_doc.custom_tourism_tax_number)
-#             if str(company_doc.custom_tourism_tax_number)
-#             else "NA"
-#         )
-
-#         address_list = frappe.get_list(
-#             "Address",
-#             filters={"is_your_company_address": "1"},
-#             fields=[
-#                 "address_line1",
-#                 "address_line2",
-#                 "city",
-#                 "pincode",
-#                 "state",
-#                 "custom_state_code",
-#                 "phone",
-#                 "email_id",
-#             ],
-#         )
-
-#         if len(address_list) == 0:
-#             frappe.throw(
-#                 "Invoice requires a proper address. Please add your company address in the Address field."
-#             )
-
-#         for address in address_list:
-
-#             post_add = ET.SubElement(party_, "cac:PostalAddress")
-#             city_name = ET.SubElement(post_add, "cbc:CityName")
-#             city_name.text = address.city
-
-#             postal_zone = ET.SubElement(post_add, "cbc:PostalZone")
-#             postal_zone.text = address.pincode
-
-#             cntry_subentity_cod = ET.SubElement(post_add, "cbc:CountrySubentityCode")
-#             statecode = (address.custom_state_code).split(":")[0]
-#             cntry_subentity_cod.text = statecode
-
-#             if address.address_line1:
-#                 add_line1 = ET.SubElement(post_add, "cac:AddressLine")
-#                 line_val = ET.SubElement(add_line1, "cbc:Line")
-#                 line_val.text = address.address_line1
-
-#             if address.address_line2:
-#                 add_line2 = ET.SubElement(post_add, "cac:AddressLine")
-#                 line2_val = ET.SubElement(add_line2, "cbc:Line")
-#                 line2_val.text = address.address_line2
-
-#             combined_city_pincode = f"{address.city}, {address.pincode}"
-#             add_line3 = ET.SubElement(post_add, "cac:AddressLine")
-#             line_3_val = ET.SubElement(add_line3, "cbc:Line")
-#             line_3_val.text = combined_city_pincode
-
-#             cntry = ET.SubElement(post_add, "cac:Country")
-#             idntfn_cod = ET.SubElement(
-#                 cntry,
-#                 "cbc:IdentificationCode",
-#                 listAgencyID="6",
-#                 listID="ISO3166-1",
-#             )
-#             idntfn_cod.text = "MYS"
-
-#         party_legal_entity = ET.SubElement(party_, "cac:PartyLegalEntity")
-#         reg_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
-#         reg_name.text = sales_invoice_doc.company
-
-#         cont_ct = ET.SubElement(party_, "cac:Contact")
-
-#         if address.get("phone"):
-#             tele = ET.SubElement(cont_ct, "cbc:Telephone")
-#             tele.text = address.phone
-
-#         if address.get("email_id"):
-#             mail = ET.SubElement(cont_ct, "cbc:ElectronicMail")
-#             mail.text = address.email_id
-
-#         return invoice
-
-#     except (
-#         frappe.DoesNotExistError,
-#         frappe.ValidationError,
-#         AttributeError,
-#         KeyError,
-#     ) as e:
-#         frappe.throw(f"Error in company data generation: {str(e)}")
-#         return None
-
 
 def customer_data(invoice, sales_invoice_doc):
     """Adds the Customer data to the invoice"""
@@ -574,11 +436,11 @@ def customer_data(invoice, sales_invoice_doc):
         )
         cac_Party = ET.SubElement(accounting_customer_party, "cac:Party")
 
-        party_id_1 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        party_id_1 = ET.SubElement(cac_Party,PARTY_IDENTIFICATION)
         prty_id = ET.SubElement(party_id_1, "cbc:ID", schemeID="TIN")
         prty_id.text = str(sales_invoice_doc.custom_customer_tin_number)
 
-        party_identifn_2 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        party_identifn_2 = ET.SubElement(cac_Party, PARTY_IDENTIFICATION)
         id_party2 = ET.SubElement(
             party_identifn_2,
             "cbc:ID",
@@ -602,7 +464,7 @@ def customer_data(invoice, sales_invoice_doc):
         )
         customer_doc.save(ignore_permissions=True)
         frappe.db.commit()
-        partyid_3 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        partyid_3 = ET.SubElement(cac_Party, PARTY_IDENTIFICATION)
         value_id3 = ET.SubElement(partyid_3, "cbc:ID", schemeID="SST")
         customer_doc.custom_sst_number = (
             getattr(customer_doc, "custom_sst_number", "NA") or "NA"
@@ -614,7 +476,7 @@ def customer_data(invoice, sales_invoice_doc):
             else "NA"
         )
 
-        partyid_4 = ET.SubElement(cac_Party, "cac:PartyIdentification")
+        partyid_4 = ET.SubElement(cac_Party, PARTY_IDENTIFICATION)
         value_id4 = ET.SubElement(partyid_4, "cbc:ID", schemeID="TTX")
         value_id4.text = (
             str(customer_doc.custom_tourism_tax_number)
@@ -630,13 +492,13 @@ def customer_data(invoice, sales_invoice_doc):
         if not address.address_line1 or not address.address_line2:
             frappe.throw(_("Customer address must have both Address Line 1 and Address Line 2 filled."))
             
-        posta_address = ET.SubElement(cac_Party, "cac:PostalAddress")
-        name_city = ET.SubElement(posta_address, "cbc:CityName")
+        posta_address = ET.SubElement(cac_Party, POSTAL_ADDRESS)
+        name_city = ET.SubElement(posta_address, CITY_NAME)
         name_city.text = address.city
-        post_zone = ET.SubElement(posta_address, "cbc:PostalZone")
+        post_zone = ET.SubElement(posta_address, POSTAL_ZONE)
         post_zone.text = address.pincode
-        cntry_sub_cod = ET.SubElement(posta_address, "cbc:CountrySubentityCode")
-        # statecode = (address.custom_state_code).split(":")[0]
+        cntry_sub_cod = ET.SubElement(posta_address, SUBENTITY)
+      
         statecode= (
             address.custom_state_code.split(":")[0]
             if address.custom_state_code
@@ -644,31 +506,31 @@ def customer_data(invoice, sales_invoice_doc):
         )
         cntry_sub_cod.text = statecode
 
-        add_cust_line1 = ET.SubElement(posta_address, "cac:AddressLine")
-        add_line1 = ET.SubElement(add_cust_line1, "cbc:Line")
+        add_cust_line1 = ET.SubElement(posta_address,ADDRESS_LINE)
+        add_line1 = ET.SubElement(add_cust_line1,LINE)
         add_line1.text = address.address_line1
 
-        add_cust_line2 = ET.SubElement(posta_address, "cac:AddressLine")
-        add_line2 = ET.SubElement(add_cust_line2, "cbc:Line")
+        add_cust_line2 = ET.SubElement(posta_address,ADDRESS_LINE)
+        add_line2 = ET.SubElement(add_cust_line2, LINE)
         add_line2.text = address.address_line2
 
         combined_city_pincode = f"{address.city}, {address.pincode}"
-        add_cust_line3 = ET.SubElement(posta_address, "cac:AddressLine")
-        add_line3 = ET.SubElement(add_cust_line3, "cbc:Line")
+        add_cust_line3 = ET.SubElement(posta_address, ADDRESS_LINE)
+        add_line3 = ET.SubElement(add_cust_line3, LINE)
         add_line3.text = combined_city_pincode
 
-        cnty_customer = ET.SubElement(posta_address, "cac:Country")
+        cnty_customer = ET.SubElement(posta_address, COUNTRY)
         idntfn_code_val = ET.SubElement(
             cnty_customer,
-            "cbc:IdentificationCode",
+            IDENTIFICATION_CODE,
             listAgencyID="6",
             listID="ISO3166-1",
         )
         idntfn_code_val.text = "MYS"
 
-        party_legalEntity = ET.SubElement(cac_Party, "cac:PartyLegalEntity")
-        reg_name_val = ET.SubElement(party_legalEntity, "cbc:RegistrationName")
-        # reg_name_val.text = sales_invoice_doc.customer
+        party_legalEntity = ET.SubElement(cac_Party, PARTY_LEGAL)
+        reg_name_val = ET.SubElement(party_legalEntity, REG_NAME)
+       
         if company_doc.custom_send_customer_code_to_lhdn:
             reg_name_val.text = sales_invoice_doc.customer
         else:
@@ -688,18 +550,18 @@ def customer_data(invoice, sales_invoice_doc):
 
 
 def delivery_data(invoice, sales_invoice_doc):
-    "" "Adds the Delivery data to the invoice" ""
+    """Adds the Delivery data to the invoice"""
     try:
         customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
 
         delivery = ET.SubElement(invoice, "cac:Delivery")
         delivery_party = ET.SubElement(delivery, "cac:DeliveryParty")
 
-        party_id_tin = ET.SubElement(delivery_party, "cac:PartyIdentification")
+        party_id_tin = ET.SubElement(delivery_party,PARTY_IDENTIFICATION)
         tin_id = ET.SubElement(party_id_tin, "cbc:ID", schemeID="TIN")
         tin_id.text = str(sales_invoice_doc.custom_customer_tin_number)
 
-        party_id_brn = ET.SubElement(delivery_party, "cac:PartyIdentification")
+        party_id_brn = ET.SubElement(delivery_party,PARTY_IDENTIFICATION)
         brn_id = ET.SubElement(
             party_id_brn,
             "cbc:ID",
@@ -716,17 +578,17 @@ def delivery_data(invoice, sales_invoice_doc):
         else:
             address = frappe.get_doc("Address", customer_doc.customer_primary_address)
 
-        postal_address = ET.SubElement(delivery_party, "cac:PostalAddress")
-        city_name = ET.SubElement(postal_address, "cbc:CityName")
+        postal_address = ET.SubElement(delivery_party, POSTAL_ADDRESS)
+        city_name = ET.SubElement(postal_address, CITY_NAME)
         city_name.text = address.city
 
-        postal_zone = ET.SubElement(postal_address, "cbc:PostalZone")
+        postal_zone = ET.SubElement(postal_address, POSTAL_ZONE)
 
         postal_zone.text = address.pincode
         # str(address.custom_state_code).split(":", 1)[1].strip()
 
         country_subentity_code = ET.SubElement(
-            postal_address, "cbc:CountrySubentityCode"
+            postal_address, SUBENTITY
         )
         statecode = (
             address.custom_state_code.split(":")[0]
@@ -736,32 +598,32 @@ def delivery_data(invoice, sales_invoice_doc):
         country_subentity_code.text = statecode
 
         address_line1 = ET.SubElement(
-            ET.SubElement(postal_address, "cac:AddressLine"), "cbc:Line"
+            ET.SubElement(postal_address, ADDRESS_LINE), LINE
         )
         address_line1.text = address.address_line1
 
         address_line2 = ET.SubElement(
-            ET.SubElement(postal_address, "cac:AddressLine"), "cbc:Line"
+            ET.SubElement(postal_address,ADDRESS_LINE), LINE
         )
         address_line2.text = address.address_line2
 
         combined_city_pincode = f"{address.city}, {address.pincode}"
         address_line3 = ET.SubElement(
-            ET.SubElement(postal_address, "cac:AddressLine"), "cbc:Line"
+            ET.SubElement(postal_address, ADDRESS_LINE), LINE
         )
         address_line3.text = combined_city_pincode
 
-        country = ET.SubElement(postal_address, "cac:Country")
+        country = ET.SubElement(postal_address, COUNTRY)
         country_id_code = ET.SubElement(
             country,
-            "cbc:IdentificationCode",
+            IDENTIFICATION_CODE,
             listAgencyID="6",
             listID="ISO3166-1",
         )
         country_id_code.text = "MYS"
 
-        party_legal_entity = ET.SubElement(delivery_party, "cac:PartyLegalEntity")
-        registration_name = ET.SubElement(party_legal_entity, "cbc:RegistrationName")
+        party_legal_entity = ET.SubElement(delivery_party,PARTY_LEGAL)
+        registration_name = ET.SubElement(party_legal_entity, REG_NAME)
         registration_name.text = sales_invoice_doc.customer
         return invoice
     except Exception as e:
@@ -800,18 +662,7 @@ def payment_data(invoice, sales_invoice_doc):
         payment_note = ET.SubElement(payment_terms, "cbc:Note")
         payment_note.text = f"Payment method is {payment_mode}"
 
-        # prepaid_payment = ET.SubElement(invoice, "cac:PrepaidPayment")
-        # prepaid_id = ET.SubElement(prepaid_payment, "cbc:ID")
-        # prepaid_id.text = "E12345678912"
-
-        # paid_amount = ET.SubElement(prepaid_payment, "cbc:PaidAmount", currencyID="MYR")
-        # paid_amount.text = "1.00"
-
-        # paid_date = ET.SubElement(prepaid_payment, "cbc:PaidDate")
-        # paid_date.text = "2024-07-23"
-
-        # paid_time = ET.SubElement(prepaid_payment, "cbc:PaidTime")
-        # paid_time.text = "00:30:00Z"
+       
         return invoice
     except Exception as e:
         frappe.throw(_(f"Error adding payment data: {str(e)}"))
@@ -824,32 +675,22 @@ def allowance_charge_data(invoice, sales_invoice_doc):
         for single_item in sales_invoice_doc.items:
             discount_amount = abs(single_item.get("discount_amount", 0.0))
             if discount_amount > 0:
-                allowance_charge_1 = ET.SubElement(invoice, "cac:AllowanceCharge")
+                allowance_charge_1 = ET.SubElement(invoice,ALLOW_CHARGE)
                 charge_indicator_1 = ET.SubElement(
-                    allowance_charge_1, "cbc:ChargeIndicator"
+                    allowance_charge_1, CHARGE_INDI
                 )
                 charge_indicator_1.text = "false"
 
                 allowance_charge_reason_1 = ET.SubElement(
-                    allowance_charge_1, "cbc:AllowanceChargeReason"
+                    allowance_charge_1, ALLOW_REASON
                 )
                 allowance_charge_reason_1.text = "Promotional Discount"
 
                 amount_1 = ET.SubElement(
-                    allowance_charge_1, "cbc:Amount", currencyID=sales_invoice_doc.currency
+                    allowance_charge_1, AMOUNT, currencyID=sales_invoice_doc.currency
                 )
                 amount_1.text = str(discount_amount)
 
-                # Second AllowanceCharge with ChargeIndicator = true only use when there shipping like charge
-                # allowance_charge_2 = ET.SubElement(invoice, "cac:AllowanceCharge")
-                # charge_indicator_2 = ET.SubElement(allowance_charge_2, "cbc:ChargeIndicator")
-                # charge_indicator_2.text = "true"
-
-                # allowance_charge_reason_2 = ET.SubElement(allowance_charge_2, "cbc:AllowanceChargeReason")
-                # allowance_charge_reason_2.text = "Service charge"
-
-                # amount_2 = ET.SubElement(allowance_charge_2, "cbc:Amount", currencyID="MYR")
-                # amount_2.text = "100"
         if sales_invoice_doc.currency and sales_invoice_doc.currency != "MYR":
             tax_exchange_rate = ET.SubElement(invoice, "cac:TaxExchangeRate")
 
@@ -876,30 +717,30 @@ def tax_total(invoice, sales_invoice_doc):
         taxable_amount = sales_invoice_doc.base_total - sales_invoice_doc.get(
             "base_discount_amount", 0.0
         )
-        cac_TaxTotal = ET.SubElement(invoice, "cac:TaxTotal")
-        taxamnt = ET.SubElement(cac_TaxTotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
+        cac_TaxTotal = ET.SubElement(invoice, TAX_TOTAL)
+        taxamnt = ET.SubElement(cac_TaxTotal, TAX_AMOUNT, currencyID=sales_invoice_doc.currency)
         tax_amount_without_retention = (
             taxable_amount * float(sales_invoice_doc.taxes[0].rate) / 100
         )
         taxamnt.text = f"{abs(round(tax_amount_without_retention, 2)):.2f}"
 
-        cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
+        cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, TAX_SUB)
         taxable_amnt = ET.SubElement(
-            cac_TaxSubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+            cac_TaxSubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
         )
         taxable_amnt.text = str(abs(round(taxable_amount, 2)))
-        TaxAmnt = ET.SubElement(cac_TaxSubtotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
+        TaxAmnt = ET.SubElement(cac_TaxSubtotal, TAX_AMOUNT, currencyID=sales_invoice_doc.currency)
         TaxAmnt.text = str(
             abs(round(taxable_amount * float(sales_invoice_doc.taxes[0].rate) / 100, 2))
         )
 
-        cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
+        cac_TaxCategory = ET.SubElement(cac_TaxSubtotal,TAX_CATE)
         raw_item_id_code = sales_invoice_doc.custom_malaysia_tax_category
         cat_id_val = ET.SubElement(cac_TaxCategory, "cbc:ID")
         # cat_id_val.text = str(sales_invoice_doc.custom_malaysia_tax_category)
         cat_id_val.text = raw_item_id_code.split(":")[0].strip()
         # <cbc:Percent>0.00</cbc:Percent><cbc:TaxExemptionReason>NA</cbc:TaxExemptionReason>
-        prct = ET.SubElement(cac_TaxCategory, "cbc:Percent")
+        prct = ET.SubElement(cac_TaxCategory, CBC_PERCENT)
         prct.text = str(sales_invoice_doc.taxes[0].rate)
         exemption = ET.SubElement(cac_TaxCategory, "cbc:TaxExemptionReason")
         if (sales_invoice_doc.custom_malaysia_tax_category) == "E":
@@ -907,9 +748,9 @@ def tax_total(invoice, sales_invoice_doc):
         else:
             exemption.text = "NA"
 
-        cac_TaxScheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
+        cac_TaxScheme = ET.SubElement(cac_TaxCategory, TAX_SCHE)
         taxscheme_id = ET.SubElement(
-            cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
+            cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID=UN_ECE
         )
         taxscheme_id.text = "OTH"
         return invoice
@@ -966,27 +807,27 @@ def tax_total_with_template(invoice, sales_invoice_doc):
         total_tax = sum(totals["tax_amount"] for totals in tax_category_totals.values())
         tax_amount_without_retention_sar = round(abs(total_tax), 2)
 
-        cac_TaxTotal = ET.SubElement(invoice, "cac:TaxTotal")
-        cbc_TaxAmount = ET.SubElement(cac_TaxTotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
+        cac_TaxTotal = ET.SubElement(invoice, TAX_TOTAL)
+        cbc_TaxAmount = ET.SubElement(cac_TaxTotal,TAX_AMOUNT, currencyID=sales_invoice_doc.currency)
         cbc_TaxAmount.text = str(tax_amount_without_retention_sar)
 
         for malaysia_tax_category, totals in tax_category_totals.items():
-            cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
+            cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, TAX_SUB)
             cbc_TaxableAmount = ET.SubElement(
-                cac_TaxSubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                cac_TaxSubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_TaxableAmount.text = str(round(totals["taxable_amount"], 2))
 
             cbc_TaxAmount = ET.SubElement(
-                cac_TaxSubtotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency
+                cac_TaxSubtotal, TAX_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_TaxAmount.text = str(round(totals["tax_amount"], 2))
 
-            cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
+            cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, TAX_CATE)
             cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
             cbc_ID.text = malaysia_tax_category
 
-            cbc_Percent = ET.SubElement(cac_TaxCategory, "cbc:Percent")
+            cbc_Percent = ET.SubElement(cac_TaxCategory, CBC_PERCENT)
             cbc_Percent.text = f"{totals['tax_rate']:.2f}"
 
             cbc_TaxExemptionReason = ET.SubElement(
@@ -999,9 +840,9 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             else:
                 cbc_TaxExemptionReason.text = "NA"
 
-            cac_TaxScheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
+            cac_TaxScheme = ET.SubElement(cac_TaxCategory,TAX_SCHE)
             cbc_TaxScheme_ID = ET.SubElement(
-                cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
+                cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID=UN_ECE
             )
             cbc_TaxScheme_ID.text = "OTH"
         return invoice
@@ -1022,7 +863,7 @@ def legal_monetary_total(invoice, sales_invoice_doc):
         )
         legal_monetary_total = ET.SubElement(invoice, "cac:LegalMonetaryTotal")
         line_ext_amnt = ET.SubElement(
-            legal_monetary_total, "cbc:LineExtensionAmount", currencyID=sales_invoice_doc.currency
+            legal_monetary_total, LINE_EXTENSION, currencyID=sales_invoice_doc.currency
         )
         line_ext_amnt.text = str(abs(sales_invoice_doc.total))
         tax_exc_ = ET.SubElement(
@@ -1087,37 +928,34 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 unitCode="H87",
             )
             item_qty.text = str(abs(single_item.qty))
-            # frappe.msgprint(f"Set item quantity: {item_qty.text}")
 
             item_line_exte_amnt = ET.SubElement(
-                invoice_line, "cbc:LineExtensionAmount", currencyID=sales_invoice_doc.currency
+                invoice_line, LINE_EXTENSION, currencyID=sales_invoice_doc.currency
             )
             item_line_exte_amnt.text = str(abs(single_item.amount))
-            # frappe.msgprint(f"Set LineExtensionAmount: {item_line_exte_amnt.text}")
 
             discount_amount = abs(single_item.get("discount_amount", 0.0))
-            # frappe.msgprint(f"Discount amount: {discount_amount}")
 
             if discount_amount > 0:
                 # frappe.msgprint("Adding discount elements")
-                allw_chrge = ET.SubElement(invoice_line, "cac:AllowanceCharge")
-                chrg_indic = ET.SubElement(allw_chrge, "cbc:ChargeIndicator")
+                allw_chrge = ET.SubElement(invoice_line, ALLOW_CHARGE)
+                chrg_indic = ET.SubElement(allw_chrge,CHARGE_INDI)
                 chrg_indic.text = "false"
                 allwa_chrge_reson = ET.SubElement(
-                    allw_chrge, "cbc:AllowanceChargeReason"
+                    allw_chrge, ALLOW_REASON
                 )
                 allwa_chrge_reson.text = "Item Discount"
                 multi_fac = ET.SubElement(allw_chrge, "cbc:MultiplierFactorNumeric")
                 multi_fac.text = "1"
-                amnt = ET.SubElement(allw_chrge, "cbc:Amount", currencyID=sales_invoice_doc.currency)
+                amnt = ET.SubElement(allw_chrge, AMOUNT, currencyID=sales_invoice_doc.currency)
                 amnt.text = str(discount_amount)
                 # frappe.msgprint(
                 #     f"Added discount elements for item: {single_item.item_code}"
                 # # )
 
-            tax_total_item = ET.SubElement(invoice_line, "cac:TaxTotal")
+            tax_total_item = ET.SubElement(invoice_line, TAX_TOTAL)
             tax_amount_item = ET.SubElement(
-                tax_total_item, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency
+                tax_total_item, TAX_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             tax_amount_item.text = str(
                 abs(
@@ -1128,12 +966,12 @@ def invoice_line_item(invoice, sales_invoice_doc):
             )
             # frappe.msgprint(f"Set tax amount: {tax_amount_item.text}")
 
-            tax_subtot_item = ET.SubElement(tax_total_item, "cac:TaxSubtotal")
+            tax_subtot_item = ET.SubElement(tax_total_item, TAX_SUB)
             taxable_amnt_item = ET.SubElement(
-                tax_subtot_item, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                tax_subtot_item, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             taxable_amnt_item.text = str(abs(single_item.amount - discount_amount))
-            tax_amnt = ET.SubElement(tax_subtot_item, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
+            tax_amnt = ET.SubElement(tax_subtot_item, TAX_AMOUNT, currencyID=sales_invoice_doc.currency)
             tax_amnt.text = str(
                 abs(
                     round(
@@ -1145,27 +983,27 @@ def invoice_line_item(invoice, sales_invoice_doc):
             # f"Set tax subtotal: TaxableAmount={taxable_amnt_item.text}, TaxAmount={tax_amnt.text}"
             # )
 
-            tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
+            tax_cate_item = ET.SubElement(tax_subtot_item, TAX_CATE)
             cat_item_id = ET.SubElement(tax_cate_item, "cbc:ID")
             raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
 
             cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
-            # cat_item_id.text = str(sales_invoice_doc.custom_malaysia_tax_category)
-            item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
+           
+            item_prct = ET.SubElement(tax_cate_item, CBC_PERCENT)
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
             # frappe.msgprint(
             #     f"Set tax category: ID={cat_item_id.text}, Percent={item_prct.text}"
             # # )
 
-            tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
+            tax_scheme_item = ET.SubElement(tax_cate_item,TAX_SCHE)
             tax_id_scheme_item = ET.SubElement(
-                tax_scheme_item, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
+                tax_scheme_item, "cbc:ID", schemeAgencyID="6", schemeID=UN_ECE
             )
             tax_id_scheme_item.text = "OTH"
 
             item_data = ET.SubElement(invoice_line, "cac:Item")
-            descp_item = ET.SubElement(item_data, "cbc:Description")
-            # descp_item.text = str(single_item.description)
+            descp_item = ET.SubElement(item_data, DESCRIPTION)
+            
             desc = ""
             if single_item.description and single_item.item_name:
                 desc = f"{single_item.description} - {single_item.item_name}"
@@ -1175,17 +1013,13 @@ def invoice_line_item(invoice, sales_invoice_doc):
                 desc = str(single_item.item_name)
 
             descp_item.text = desc
-            # if single_item.description:
-            #     descp_item.text = str(single_item.description)
-            # else:
-            #     descp_item.text = str(single_item.item_name)
-            # frappe.msgprint(f"Set item description: {descp_item.text}")
+            
 
             comm_class_cod = ET.SubElement(item_data, "cac:CommodityClassification")
             item_class_cod = ET.SubElement(
                 comm_class_cod, "cbc:ItemClassificationCode", listID="CLASS"
             )
-            # item_doc = frappe.get_doc("Item", single_item.item_name)
+            
 
             classification_code = str(
                 single_item.custom_item_classification_codes
@@ -1201,7 +1035,7 @@ def invoice_line_item(invoice, sales_invoice_doc):
             # frappe.msgprint(f"Set price amount: {pri_amnt_item.text}")
 
             item_pri_ext = ET.SubElement(invoice_line, "cac:ItemPriceExtension")
-            item_val_amnt = ET.SubElement(item_pri_ext, "cbc:Amount", currencyID=sales_invoice_doc.currency)
+            item_val_amnt = ET.SubElement(item_pri_ext, AMOUNT, currencyID=sales_invoice_doc.currency)
             item_val_amnt.text = str(abs(single_item.base_amount))
             # frappe.msgprint(f"Set item price extension: {item_val_amnt.text}")
 
@@ -1230,21 +1064,21 @@ def item_data_with_template(invoice, sales_invoice_doc):
             )
             cbc_InvoicedQuantity.text = str(abs(single_item.qty))
             cbc_LineExtensionAmount = ET.SubElement(
-                cac_InvoiceLine, "cbc:LineExtensionAmount", currencyID=sales_invoice_doc.currency
+                cac_InvoiceLine, LINE_EXTENSION, currencyID=sales_invoice_doc.currency
             )
             cbc_LineExtensionAmount.text = str(abs(single_item.amount))
 
             discount_amount = abs(single_item.get("discount_amount", 0.0))
             if discount_amount > 0:
                 cac_AllowanceCharge = ET.SubElement(
-                    cac_InvoiceLine, "cac:AllowanceCharge"
+                    cac_InvoiceLine, ALLOW_CHARGE
                 )
                 cbc_ChargeIndicator = ET.SubElement(
-                    cac_AllowanceCharge, "cbc:ChargeIndicator"
+                    cac_AllowanceCharge, CHARGE_INDI
                 )
                 cbc_ChargeIndicator.text = "false"
                 cbc_AllowanceChargeReason = ET.SubElement(
-                    cac_AllowanceCharge, "cbc:AllowanceChargeReason"
+                    cac_AllowanceCharge, ALLOW_REASON
                 )
                 cbc_AllowanceChargeReason.text = "Item Discount"
                 cbc_MultiplierFactorNumeric = ET.SubElement(
@@ -1252,45 +1086,45 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 )
                 cbc_MultiplierFactorNumeric.text = "1"
                 cbc_Amount = ET.SubElement(
-                    cac_AllowanceCharge, "cbc:Amount", currencyID=sales_invoice_doc.currency
+                    cac_AllowanceCharge, AMOUNT, currencyID=sales_invoice_doc.currency
                 )
                 cbc_Amount.text = str(discount_amount)
 
-            cac_TaxTotal = ET.SubElement(cac_InvoiceLine, "cac:TaxTotal")
+            cac_TaxTotal = ET.SubElement(cac_InvoiceLine, TAX_TOTAL)
             cbc_TaxAmount = ET.SubElement(
-                cac_TaxTotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency
+                cac_TaxTotal, TAX_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_TaxAmount.text = str(
                 abs(round(item_tax_percentage * single_item.amount / 100, 2))
             )
 
-            cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
+            cac_TaxSubtotal = ET.SubElement(cac_TaxTotal, TAX_SUB)
             cbc_TaxableAmount = ET.SubElement(
-                cac_TaxSubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                cac_TaxSubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_TaxableAmount.text = str(abs(single_item.amount - discount_amount))
             cbc_TaxAmount = ET.SubElement(
-                cac_TaxSubtotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency
+                cac_TaxSubtotal, TAX_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_TaxAmount.text = str(
                 abs(round(item_tax_percentage * single_item.amount / 100, 2))
             )
 
             malaysia_tax_category = item_tax_template.custom_malaysia_tax_category
-            cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
+            cac_TaxCategory = ET.SubElement(cac_TaxSubtotal, TAX_CATE)
             cbc_ID = ET.SubElement(cac_TaxCategory, "cbc:ID")
             cbc_ID.text = str(malaysia_tax_category)
-            cbc_Percent = ET.SubElement(cac_TaxCategory, "cbc:Percent")
+            cbc_Percent = ET.SubElement(cac_TaxCategory,CBC_PERCENT)
             cbc_Percent.text = f"{float(item_tax_percentage):.2f}"
-            cac_TaxScheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
+            cac_TaxScheme = ET.SubElement(cac_TaxCategory,TAX_SCHE)
             cbc_TaxScheme_ID = ET.SubElement(
-                cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID="UN/ECE 5153"
+                cac_TaxScheme, "cbc:ID", schemeAgencyID="6", schemeID=UN_ECE
             )
             cbc_TaxScheme_ID.text = "OTH"
 
             cac_Item = ET.SubElement(cac_InvoiceLine, "cac:Item")
-            cbc_Description = ET.SubElement(cac_Item, "cbc:Description")
-            # cbc_Description.text = str(single_item.description)
+            cbc_Description = ET.SubElement(cac_Item, DESCRIPTION)
+          
             if single_item.description and single_item.item_name:
                 cbc_Description.text = (
                     f"{single_item.description} - {single_item.item_name}"
@@ -1308,10 +1142,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 "cbc:ItemClassificationCode",
                 listID="CLASS",
             )
-            # cbc_ItemClassificationCode.text =str(single_item.custom_item_classification_code)
-            # item_doc = frappe.get_doc(
-            #     "Item", single_item.item_code
-            # )  # Example for Frappe framework
+            
             classification_code = str(
                 single_item.custom_item_classification_codes
             ).split(":")[0]
@@ -1329,7 +1160,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 cac_InvoiceLine, "cac:ItemPriceExtension"
             )
             cbc_Amount = ET.SubElement(
-                cac_ItemPriceExtension, "cbc:Amount", currencyID=sales_invoice_doc.currency
+                cac_ItemPriceExtension,AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_Amount.text = str(abs(single_item.base_amount))
         return invoice
@@ -1345,16 +1176,7 @@ def xml_structuring(invoice, sales_invoice_doc):
         # nosemgrep: frappe-semgrep-rules.rules.security.frappe-security-file-traversal
         with open(frappe.local.site + "/private/files/beforesubmit1.xml", "w") as file:
             file.write(raw_xml)
-        # try:
-        #                 fileXx = frappe.get_doc(
-        #                     {   "doctype": "File",
-        #                         "file_type": "xml",
-        #                         "file_name":  "E-invoice-" + sales_invoice_doc.name + ".xml",
-        #                         "attached_to_doctype":sales_invoice_doc.doctype,
-        #                         "attached_to_name":sales_invoice_doc.name,
-        #                         "content": raw_xml,
-        #                         "is_private": 1,})
-        #                 fileXx.save()
+        
 
         return raw_xml
     except Exception as e:
@@ -1381,7 +1203,6 @@ def get_api_url(company_abbr, base_url=""):
 def generate_qr_code(sales_invoice_doc, status):
     """Generate QR code for the given Sales Invoice that links to verification URL"""
 
-    customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
     company_abbr = company_doc.abbr
 
