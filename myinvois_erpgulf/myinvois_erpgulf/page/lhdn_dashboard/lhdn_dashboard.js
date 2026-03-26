@@ -44,70 +44,69 @@ class LhdnDashboard {
         this.form.make();
     }
 
-render_cards() {
-    const statuses = ['Valid', 'Invalid', 'Submitted', 'Cancelled', 'Failed', 'Not Submitted'];
+    render_cards() {
+        const statuses = ['Valid', 'Invalid', 'Submitted', 'Cancelled', 'Failed', 'Not Submitted'];
 
-    const getCounts = (doctype, filters) => frappe.call({
-        method: "frappe.client.get_count",
-        args: { doctype, filters }
-    });
-
-    const getNotSubmittedCounts = (doctype) => {
-        const draftCountPromise = frappe.call({
+        const getCounts = (doctype, filters) => frappe.call({
             method: "frappe.client.get_count",
-            args: { doctype, filters: { docstatus: 0 } }
+            args: { doctype, filters }
         });
-        const blankStatusCountPromise = frappe.call({
-            method: "frappe.client.get_count",
-            args: {
-                doctype,
-                filters: [
-                    // ["docstatus", "=", 1],
-                    ["custom_lhdn_status", "in", ["", null]]
-                ]
+
+        const getNotSubmittedCounts = (doctype) => {
+            const draftCountPromise = frappe.call({
+                method: "frappe.client.get_count",
+                args: { doctype, filters: { docstatus: 0 } }
+            });
+            const blankStatusCountPromise = frappe.call({
+                method: "frappe.client.get_count",
+                args: {
+                    doctype,
+                    filters: [
+                        // ["docstatus", "=", 1],
+                        ["custom_lhdn_status", "in", ["", null]]
+                    ]
+                }
+            });
+
+            return Promise.all([draftCountPromise, blankStatusCountPromise]).then(([draftCountRes, blankStatusCountRes]) => {
+                const draftCount = draftCountRes.message || 0;
+                const blankStatusCount = blankStatusCountRes.message || 0;
+                return draftCount + blankStatusCount;
+            });
+        };
+
+        const promises = statuses.map(status => {
+            if (status === 'Not Submitted') {
+                return Promise.all([
+                    getNotSubmittedCounts("Sales Invoice"),
+                    getNotSubmittedCounts("Purchase Invoice")
+                ]).then(([salesCount, purchaseCount]) => ({
+                    status,
+                    sales_count: salesCount,
+                    purchase_count: purchaseCount
+                }));
+            } else {
+                const filters = { custom_lhdn_status: status };
+                return Promise.all([
+                    getCounts("Sales Invoice", filters),
+                    getCounts("Purchase Invoice", filters)
+                ]).then(([salesCount, purchaseCount]) => ({
+                    status,
+                    sales_count: salesCount.message || 0,
+                    purchase_count: purchaseCount.message || 0
+                }));
             }
         });
 
-        return Promise.all([draftCountPromise, blankStatusCountPromise]).then(([draftCountRes, blankStatusCountRes]) => {
-            const draftCount = draftCountRes.message || 0;
-            const blankStatusCount = blankStatusCountRes.message || 0;
-            return draftCount + blankStatusCount;
-        });
-    };
+        Promise.all(promises).then(results => {
+            let cardHtml = '';
 
-    const promises = statuses.map(status => {
-        if (status === 'Not Submitted') {
-            return Promise.all([
-                getNotSubmittedCounts("Sales Invoice"),
-                getNotSubmittedCounts("Purchase Invoice")
-            ]).then(([salesCount, purchaseCount]) => ({
-                status,
-                sales_count: salesCount,
-                purchase_count: purchaseCount
-            }));
-        } else {
-            const filters = { custom_lhdn_status: status };
-            return Promise.all([
-                getCounts("Sales Invoice", filters),
-                getCounts("Purchase Invoice", filters)
-            ]).then(([salesCount, purchaseCount]) => ({
-                status,
-                sales_count: salesCount.message || 0,
-                purchase_count: purchaseCount.message || 0
-            }));
-        }
-    });
+            for (let i = 0; i < results.length; i += 3) {
+                cardHtml += `<div class="status-row" style="display:flex; flex-wrap:wrap; gap:30px; margin-bottom:30px;">`;
 
-    Promise.all(promises).then(results => {
-        let cardHtml = '';
-
-        for (let i = 0; i < results.length; i += 3) {
-            // cardHtml += `<div class="status-row" style="display: flex; gap: 30px; margin-bottom: 30px;">`;
-            cardHtml += `<div class="status-row" style="display:flex; flex-wrap:wrap; gap:30px; margin-bottom:30px;">`;
-
-            for (let j = i; j < i + 3 && j < results.length; j++) {
-                const res = results[j];
-                cardHtml += `
+                for (let j = i; j < i + 3 && j < results.length; j++) {
+                    const res = results[j];
+                    cardHtml += `
                     <div style="flex: 1;">
                         <h4 style="margin-bottom: 10px;">${res.status}</h4>
                         <div style="display: flex; gap: 12px;">
@@ -116,14 +115,14 @@ render_cards() {
                         </div>
                     </div>
                 `;
+                }
+
+                cardHtml += `</div>`;
             }
 
-            cardHtml += `</div>`;
-        }
-
-        this.form.get_field("summary_cards").html(cardHtml);
-    });
-}
+            this.form.get_field("summary_cards").html(cardHtml);
+        });
+    }
 
 
     create_card(title, count, index, doctype) {

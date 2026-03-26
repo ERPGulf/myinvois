@@ -42,6 +42,9 @@ from myinvois_erpgulf.myinvois_erpgulf.purchase_invoice import (
 from myinvois_erpgulf.myinvois_erpgulf.taxpayerlogin import get_access_token
 from frappe import _
 
+DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+LHDN_SUCCESS_LOG_DOCTYPE = "LHDN Success Log"
+PURCHASE_INVOICE_DOCTYPE = "Purchase Invoice"
 
 def xml_hash():
     """defining the xml hash"""
@@ -110,7 +113,7 @@ def certificate_data(company_abbr):
                     certificate.fingerprint(hashes.SHA256())
                 ).decode("utf-8")
                 signing_time = datetime.datetime.now(datetime.timezone.utc).strftime(
-                    "%Y-%m-%dT%H:%M:%SZ"
+                    DATE_TIME_FORMAT
                 )
 
             if additional_certificates:
@@ -149,7 +152,7 @@ def sign_data(line_xml, company_abbr):
             raise ValueError("hashdata cannot be None")
         if cert_pem is None:
             raise ValueError("cert_pem cannot be None")
-        cert = load_pem_x509_certificate(cert_pem.encode(), default_backend())
+        
         company_name = frappe.db.get_value("Company", {"abbr": company_abbr}, "name")
         if not company_name:
             frappe.throw(_(f"Company with abbreviation {company_abbr} not found."))
@@ -389,11 +392,10 @@ def submission_url(sales_invoice_doc, company_abbr):
             response = submit_request()
 
         response_data = response.json()
-        status = "Approved" if response_data.get("submissionUid") else "Rejected"
         frappe.msgprint(_(f"Response body: {response.text}"))
         sales_invoice_doc.db_set(
             "custom_submission_time",
-            datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            datetime.datetime.now(datetime.timezone.utc).strftime(DATE_TIME_FORMAT),
             commit=True,
             update_modified=True,
         )
@@ -405,7 +407,7 @@ def submission_url(sales_invoice_doc, company_abbr):
         )  # Also update in-memory value
 
         submission_time = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
+            DATE_TIME_FORMAT
         )
         sales_invoice_doc.custom_submit_response = response.text
         sales_invoice_doc.custom_submission_time = submission_time
@@ -453,7 +455,6 @@ def submission_url(sales_invoice_doc, company_abbr):
         requests.RequestException,
         ValueError,
         KeyError,
-        Exception,
     ) as e:
         frappe.log_error(frappe.get_traceback(), "Error in submission_url")
         frappe.throw(_(f"Error in submission URL: {str(e)}"))
@@ -471,11 +472,11 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
 
         # Check if a document with the same invoice_number already exists
         existing_doc = frappe.db.exists(
-            "LHDN Success Log", {"invoice_number": invoice_number}
+            LHDN_SUCCESS_LOG_DOCTYPE, {"invoice_number": invoice_number}
         )
         if existing_doc:
             # Update the existing document
-            doc_instance = frappe.get_doc("LHDN Success Log", existing_doc)
+            doc_instance = frappe.get_doc(LHDN_SUCCESS_LOG_DOCTYPE, existing_doc)
             doc_instance.update(
                 {
                     "custom_status_of_submisison": status,
@@ -484,12 +485,12 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
                     "time": current_time,
                 }
             )
-            frappe.log(f"Updated LHDN Success Log: {invoice_number}")
+            frappe.log(f"Updated LHDN Success's Log: {invoice_number}")
         else:
             # Create a new document
             doc_instance = frappe.get_doc(
                 {
-                    "doctype": "LHDN Success Log",
+                    "doctype": LHDN_SUCCESS_LOG_DOCTYPE,
                     "title": "LHDN Invoice Submission Successful",
                     "message": "Message from LHDN",
                     "custom_status_of_submisison": status,
@@ -501,7 +502,7 @@ def success_log(response, submission_uuid, status, invoice_number, company_doc=N
                 }
             )
             doc_instance.insert(ignore_permissions=True)
-            frappe.log(f"Created new LHDN Success Log: {invoice_number}")
+            frappe.log(f"Created new LHDN  Log as Success: {invoice_number}")
 
         # Save the document (necessary if updated)
         doc_instance.save(ignore_permissions=True)
@@ -554,7 +555,7 @@ def status_submission(invoice_number, sales_invoice_doc, company_abbr):
         # Case: No submission UID
         if not submission_uid:
             if isinstance(sales_invoice_doc, dict):
-                sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
+                sales_invoice_doc = frappe.get_doc(PURCHASE_INVOICE_DOCTYPE, invoice_number)
 
             sales_invoice_doc.custom_lhdn_status = "Failed"
             sales_invoice_doc.save(ignore_permissions=True)
@@ -649,7 +650,7 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
 
         if response.status_code == 200:
             response_data = response.json()
-            doc_instance = frappe.get_doc("LHDN Success Log", doc.get("name"))
+            doc_instance = frappe.get_doc(LHDN_SUCCESS_LOG_DOCTYPE, doc.get("name"))
             document_summary = response_data.get("documentSummary", [])
             if document_summary:
                 status = document_summary[0].get("status", "Unknown")
@@ -666,7 +667,7 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
         else:
 
             response_data = response.json()
-            doc_instance = frappe.get_doc("LHDN Success Log", doc.get("name"))
+            doc_instance = frappe.get_doc(LHDN_SUCCESS_LOG_DOCTYPE, doc.get("name"))
             doc_instance.lhdn_response = json.dumps(response_data, indent=4)
             doc_instance.save(ignore_permissions=True)
             frappe.db.commit()
@@ -681,7 +682,7 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
     try:
-        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc(PURCHASE_INVOICE_DOCTYPE, invoice_number)
         company_name = sales_invoice_doc.company
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
@@ -807,11 +808,11 @@ def validate_before_submit(doc, method=None):
 def submit_document(invoice_number : str, any_item_has_tax_template: typing.Optional[bool] =False):
     """defining the submit document"""
     try:
-        sales_invoice_doc = frappe.get_doc("Purchase Invoice", invoice_number)
+        sales_invoice_doc = frappe.get_doc(PURCHASE_INVOICE_DOCTYPE, invoice_number)
         company_name = sales_invoice_doc.company
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
-        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+        
         # Check if any item has a tax template but not all items have one
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
