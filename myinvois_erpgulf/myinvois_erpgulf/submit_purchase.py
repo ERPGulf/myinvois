@@ -817,11 +817,12 @@ def submit_validate_item_tax_tem(sales_invoice_doc):
             frappe.throw(_(
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
             ))
-    else:
-        # Set to True if all items have a tax template
-        any_item_has_tax_template = all(
-            item.item_tax_template for item in sales_invoice_doc.items
-        )
+    # else:
+    #     # Set to True if all items have a tax template
+    #     any_item_has_tax_template = all(
+    #         item.item_tax_template for item in sales_invoice_doc.items
+    #     )
+        
 @frappe.whitelist(allow_guest=False)
 def submit_document(invoice_number : str, any_item_has_tax_template: typing.Optional[bool] =False):
     """defining the submit document"""
