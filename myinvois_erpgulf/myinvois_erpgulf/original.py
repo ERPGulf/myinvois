@@ -826,7 +826,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             else:
                 invoice = item_data_with_template(invoice, sales_invoice_doc)
 
-            xml_structuring(invoice, sales_invoice_doc)
+            xml_structuring(invoice)
 
             line_xml, doc_hash = xml_hash()
 
@@ -897,7 +897,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             else:
                 invoice = item_data_with_template(invoice, sales_invoice_doc)
 
-            xml_structuring(invoice, sales_invoice_doc)
+            xml_structuring(invoice)
 
             line_xml, doc_hash = xml_hash()
           
@@ -979,7 +979,7 @@ def submit_document(invoice_number: str, any_item_has_tax_template:typing.Option
                 else:
                     invoice = item_data_with_template(invoice, sales_invoice_doc)
 
-                xml_structuring(invoice, sales_invoice_doc)
+                xml_structuring(invoice)
 
                 line_xml, doc_hash = xml_hash()
 
@@ -1068,7 +1068,7 @@ def submit_document(invoice_number: str, any_item_has_tax_template:typing.Option
                 else:
                     invoice = item_data_with_template(invoice, sales_invoice_doc)
 
-                xml_structuring(invoice, sales_invoice_doc)
+                xml_structuring(invoice)
 
                 line_xml, doc_hash = xml_hash()
                 # frappe.throw(f"line_xml: {line_xml}")

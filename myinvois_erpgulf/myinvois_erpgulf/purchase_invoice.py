@@ -25,6 +25,12 @@ DYANAMIC_LINK = "Dynamic Link"
 CBC_ID = "cbc:ID"
 PARTY_IDENTIFICATION="cac:PartyIdentification"
 LINE_EXTENSION="cbc:LineExtensionAmount"
+TAX_CATE ="cac:TaxCategory"
+PERCENT = "cbc:Percent"
+TAX_SCHEME= "cac:TaxScheme"
+UN_ECE="UN/ECE 5153"
+TAXABLE_AMOUNT="cbc:TaxableAmount"
+TAX_SUBTOT="cac:TaxSubtotal"
 def get_icv_code(invoice_number):
     """Extracts the numeric part from the invoice number to generate the ICV code"""
     try:
@@ -706,22 +712,21 @@ def tax_total(invoice, sales_invoice_doc):
         )
         taxamnt.text = f"{abs(round(tax_amount_without_retention, 2)):.2f}"
 
-        cac_taxsubtotal = ET.SubElement(cac_taxtotal, "cac:TaxSubtotal")
+        cac_taxsubtotal = ET.SubElement(cac_taxtotal, TAX_SUBTOT)
         taxable_amnt = ET.SubElement(
-            cac_taxsubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+            cac_taxsubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
         )
         taxable_amnt.text = str(abs(round(taxable_amount, 2)))
-        Taxamnt = ET.SubElement(cac_taxsubtotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
-        Taxamnt.text = str(
+        taxamnt = ET.SubElement(cac_taxsubtotal, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
+        taxamnt.text = str(
             abs(round(taxable_amount * float(sales_invoice_doc.taxes[0].rate) / 100, 2))
         )
 
-        cac_taxcategory = ET.SubElement(cac_taxsubtotal, "cac:TaxCategory")
+        cac_taxcategory = ET.SubElement(cac_taxsubtotal, TAX_CATE)
         raw_item_id_code = sales_invoice_doc.custom_malaysia_tax_category
         cat_id_val = ET.SubElement(cac_taxcategory, CBC_ID)
-        # cat_id_val.text = str(sales_invoice_doc.custom_malaysia_tax_category)
         cat_id_val.text = raw_item_id_code.split(":")[0].strip()
-        prct = ET.SubElement(cac_taxcategory, "cbc:Percent")
+        prct = ET.SubElement(cac_taxcategory, PERCENT)
         prct.text = str(sales_invoice_doc.taxes[0].rate)
         exemption = ET.SubElement(cac_taxcategory, "cbc:TaxExemptionReason")
         if (sales_invoice_doc.custom_malaysia_tax_category) == "E":
@@ -729,9 +734,9 @@ def tax_total(invoice, sales_invoice_doc):
         else:
             exemption.text = "NA"
 
-        cac_taxscheme = ET.SubElement(cac_taxcategory, "cac:TaxScheme")
+        cac_taxscheme = ET.SubElement(cac_taxcategory, TAX_SCHEME)
         taxscheme_id = ET.SubElement(
-            cac_taxscheme, CBC_ID, schemeAgencyID="6", schemeID="UN/ECE 5153"
+            cac_taxscheme, CBC_ID, schemeAgencyID="6", schemeID=UN_ECE
         )
         taxscheme_id.text = "OTH"
         return invoice
@@ -793,9 +798,9 @@ def tax_total_with_template(invoice, sales_invoice_doc):
         cbc_taxamount.text = str(tax_amount_without_retention_sar)
 
         for malaysia_tax_category, totals in tax_category_totals.items():
-            cac_taxsubtotal = ET.SubElement(cac_taxtotal, "cac:TaxSubtotal")
+            cac_taxsubtotal = ET.SubElement(cac_taxtotal, TAX_SUBTOT)
             cbc_taxableamount = ET.SubElement(
-                cac_taxsubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                cac_taxsubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_taxableamount.text = str(round(totals["taxable_amount"], 2))
 
@@ -804,11 +809,11 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             )
             cbc_taxamount.text = str(round(totals["tax_amount"], 2))
 
-            cac_taxcategory = ET.SubElement(cac_taxsubtotal, "cac:TaxCategory")
+            cac_taxcategory = ET.SubElement(cac_taxsubtotal,TAX_CATE)
             cbc_id = ET.SubElement(cac_taxcategory, CBC_ID)
             cbc_id.text = malaysia_tax_category
 
-            cbc_percent = ET.SubElement(cac_taxcategory, "cbc:Percent")
+            cbc_percent = ET.SubElement(cac_taxcategory, PERCENT)
             cbc_percent.text = f"{totals['tax_rate']:.2f}"
 
             cbc_taxexemptionreason = ET.SubElement(
@@ -821,9 +826,9 @@ def tax_total_with_template(invoice, sales_invoice_doc):
             else:
                 cbc_taxexemptionreason.text = "NA"
 
-            cac_taxscheme = ET.SubElement(cac_TaxCategory, "cac:TaxScheme")
+            cac_taxscheme = ET.SubElement(cac_TaxCategory, TAX_SCHEME)
             cbc_taxscheme_id = ET.SubElement(
-                cac_taxscheme, CBC_ID, schemeAgencyID="6", schemeID="UN/ECE 5153"
+                cac_taxscheme, CBC_ID, schemeAgencyID="6", schemeID=UN_ECE
             )
             cbc_taxscheme_id.text = "OTH"
         return invoice
@@ -878,7 +883,7 @@ def legal_monetary_total(invoice, sales_invoice_doc):
         return None
 
 
-def get_Tax_for_Item(full_string, item):
+def get_tax_for_item(full_string, item):
     """Get tax amount and tax percentage for the given item"""
     try:
         data = json.loads(full_string)
@@ -931,9 +936,9 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
-            tax_subtot_item = ET.SubElement(tax_total_item, "cac:TaxSubtotal")
+            tax_subtot_item = ET.SubElement(tax_total_item, TAX_SUBTOT)
             taxable_amnt_item = ET.SubElement(
-                tax_subtot_item, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                tax_subtot_item, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             taxable_amnt_item.text = str(abs(single_item.amount - discount_amount))
             tax_amnt = ET.SubElement(tax_subtot_item, "cbc:TaxAmount", currencyID=sales_invoice_doc.currency)
@@ -944,16 +949,16 @@ def invoice_line_item(invoice, sales_invoice_doc):
                     )
                 )
             )
-            tax_cate_item = ET.SubElement(tax_subtot_item, "cac:TaxCategory")
+            tax_cate_item = ET.SubElement(tax_subtot_item, TAX_CATE)
             cat_item_id = ET.SubElement(tax_cate_item,CBC_ID)
             raw_invoice_type_code = sales_invoice_doc.custom_malaysia_tax_category
 
             cat_item_id.text = raw_invoice_type_code.split(":")[0].strip()
-            item_prct = ET.SubElement(tax_cate_item, "cbc:Percent")
+            item_prct = ET.SubElement(tax_cate_item, PERCENT)
             item_prct.text = str(sales_invoice_doc.taxes[0].rate)
-            tax_scheme_item = ET.SubElement(tax_cate_item, "cac:TaxScheme")
+            tax_scheme_item = ET.SubElement(tax_cate_item, TAX_SCHEME)
             tax_id_scheme_item = ET.SubElement(
-                tax_scheme_item, CBC_ID, schemeAgencyID="6", schemeID="UN/ECE 5153"
+                tax_scheme_item, CBC_ID, schemeAgencyID="6", schemeID=UN_ECE
             )
             tax_id_scheme_item.text = "OTH"
 
@@ -1044,9 +1049,9 @@ def item_data_with_template(invoice, sales_invoice_doc):
                 abs(round(item_tax_percentage * single_item.amount / 100, 2))
             )
 
-            cac_taxsubtotal = ET.SubElement(cac_TaxTotal, "cac:TaxSubtotal")
+            cac_taxsubtotal = ET.SubElement(cac_TaxTotal, TAX_SUBTOT)
             cbc_taxableamount = ET.SubElement(
-                cac_taxsubtotal, "cbc:TaxableAmount", currencyID=sales_invoice_doc.currency
+                cac_taxsubtotal, TAXABLE_AMOUNT, currencyID=sales_invoice_doc.currency
             )
             cbc_taxableamount.text = str(abs(single_item.amount - discount_amount))
             cbc_taxamount = ET.SubElement(
@@ -1057,14 +1062,14 @@ def item_data_with_template(invoice, sales_invoice_doc):
             )
 
             malaysia_tax_category = item_tax_template.custom_malaysia_tax_category
-            cac_taxcategory = ET.SubElement(cac_TaxSubtotal, "cac:TaxCategory")
+            cac_taxcategory = ET.SubElement(cac_TaxSubtotal, TAX_CATE)
             cbc_id = ET.SubElement(cac_TaxCategory, CBC_ID)
             cbc_id.text = str(malaysia_tax_category)
-            cbc_percent = ET.SubElement(cac_taxcategory, "cbc:Percent")
+            cbc_percent = ET.SubElement(cac_taxcategory, PERCENT)
             cbc_percent.text = f"{float(item_tax_percentage):.2f}"
-            cac_taxscheme = ET.SubElement(cac_taxcategory, "cac:TaxScheme")
+            cac_taxscheme = ET.SubElement(cac_taxcategory, TAX_SCHEME)
             cbc_taxscheme_id = ET.SubElement(
-                cac_taxscheme,CBC_ID, schemeAgencyID="6", schemeID="UN/ECE 5153"
+                cac_taxscheme,CBC_ID, schemeAgencyID="6", schemeID=UN_ECE
             )
             cbc_taxscheme_id.text = "OTH"
 
@@ -1112,7 +1117,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
         return None
 
 
-def xml_structuring(invoice, sales_invoice_doc):
+def xml_structuring(invoice):
     """xml structuring of purchase invoice"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
