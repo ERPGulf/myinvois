@@ -901,7 +901,7 @@ def legal_monetary_total(invoice, sales_invoice_doc):
         return None
 
 
-def get_Tax_for_Item(full_string, item):
+def get_tax_for_item(full_string, item):
     """Get tax amount and tax percentage for the given item"""
     try:
         data = json.loads(full_string)
@@ -1173,7 +1173,7 @@ def item_data_with_template(invoice, sales_invoice_doc):
         return None
 
 
-def xml_structuring(invoice, sales_invoice_doc):
+def xml_structuring(invoice):
     """xml structuring of Sales Invoice"""
     try:
         raw_xml = ET.tostring(invoice, encoding="utf-8", method="xml").decode("utf-8")
