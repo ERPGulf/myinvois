@@ -62,17 +62,23 @@ jobs:
           bench init --frappe-branch version-15 --skip-redis-config-generation --skip-assets --python "$(which python)" ~/frappe-bench
           mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL character_set_server = 'utf8mb4'"
           mariadb --host 127.0.0.1 --port 3306 -u root -proot -e "SET GLOBAL collation_server = 'utf8mb4_unicode_ci'"
-
+      
       - name: Install App
         working-directory: /home/runner/frappe-bench
         run: |
-       
-          bench get-app myinvois_erpgulf $GITHUB_WORKSPACE
-          bench get-app ${{ github.event.repository.name }} $GITHUB_WORKSPACE
+          # 1. Get ERPNext normally
+          bench get-app erpnext --branch version-15
+          
+          # 2. Link your code directly (this replaces bench get-app)
+          mkdir -p apps/myinvois_erpgulf
+          cp -r $GITHUB_WORKSPACE/* apps/myinvois_erpgulf/
+          ./env/bin/python -m pip install -e apps/myinvois_erpgulf
+          
+          # 3. Standard Setup
           bench setup requirements --dev
           bench new-site --db-root-password root --admin-password admin test_site
           bench --site test_site install-app erpnext
-          bench --site test_site install-app ${{ github.event.repository.name }}
+          bench --site test_site install-app myinvois_erpgulf
           bench build
         env:
           CI: 'Yes'
