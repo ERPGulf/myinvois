@@ -678,6 +678,19 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
     except (ValueError, KeyError, frappe.ValidationError) as e:
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
 
+def validate_item_tax_template(sales_invoice_doc):
+    """the validation of item tax template"""
+    if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
+            item.item_tax_template for item in sales_invoice_doc.items
+        ):
+            frappe.throw(_(
+                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
+            ))
+    else:
+        # Set to True if all items have a tax template
+        any_item_has_tax_template = all(
+            item.item_tax_template for item in sales_invoice_doc.items
+        )
 
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
@@ -692,21 +705,9 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             return
 
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-        msic_code_full = company_doc.custom_msic_code_ 
-        if not msic_code_full:
-            frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
-        if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
-            item.item_tax_template for item in sales_invoice_doc.items
-        ):
-            frappe.throw(_(
-                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            ))
-        else:
-            # Set to True if all items have a tax template
-            any_item_has_tax_template = all(
-                item.item_tax_template for item in sales_invoice_doc.items
-            )
-
+        validate_msic(company_doc)
+        
+        validate_item_tax_template(sales_invoice_doc)
         if settings.custom_certificate_file and settings.custom_version == "1.1":
 
             invoice = create_invoice_with_extensions()
@@ -798,12 +799,29 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
     ) as e:
         frappe.throw(_(f"Error in validate before  document: {str(e)}"))
 
+def validate_msic(company_doc):
+        msic_code_full = company_doc.custom_msic_code_ 
+        if not msic_code_full:
+            frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
+
 
 def validate_before_submit(doc, method=None):
     """validating the invoice before submission"""
     validate_before(doc.name)
 
-
+def submit_validate_item_tax_tem(sales_invoice_doc):
+    """validateitem tax template"""
+    if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
+            item.item_tax_template for item in sales_invoice_doc.items
+        ):
+            frappe.throw(_(
+                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
+            ))
+    else:
+        # Set to True if all items have a tax template
+        any_item_has_tax_template = all(
+            item.item_tax_template for item in sales_invoice_doc.items
+        )
 @frappe.whitelist(allow_guest=False)
 def submit_document(invoice_number : str, any_item_has_tax_template: typing.Optional[bool] =False):
     """defining the submit document"""
@@ -814,17 +832,7 @@ def submit_document(invoice_number : str, any_item_has_tax_template: typing.Opti
         company_abbr = settings.abbr
         
         # Check if any item has a tax template but not all items have one
-        if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
-            item.item_tax_template for item in sales_invoice_doc.items
-        ):
-            frappe.throw(_(
-                "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
-            ))
-        else:
-            # Set to True if all items have a tax template
-            any_item_has_tax_template = all(
-                item.item_tax_template for item in sales_invoice_doc.items
-            )
+        submit_validate_item_tax_tem(sales_invoice_doc)
 
         if (
             settings.custom_enable_lhdn_invoice
