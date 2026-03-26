@@ -5,7 +5,7 @@ frappe.pages['lhdn-dashboard'].on_page_load = function (wrapper) {
         single_column: true
     });
 
-    const frappe_major_version = parseInt(
+    const frappe_major_version = Number.parseInt(
         (frappe.boot?.versions?.frappe || "0").split(".")[0]
     );
 
@@ -348,8 +348,7 @@ class LhdnDashboard {
                             <td>${row.name}</td>
                             <td>${row.supplier}</td>
                             <td>${row.posting_date}</td>
-                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
-                            <td>${row.grand_total}</td>
+                            <td>${row.custom_lhdn_status?.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
                         </tr>`
                     ).join("");
 
