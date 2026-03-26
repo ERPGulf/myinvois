@@ -22,9 +22,7 @@ frappe.ui.form.on('Purchase Invoice', {
         let response = frm.doc.custom_submit_response;
         let should_show_button = false;
 
-        if (!response) {
-            should_show_button = true;
-        } else {
+        if (response) {   // ✅ FIXED (removed negation)
             try {
                 let parsed = JSON.parse(response);
                 if (
@@ -35,12 +33,16 @@ frappe.ui.form.on('Purchase Invoice', {
                     should_show_button = true;
                 }
             } catch (e) {
+                console.error("JSON Parse Error:", e); // ✅ FIXED (handled error)
                 should_show_button = true;
             }
+        } else {
+            should_show_button = true;
         }
 
         if (should_show_button) {
             frm.add_custom_button(__('Submit Invoice to LHDN'), function () {
+
                 // 🔄 Show loading GIF
                 show_loading_overlay();
 
@@ -50,6 +52,7 @@ frappe.ui.form.on('Purchase Invoice', {
                         "invoice_number": frm.doc.name
                     },
                     callback: function (response) {
+
                         // ✅ Hide loading GIF
                         hide_loading_overlay();
 
@@ -92,7 +95,6 @@ function hide_loading_overlay() {
     $('#custom-loading-overlay').remove();
 }
 
-
 frappe.ui.form.on('Purchase Invoice', {
     refresh: function (frm) {
         // Optional: call on refresh or via button
@@ -105,7 +107,10 @@ frappe.ui.form.on('Purchase Invoice', {
                 sales_invoice_doc: frm.doc.name
             },
             callback: function (r) {
-                if (!r.exc) {
+
+                if (r.exc) {   // ✅ FIXED (removed negation)
+                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
+                } else {
                     if (r.message?.taxpayerTIN) {
                         frappe.msgprint(
                             __('TIN Fetched Successfully: {0}', [r.message.taxpayerTIN])
@@ -114,20 +119,14 @@ frappe.ui.form.on('Purchase Invoice', {
                     } else {
                         frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
                     }
-                } else {
-                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
                 }
             },
             error: function (err) {
+                console.error("TIN Fetch Error:", err); // ✅ FIXED (handled error)
             }
         });
     }
 });
-
-
-
-
-
 
 frappe.realtime.on('show_lhdn_loader', () => {
     show_loading_overlay();
@@ -136,25 +135,3 @@ frappe.realtime.on('show_lhdn_loader', () => {
 frappe.realtime.on('hide_lhdn_loader', () => {
     hide_loading_overlay();
 });
-
-function show_loading_overlay() {
-    if (!$('#custom-loading-overlay').length) {
-        $('body').append(`
-            <div id="custom-loading-overlay" style="
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(255, 255, 255, 0.7);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            ">
-                <img src="/assets/myinvois_erpgulf/js/loading01.gif" style="width: 100px;" />
-            </div>
-        `);
-    }
-}
-
-function hide_loading_overlay() {
-    $('#custom-loading-overlay').remove();
-}

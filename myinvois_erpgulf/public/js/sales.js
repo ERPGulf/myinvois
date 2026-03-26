@@ -1,4 +1,3 @@
-
 frappe.ui.form.on('Sales Invoice', {
     refresh: function (frm) {
         if (frm.doc.docstatus !== 1) return;
@@ -6,9 +5,7 @@ frappe.ui.form.on('Sales Invoice', {
         let response = frm.doc.custom_submit_response;
         let should_show_button = false;
 
-        if (!response) {
-            should_show_button = true;
-        } else {
+        if (response) {
             try {
                 let parsed = JSON.parse(response);
 
@@ -20,13 +17,15 @@ frappe.ui.form.on('Sales Invoice', {
                     should_show_button = true;
                 }
             } catch (e) {
+                console.error(e);
                 should_show_button = true;
             }
+        } else {
+            should_show_button = true;
         }
 
         if (should_show_button) {
             frm.add_custom_button(__('Submit Invoice to LHDN'), function () {
-                // Show loading overlay
                 show_loading_overlay();
 
                 frappe.call({
@@ -35,7 +34,6 @@ frappe.ui.form.on('Sales Invoice', {
                         "invoice_number": frm.doc.name
                     },
                     callback: function (response) {
-                        // Hide loading overlay
                         hide_loading_overlay();
 
                         if (response.message) {
@@ -53,7 +51,8 @@ frappe.ui.form.on('Sales Invoice', {
     }
 });
 
-// Reusable helpers
+
+// Reusable helpers (ONLY ONE DEFINITION)
 function show_loading_overlay() {
     if (!$('#custom-loading-overlay').length) {
         $('body').append(`
@@ -77,21 +76,18 @@ function hide_loading_overlay() {
 }
 
 
-
 frappe.ui.form.on('Sales Invoice', {
     refresh: function (frm) {
-        // Add the custom button
         frm.add_custom_button(__('Get Status of SubmittedDoc'), function () {
-            // Call the backend method to get the status
             frappe.call({
                 method: "myinvois_erpgulf.myinvois_erpgulf.get_status.status_submit",
                 args: {
-                    "doc": frm.doc  // Pass the current document
+                    "doc": frm.doc
                 },
                 callback: function (response) {
                     if (response.message) {
                         frappe.msgprint(__("Status updated successfully! Check the logs for details."));
-                        frm.reload_doc();  // Reload the form to reflect any changes
+                        frm.reload_doc();
                     }
                 }
             });
@@ -105,24 +101,20 @@ frappe.ui.form.on('Sales Invoice', {
                 sales_invoice_doc: frm.doc.name
             },
             callback: function (r) {
-                if (!r.exc) {
+                if (r.exc) {
+                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
+                } else {
                     if (r.message?.taxpayerTIN) {
                         frappe.msgprint(__('TIN Fetched Successfully: {0}', [r.message.taxpayerTIN]));
-
                     } else {
                         frappe.msgprint(__('TIN lookup completed, but TIN was not found.'));
                     }
-                    frm.reload_doc();  // Refresh the document to reflect any updates
-                } else {
-                    frappe.msgprint(__('Something went wrong while fetching TIN.'));
+                    frm.reload_doc();
                 }
             }
         });
     }
 });
-
-
-
 
 
 frappe.realtime.on('show_lhdn_loader', () => {
@@ -132,25 +124,3 @@ frappe.realtime.on('show_lhdn_loader', () => {
 frappe.realtime.on('hide_lhdn_loader', () => {
     hide_loading_overlay();
 });
-
-function show_loading_overlay() {
-    if (!$('#custom-loading-overlay').length) {
-        $('body').append(`
-            <div id="custom-loading-overlay" style="
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(255, 255, 255, 0.7);
-                z-index: 10000;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            ">
-                <img src="/assets/myinvois_erpgulf/js/loading01.gif" style="width: 100px;" />
-            </div>
-        `);
-    }
-}
-
-function hide_loading_overlay() {
-    $('#custom-loading-overlay').remove();
-}
