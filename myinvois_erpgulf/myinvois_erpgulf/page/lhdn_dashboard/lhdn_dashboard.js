@@ -17,7 +17,7 @@ frappe.pages['lhdn-dashboard'].on_page_load = function (wrapper) {
         });
     }
 
-    new LhdnDashboard(page);
+    wrapper.lhdn_dashboard = new LhdnDashboard(page);
 };
 
 class LhdnDashboard {
@@ -271,7 +271,7 @@ class LhdnDashboard {
             borderWidth: 1,
         }));
 
-        new Chart(ctx, {
+        const chartInstance = new Chart(ctx, {
             type: chartType,
             data: { labels, datasets },
             options: {
