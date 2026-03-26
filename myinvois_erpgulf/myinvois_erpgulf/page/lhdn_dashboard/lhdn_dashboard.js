@@ -200,10 +200,10 @@ class LhdnDashboard {
                 let status = invoice.custom_lhdn_status;
 
                 if (year === currentYear) {
-                    if (!status || !status.trim()) {
+                    if (!status?.trim()) {
                         status = "Not Submitted";
                     }
-                    if (!monthlyStatusCount[status]) monthlyStatusCount[status] = Array(12).fill(0);
+                    if (!monthlyStatusCount[status]) monthlyStatusCount[status] = new Array(12).fill(0);
                     monthlyStatusCount[status][month]++;
                 }
             });
@@ -233,7 +233,7 @@ class LhdnDashboard {
                 let status = invoice.custom_lhdn_status;
 
                 if (month === currentMonth) {
-                    if (!status || !status.trim()) {
+                    if (!status?.trim()) {
                         status = "Not Submitted";
                     }
                     statusCount[status] = (statusCount[status] || 0) + 1;
@@ -272,7 +272,7 @@ class LhdnDashboard {
             borderWidth: 1,
         }));
 
-        new Chart(ctx, {
+        const chartInstance = new Chart(ctx, {
             type: chartType,
             data: { labels, datasets },
             options: {
@@ -306,7 +306,7 @@ class LhdnDashboard {
                             <td>${row.name}</td>
                             <td>${row.customer}</td>
                             <td>${row.posting_date}</td>
-                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.custom_lhdn_status?.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
                             <td>${row.grand_total}</td>
                         </tr>`
                     ).join("");
@@ -349,7 +349,7 @@ class LhdnDashboard {
                             <td>${row.name}</td>
                             <td>${row.supplier}</td>
                             <td>${row.posting_date}</td>
-                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.custom_lhdn_status?.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
                             <td>${row.grand_total}</td>
                         </tr>`
                     ).join("");

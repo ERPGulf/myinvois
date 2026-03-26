@@ -855,15 +855,6 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 line_xml,
             )
 
-            # submission_url(sales_invoice_doc)
-            # response_data = json.loads(sales_invoice_doc.custom_submit_response)
-            # submission_uid = response_data.get("submissionUid")
-
-            # if not submission_uid:
-            #     frappe.throw(
-            #         f"Submission UID not found.. not submitted due to an error in the response: "
-            #         f"{response_data}"
-            #     )
         else:
             invoice = create_invoice_with_extensions()
             invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
