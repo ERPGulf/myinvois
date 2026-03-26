@@ -62,7 +62,6 @@ class LhdnDashboard {
                 args: {
                     doctype,
                     filters: [
-                        // ["docstatus", "=", 1],
                         ["custom_lhdn_status", "in", ["", null]]
                     ]
                 }
@@ -123,7 +122,6 @@ class LhdnDashboard {
             this.form.get_field("summary_cards").html(cardHtml);
         });
     }
-
 
     create_card(title, count, index, doctype) {
         const colors = [
@@ -248,17 +246,20 @@ class LhdnDashboard {
 
     render_chart(chartId, data, label, chartType) {
         const ctx = document.getElementById(chartId).getContext('2d');
+
+        if (!ctx) return;
+
         const labels = chartType === 'bar'
             ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
             : Object.keys(data);
 
         const colors = [
-            'rgba(255, 99, 132, 0.6)',   // Valid
-            'rgba(54, 162, 235, 0.6)',   // Invalid
-            'rgba(255, 206, 86, 0.6)',   // Submitted
-            'rgba(75, 192, 192, 0.6)',   // Cancelled
-            'rgba(153, 102, 255, 0.6)',  // Failed
-            'rgba(153, 153, 153, 0.6)'   // Not Submitted
+            'rgba(255, 99, 132, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)',
+            'rgba(153, 153, 153, 0.6)'
         ];
 
         const borderColors = colors.map(c => c.replace('0.6', '1'));
@@ -271,7 +272,7 @@ class LhdnDashboard {
             borderWidth: 1,
         }));
 
-        const chartInstance = new Chart(ctx, {
+        new Chart(ctx, {
             type: chartType,
             data: { labels, datasets },
             options: {
@@ -348,7 +349,8 @@ class LhdnDashboard {
                             <td>${row.name}</td>
                             <td>${row.supplier}</td>
                             <td>${row.posting_date}</td>
-                            <td>${row.custom_lhdn_status?.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.custom_lhdn_status && row.custom_lhdn_status.trim() ? row.custom_lhdn_status : 'Not Submitted'}</td>
+                            <td>${row.grand_total}</td>
                         </tr>`
                     ).join("");
 
