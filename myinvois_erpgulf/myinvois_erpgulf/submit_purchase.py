@@ -978,7 +978,7 @@ def submit_document(invoice_number : str, any_item_has_tax_template: typing.Opti
                 frappe.throw(
                     _(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
                 )
-                pass
+                # pass
 
     except (
         frappe.DoesNotExistError,
@@ -1011,7 +1011,7 @@ def submit_document_wrapper(doc, _method=None):
 
             submit_document(doc.name)
 
-        else:
-            pass
+        # else:
+        #     pass
     finally:
         frappe.publish_realtime("hide_lhdn_loader", {}, user=frappe.session.user)
