@@ -202,6 +202,53 @@ def add_signature(invoice):
         frappe.throw(_(f"Error signature data: {str(e)}"))
         return None
 
+def validate_invoice_type(sales_invoice_doc):
+    """Validate invoice type rules based on LHDN"""
+    if not sales_invoice_doc.custom_invoicetype_code:
+        frappe.throw(_("Custom Invoice Type Code is missing!"))
+
+    if (
+        sales_invoice_doc.is_return == 1
+        and sales_invoice_doc.custom_is_return_refund == 0
+        and sales_invoice_doc.custom_invoicetype_code not in [CREDIT_NOTE]
+    ):
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '02 : Credit Note'")
+        )
+
+    if (
+        sales_invoice_doc.custom_is_return_refund == 1
+        and sales_invoice_doc.is_return == 1
+        and sales_invoice_doc.custom_invoicetype_code not in [REFUND]
+    ):
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '04 :  Refund Note'")
+        )
+
+    if sales_invoice_doc.is_debit_note == 1 and \
+       sales_invoice_doc.custom_invoicetype_code != DEBIT_NOTE:
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '03 : Debit Note'")
+        )
+
+
+def get_invoice_type_code(invoice, sales_invoice_doc, company_abbr):
+    """Prepare and append InvoiceTypeCode"""
+    raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
+    invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
+
+    company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
+    version = "1.1" if (
+        company_doc.custom_certificate_file and company_doc.custom_version == "1.1"
+    ) else "1.0"
+
+    create_element(
+        invoice,
+        "cbc:InvoiceTypeCode",
+        invoice_type_code,
+        {"listVersionID": version},
+    )
+
 
 def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
     """Adds the Sales Invoice data to the invoice"""
@@ -211,75 +258,23 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         formatted_date, formatted_time = get_current_utc_datetime()
         create_element(invoice, "cbc:IssueDate", str(formatted_date))
         create_element(invoice, "cbc:IssueTime", str(formatted_time))
-        if not sales_invoice_doc.custom_invoicetype_code:
-            frappe.throw(_("Custom Invoice Type Code is missing!"))
 
-        if (
-            sales_invoice_doc.is_return == 1
-            and sales_invoice_doc.custom_is_return_refund == 0
-        ):
-            
-            if sales_invoice_doc.custom_invoicetype_code not in [
-                CREDIT_NOTE,
-            ]:
-                frappe.throw(
-                    _(
-                        "As per LHDN Regulation,Choose the invoice type code as '02 : Credit Note'"
-                    )
-                )
-        if (
-            sales_invoice_doc.custom_is_return_refund == 1
-            and sales_invoice_doc.is_return == 1
-        ):
-            
-            if sales_invoice_doc.custom_invoicetype_code not in [
-                REFUND,
-            ]:
-                frappe.throw(
-                    _(
-                        "As per LHDN Regulation,Choose the invoice type code as '04 :  Refund Note'"
-                    )
-                )
-        if sales_invoice_doc.is_debit_note == 1:
-            # Check if the field is already set to "03 : Debit Note"
-            if sales_invoice_doc.custom_invoicetype_code != DEBIT_NOTE:
-                frappe.throw(
-                    _(
-                        "As per LHDN Regulation,Choose the invoice type code as '03 : Debit Note'"
-                    )
-                )
-        raw_invoice_type_code = sales_invoice_doc.custom_invoicetype_code
+        # 🔹 Extracted validation (reduces complexity)
+        validate_invoice_type(sales_invoice_doc)
 
-        invoice_type_code = raw_invoice_type_code.split(":")[0].strip()
-        company_doc = frappe.get_doc("Company", {"abbr": company_abbr})
-        if company_doc.custom_certificate_file and company_doc.custom_version == "1.1":
-            create_element(
-                invoice,
-                "cbc:InvoiceTypeCode",
-                invoice_type_code,
-                {"listVersionID": "1.1"},
-            )
-        else:
-            create_element(
-                invoice,
-                "cbc:InvoiceTypeCode",
-                invoice_type_code,
-                {"listVersionID": "1.0"},
-            )
+        # 🔹 Extracted invoice type handling
+        get_invoice_type_code(invoice, sales_invoice_doc, company_abbr)
 
-        create_element(
-            invoice, "cbc:DocumentCurrencyCode", sales_invoice_doc.currency
-        )  # or sales_invoice_doc.currency
+        create_element(invoice, "cbc:DocumentCurrencyCode", sales_invoice_doc.currency)
         create_element(invoice, "cbc:TaxCurrencyCode", sales_invoice_doc.currency)
 
         inv_period = create_element(invoice, "cac:InvoicePeriod")
         create_element(inv_period, "cbc:StartDate", str(sales_invoice_doc.posting_date))
         create_element(inv_period, "cbc:EndDate", str(sales_invoice_doc.due_date))
         create_element(inv_period, DESCRIPTION, "Monthly")
-        
-        invoice_number = sales_invoice_doc.name
-        add_billing_reference(invoice, invoice_number, sales_invoice_doc)
-        # add_signature(invoice)
+
+        add_billing_reference(invoice, sales_invoice_doc.name, sales_invoice_doc)
+
         return invoice
 
     except (
@@ -290,7 +285,6 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
     ) as e:
         frappe.throw(_(f"Error sales invoice data: {str(e)}"))
         return None
-
 
 def company_data(invoice, sales_invoice_doc):
     """Adds the Company data to the invoice"""
@@ -1121,10 +1115,10 @@ def item_data_with_template(invoice, sales_invoice_doc):
             cbc_percent = ET.SubElement(cac_taxcategory,CBC_PERCENT)
             cbc_percent.text = f"{float(item_tax_percentage):.2f}"
             cac_taxscheme = ET.SubElement(cac_taxcategory,TAX_SCHE)
-            cbc_taxScheme_id = ET.SubElement(
+            cbc_taxscheme_id = ET.SubElement(
                 cac_taxscheme, CBC_ID, schemeAgencyID="6", schemeID=UN_ECE
             )
-            cbc_taxScheme_id.text = "OTH"
+            cbc_taxscheme_id.text = "OTH"
 
             cac_item = ET.SubElement(cac_invoiceline, "cac:Item")
             cbc_description = ET.SubElement(cac_item, DESCRIPTION)
