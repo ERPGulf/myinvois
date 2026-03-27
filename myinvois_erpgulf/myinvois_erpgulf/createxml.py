@@ -1303,7 +1303,7 @@ def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
 def delayed_qr_generation(sales_invoice_name):
     sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice_name)
     try:
-        # status = "delayed"
+  
         qr_image_path = generate_qr_code(sales_invoice_doc)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
     except Exception as e:
