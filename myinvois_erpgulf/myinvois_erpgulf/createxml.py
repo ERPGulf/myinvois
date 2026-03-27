@@ -89,6 +89,34 @@ def get_current_utc_datetime():
     formatted_time = current_datetime_utc.strftime("%H:%M:%SZ")
     return formatted_date, formatted_time
 
+def handle_special_invoice_type(invoice_document_reference, sales_invoice_doc):
+    """handles special cases for certain invoice types (Credit Note, Debit Note, Refund)"""
+    if sales_invoice_doc.custom_invoicetype_code in [
+        CREDIT_NOTE,
+        DEBIT_NOTE,
+        REFUND,
+    ]:
+        doc_id = sales_invoice_doc.return_against
+        if not doc_id:
+            frappe.throw(_("No document found in return_against."))
+        doc = frappe.get_doc("Sales Invoice", doc_id)
+        if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
+            try:
+                custom_submit_response = json.loads(doc.custom_submit_response)
+                accepted_documents = custom_submit_response.get(
+                    "acceptedDocuments", []
+                )
+                if accepted_documents:
+                    uuid = accepted_documents[0].get("uuid")
+                    create_element(invoice_document_reference, "cbc:UUID", uuid)
+                else:
+                    frappe.throw(
+                        _("No accepted documents found in custom_submit_response.")
+                    )
+            except Exception as e:
+                frappe.throw(
+                    _("Error parsing custom_submit_response: {0}").format(str(e))
+                )
 
 def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
     """Adds BillingReference with InvoiceDocumentReference to the invoice"""
@@ -103,39 +131,11 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
             REFUND,
         ]:
             invoice_id = sales_invoice_doc.return_against
-
         else:
             invoice_id = get_icv_code(invoice_number)
-
         create_element(invoice_document_reference, CBC_ID, invoice_id)
-        if sales_invoice_doc.custom_invoicetype_code in [
-            CREDIT_NOTE,
-            DEBIT_NOTE,
-            REFUND,
-        ]:
-            doc_id = sales_invoice_doc.return_against
-            if not doc_id:
-                frappe.throw(_("No document found in return_against."))
 
-            doc = frappe.get_doc("Sales Invoice", doc_id)
-
-            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
-                try:
-                    custom_submit_response = json.loads(doc.custom_submit_response)
-                    accepted_documents = custom_submit_response.get(
-                        "acceptedDocuments", []
-                    )
-                    if accepted_documents:
-                        uuid = accepted_documents[0].get("uuid")
-                        create_element(invoice_document_reference, "cbc:UUID", uuid)
-                    else:
-                        frappe.throw(
-                            _("No accepted documents found in custom_submit_response.")
-                        )
-                except Exception as e:
-                    frappe.throw(
-                        _("Error parsing custom_submit_response: {0}").format(str(e))
-                    )
+        handle_special_invoice_type(invoice_document_reference, sales_invoice_doc)
 
         # else:
         #     frappe.throw(_("custom_submit_response is missing or empty."))
@@ -1211,8 +1211,8 @@ def generate_qr_code(sales_invoice_doc, status):
 
     submission_uid = submit_response.get("submissionUid")
     if not submission_uid:
-
-        sales_invoice_doc.custom_lhdn_status = "Failed"
+        status = "failed"
+        sales_invoice_doc.custom_lhdn_status = status
         sales_invoice_doc.save(ignore_permissions=True)
         
         frappe.db.commit() # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
