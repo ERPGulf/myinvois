@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+
 # -----------------------------
 # Tax categories
 # -----------------------------
@@ -10,19 +11,76 @@ TAX_CATEGORIES = {
     "04": "High-Value Goods Tax",
     "05": "Sales Tax on Low Value Goods",
     "06": "Not Applicable",
-    "E" : "Tax Exemption (where applicable)"
-   
+    "E": "Tax Exemption (where applicable)"
 }
 
 # -----------------------------
-# Process Sales Invoices with filters using SQL
+# Common Helpers
+# -----------------------------
+def apply_filters(query, filters, values, alias):
+    if filters.get("company"):
+        query += f" AND {alias}.company = %s"
+        values.append(filters["company"])
+
+    if filters.get("from_date") and filters.get("to_date"):
+        query += f" AND {alias}.posting_date BETWEEN %s AND %s"
+        values.extend([filters["from_date"], filters["to_date"]])
+    elif filters.get("from_date"):
+        query += f" AND {alias}.posting_date >= %s"
+        values.append(filters["from_date"])
+    elif filters.get("to_date"):
+        query += f" AND {alias}.posting_date <= %s"
+        values.append(filters["to_date"])
+
+    return query
+
+
+def update_totals_from_items(rows, totals):
+    for row in rows:
+        key_amount = "adjustment" if row.is_return else "amount"
+
+        code = row.code or "E"
+        if code not in TAX_CATEGORIES:
+            code = "E"
+
+        amount = row.amount or 0
+        vat = round((row.net_amount or amount) * (row.tax_rate / 100), 2)
+
+        totals[code][key_amount] += amount
+        totals[code]["vat"] += vat
+
+
+def update_totals_from_invoices(rows, totals, doctype_item):
+    for doc in rows:
+        item_check = frappe.db.exists(
+            doctype_item,
+            {"parent": doc.name, "item_tax_template": ["is", "set"]}
+        )
+        if item_check:
+            continue
+
+        key_amount = "adjustment" if doc.is_return else "amount"
+
+        raw_code = doc.custom_malaysia_tax_category or "E"
+        code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
+        if code not in TAX_CATEGORIES:
+            code = "E"
+
+        totals[code][key_amount] += doc.grand_total or 0
+        totals[code]["vat"] += doc.total_taxes_and_charges or 0
+
+
+def init_totals():
+    return {k: {"amount": 0, "adjustment": 0, "vat": 0} for k in TAX_CATEGORIES.keys()}
+
+
+# -----------------------------
+# Sales Invoice Processing
 # -----------------------------
 def process_sales_invoices(filters=None):
-    totals = {k: {"amount": 0, "adjustment": 0, "vat": 0} for k in TAX_CATEGORIES.keys()}
+    totals = init_totals()
     filters = filters or {}
-    values = []
 
-    # --- Items-level totals ---
     query_items = """
         SELECT si.name AS invoice, sit.custom_malaysia_tax_category AS code,
                sii.amount, sii.net_amount,
@@ -35,32 +93,12 @@ def process_sales_invoices(filters=None):
         WHERE si.docstatus = 1 AND sii.item_tax_template IS NOT NULL
     """
 
-    if filters.get("company"):
-        query_items += " AND si.company = %s"
-        values.append(filters["company"])
-    if filters.get("from_date") and filters.get("to_date"):
-        query_items += " AND si.posting_date BETWEEN %s AND %s"
-        values.extend([filters["from_date"], filters["to_date"]])
-    elif filters.get("from_date"):
-        query_items += " AND si.posting_date >= %s"
-        values.append(filters["from_date"])
-    elif filters.get("to_date"):
-        query_items += " AND si.posting_date <= %s"
-        values.append(filters["to_date"])
-
+    values = []
+    query_items = apply_filters(query_items, filters, values, "si")
     items = frappe.db.sql(query_items, values, as_dict=True)
 
-    for row in items:
-        key_amount = "adjustment" if row.is_return else "amount"
-        code = row.code or "E"
-        if code not in TAX_CATEGORIES:
-            code = "E"
-        amount = row.amount or 0
-        vat = round((row.net_amount or amount) * (row.tax_rate / 100), 2)
-        totals[code][key_amount] += amount
-        totals[code]["vat"] += vat
+    update_totals_from_items(items, totals)
 
-    # --- Invoice-level fallback (no item tax template) ---
     query_invoice = """
         SELECT si.name, si.grand_total, si.total_taxes_and_charges,
                si.custom_malaysia_tax_category, si.is_return
@@ -69,49 +107,21 @@ def process_sales_invoices(filters=None):
     """
 
     values = []
-    if filters.get("company"):
-        query_invoice += " AND si.company = %s"
-        values.append(filters["company"])
-    if filters.get("from_date") and filters.get("to_date"):
-        query_invoice += " AND si.posting_date BETWEEN %s AND %s"
-        values.extend([filters["from_date"], filters["to_date"]])
-    elif filters.get("from_date"):
-        query_invoice += " AND si.posting_date >= %s"
-        values.append(filters["from_date"])
-    elif filters.get("to_date"):
-        query_invoice += " AND si.posting_date <= %s"
-        values.append(filters["to_date"])
-
+    query_invoice = apply_filters(query_invoice, filters, values, "si")
     invoices = frappe.db.sql(query_invoice, values, as_dict=True)
 
-    for doc in invoices:
-        # Check if this invoice has items with templates already counted
-        item_check = frappe.db.exists(
-            "Sales Invoice Item",
-            {"parent": doc.name, "item_tax_template": ["is", "set"]}
-        )
-        if item_check:
-            continue  # Already included in item-level totals
-
-        key_amount = "adjustment" if doc.is_return else "amount"
-        raw_code = doc.custom_malaysia_tax_category or "E"
-        code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
-        if code not in TAX_CATEGORIES:
-            code = "E"
-        totals[code][key_amount] += doc.grand_total or 0
-        totals[code]["vat"] += doc.total_taxes_and_charges or 0
+    update_totals_from_invoices(invoices, totals, "Sales Invoice Item")
 
     return totals
 
+
 # -----------------------------
-# Process Purchase Invoices with filters using SQL
+# Purchase Invoice Processing
 # -----------------------------
 def process_purchase_invoices(filters=None):
-    totals = {k: {"amount": 0, "adjustment": 0, "vat": 0} for k in TAX_CATEGORIES.keys()}
+    totals = init_totals()
     filters = filters or {}
-    values = []
 
-    # --- Items-level totals ---
     query_items = """
         SELECT pi.name AS invoice, pit.custom_malaysia_tax_category AS code,
                pii.amount, pii.net_amount,
@@ -124,73 +134,30 @@ def process_purchase_invoices(filters=None):
         WHERE pi.docstatus = 1 AND pii.item_tax_template IS NOT NULL
     """
 
-    if filters.get("company"):
-        query_items += " AND pi.company = %s"
-        values.append(filters["company"])
-    if filters.get("from_date") and filters.get("to_date"):
-        query_items += " AND pi.posting_date BETWEEN %s AND %s"
-        values.extend([filters["from_date"], filters["to_date"]])
-    elif filters.get("from_date"):
-        query_items += " AND pi.posting_date >= %s"
-        values.append(filters["from_date"])
-    elif filters.get("to_date"):
-        query_items += " AND pi.posting_date <= %s"
-        values.append(filters["to_date"])
-
+    values = []
+    query_items = apply_filters(query_items, filters, values, "pi")
     items = frappe.db.sql(query_items, values, as_dict=True)
 
-    for row in items:
-        key_amount = "adjustment" if row.is_return else "amount"
-        code = row.code or "E"
-        if code not in TAX_CATEGORIES:
-            code = "E"
-        amount = row.amount or 0
-        vat = round((row.net_amount or amount) * (row.tax_rate / 100), 2)
-        totals[code][key_amount] += amount
-        totals[code]["vat"] += vat
+    update_totals_from_items(items, totals)
 
-    # --- Invoice-level fallback ---
     query_invoice = """
         SELECT pi.name, pi.grand_total, pi.total_taxes_and_charges,
                pi.custom_malaysia_tax_category, pi.is_return
         FROM `tabPurchase Invoice` pi
         WHERE pi.docstatus = 1
     """
-    values = []
-    if filters.get("company"):
-        query_invoice += " AND pi.company = %s"
-        values.append(filters["company"])
-    if filters.get("from_date") and filters.get("to_date"):
-        query_invoice += " AND pi.posting_date BETWEEN %s AND %s"
-        values.extend([filters["from_date"], filters["to_date"]])
-    elif filters.get("from_date"):
-        query_invoice += " AND pi.posting_date >= %s"
-        values.append(filters["from_date"])
-    elif filters.get("to_date"):
-        query_invoice += " AND pi.posting_date <= %s"
-        values.append(filters["to_date"])
 
+    values = []
+    query_invoice = apply_filters(query_invoice, filters, values, "pi")
     invoices = frappe.db.sql(query_invoice, values, as_dict=True)
 
-    for doc in invoices:
-        item_check = frappe.db.exists(
-            "Purchase Invoice Item",
-            {"parent": doc.name, "item_tax_template": ["is", "set"]}
-        )
-        if item_check:
-            continue  # Already included
-        key_amount = "adjustment" if doc.is_return else "amount"
-        raw_code = doc.custom_malaysia_tax_category or "E"
-        code = raw_code.split(" : ")[0] if " : " in raw_code else raw_code
-        if code not in TAX_CATEGORIES:
-            code = "E"
-        totals[code][key_amount] += doc.grand_total or 0
-        totals[code]["vat"] += doc.total_taxes_and_charges or 0
+    update_totals_from_invoices(invoices, totals, "Purchase Invoice Item")
 
     return totals
 
+
 # -----------------------------
-# Execute function with filters
+# Execute Report
 # -----------------------------
 def execute(filters=None):
     columns = [
@@ -199,11 +166,13 @@ def execute(filters=None):
         {"label": _("Adjustment (SAR)"), "fieldname": "adjustment", "fieldtype": "Currency", "width": 180},
         {"label": _("Adjustment (SAR)"), "fieldname": "vat", "fieldtype": "Currency", "width": 180},
     ]
+
     data = []
 
     # --- SALES VAT ---
     data.append({"category": "<b>Sales VAT</b>", "amount": None, "adjustment": None, "vat": None})
     sales_totals = process_sales_invoices(filters)
+
     for code, label in TAX_CATEGORIES.items():
         vals = sales_totals[code]
         data.append({
@@ -212,11 +181,13 @@ def execute(filters=None):
             "adjustment": vals["adjustment"],
             "vat": vals["vat"]
         })
+
     total_sales = {
-        "amount": sum(vals["amount"] for vals in sales_totals.values()),
-        "adjustment": sum(vals["adjustment"] for vals in sales_totals.values()),
-        "vat": sum(vals["vat"] for vals in sales_totals.values())
+        "amount": sum(v["amount"] for v in sales_totals.values()),
+        "adjustment": sum(v["adjustment"] for v in sales_totals.values()),
+        "vat": sum(v["vat"] for v in sales_totals.values())
     }
+
     data.append({
         "category": "<b>Total Sales</b>",
         "amount": total_sales["amount"],
@@ -229,6 +200,7 @@ def execute(filters=None):
     # --- PURCHASE VAT ---
     data.append({"category": "<b>Purchase VAT</b>", "amount": None, "adjustment": None, "vat": None})
     purchase_totals = process_purchase_invoices(filters)
+
     for code, label in TAX_CATEGORIES.items():
         vals = purchase_totals[code]
         data.append({
@@ -237,11 +209,13 @@ def execute(filters=None):
             "adjustment": vals["adjustment"],
             "vat": vals["vat"]
         })
+
     total_purchase = {
-        "amount": sum(vals["amount"] for vals in purchase_totals.values()),
-        "adjustment": sum(vals["adjustment"] for vals in purchase_totals.values()),
-        "vat": sum(vals["vat"] for vals in purchase_totals.values())
+        "amount": sum(v["amount"] for v in purchase_totals.values()),
+        "adjustment": sum(v["adjustment"] for v in purchase_totals.values()),
+        "vat": sum(v["vat"] for v in purchase_totals.values())
     }
+
     data.append({
         "category": "<b>Total Purchase</b>",
         "amount": total_purchase["amount"],

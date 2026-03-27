@@ -294,105 +294,118 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         return None
 
 
+def set_msic_code(party_, company_doc):
+    """Adds the MSIC code to the party element"""
+    msic_code_full = company_doc.custom_msic_code_
+    if ":" in msic_code_full:
+        msic_code_code, msic_code_name = [
+            s.strip() for s in msic_code_full.split(":", 1)
+        ]
+    else:
+        msic_code_code, msic_code_name = msic_code_full.strip(), ""
+
+    cbc_indclacode = ET.SubElement(
+        party_, "cbc:IndustryClassificationCode", name=msic_code_name
+    )
+    cbc_indclacode.text = msic_code_code
+
+
+def set_identifiers(party_, company_doc):
+    """Adds the various identifiers (TIN, Registration/IC/Passport, SST, TTX) to the party element"""
+    identifiers = [
+        ("TIN", company_doc.custom_customer_tin_number),
+        (
+            company_doc.custom_customer__registrationicpassport_type,
+            company_doc.custom_customer_registrationicpassport_number,
+        ),
+        ("SST", getattr(company_doc, "custom_sst_number", "NA") or "NA"),
+        ("TTX", getattr(company_doc, "custom_tourism_tax_number", "NA") or "NA"),
+    ]
+
+    for scheme_id, value in identifiers:
+        party_id = ET.SubElement(party_, PARTY_IDENTIFICATION)
+        id_element = ET.SubElement(party_id, CBC_ID, schemeID=scheme_id)
+        id_element.text = str(value) if value else "NA"
+
+
+def set_address(party_, sales_invoice_doc, company_doc):
+    """Adds the address information to the party element and returns the address document"""
+    if int(frappe.__version__.split(".")[0]) == 13:
+        address = frappe.get_doc("Address", sales_invoice_doc.primary_address)
+    else:
+        address = frappe.get_doc(
+            "Address", company_doc.supplier_primary_address
+        )
+
+    post_add = ET.SubElement(party_, POSTAL_ADDRESS)
+    ET.SubElement(post_add, CITY_NAME).text = address.city
+    ET.SubElement(post_add, POSTAL_ZONE).text = address.pincode
+
+    statecode_raw = address.custom_state_code or ""
+    statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "17"
+    if not statecode:
+        statecode = "17"
+    ET.SubElement(post_add, COUNTRY_SUBENTITY).text = statecode
+
+    add_line1 = ET.SubElement(post_add, ADDRESS_LINE)
+    ET.SubElement(add_line1, LINE).text = address.address_line1
+
+    add_line2 = ET.SubElement(post_add, ADDRESS_LINE)
+    ET.SubElement(add_line2, LINE).text = address.address_line2
+
+    combined_city_pincode = f"{address.city}, {address.pincode}"
+    add_line3 = ET.SubElement(post_add, ADDRESS_LINE)
+    ET.SubElement(add_line3, LINE).text = combined_city_pincode
+
+    cntry = ET.SubElement(post_add, COUNTRY)
+    idntfn_cod = ET.SubElement(
+        cntry,
+        IDENTIFICATION_CODE,
+        listAgencyID="6",
+        listID="ISO3166-1",
+    )
+
+    idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
+
+    return address
+
+
+def set_contact(party_, address):
+    """Adds contact information to the party element"""
+    cont_ct = ET.SubElement(party_, "cac:Contact")
+
+    phone = address.get("phone")
+    ET.SubElement(cont_ct, "cbc:Telephone").text = (
+        phone if not is_na(phone) else "60100000000"
+    )
+
+    email = address.get("email_id")
+
+    if is_na(email) or not is_valid_email(email):
+        email = "noemail@noemail.com"
+
+    ET.SubElement(cont_ct, "cbc:ElectronicMail").text = email
+
+
 def company_data(invoice, sales_invoice_doc):
     """Adds the Company data to the invoice"""
     try:
         company_doc = frappe.get_doc("Supplier", sales_invoice_doc.supplier)
         account_supplier_party = ET.SubElement(invoice, "cac:AccountingSupplierParty")
         party_ = ET.SubElement(account_supplier_party, "cac:Party")
-        # Extract MSIC code and name
-        msic_code_full = (
-            company_doc.custom_msic_code_
-        )  # e.g., "01111: Growing of maize"
-        if ":" in msic_code_full:
-            msic_code_code, msic_code_name = [
-                s.strip() for s in msic_code_full.split(":", 1)
-            ]
-        else:
-            msic_code_code, msic_code_name = msic_code_full.strip(), ""
-        # Create the cbc:IndustryClassificationCode element
-        cbc_indclacode = ET.SubElement(
-            party_, "cbc:IndustryClassificationCode", name=msic_code_name
-        )
-        cbc_indclacode.text = msic_code_code
 
-        # Company Identifications
-        identifiers = [
-            ("TIN", company_doc.custom_customer_tin_number),
-            (
-                company_doc.custom_customer__registrationicpassport_type,
-                company_doc.custom_customer_registrationicpassport_number,
-            ),
-            ("SST", getattr(company_doc, "custom_sst_number", "NA") or "NA"),
-            ("TTX", getattr(company_doc, "custom_tourism_tax_number", "NA") or "NA"),
-        ]
+        set_msic_code(party_, company_doc)
+        set_identifiers(party_, company_doc)
 
-        for scheme_id, value in identifiers:
-            party_id = ET.SubElement(party_, PARTY_IDENTIFICATION)
-            id_element = ET.SubElement(party_id, CBC_ID, schemeID=scheme_id)
-            id_element.text = str(value) if value else "NA"
+        address = set_address(party_, sales_invoice_doc, company_doc)
 
-        # Retrieve the first valid company address
-        if int(frappe.__version__.split(".")[0]) == 13:
-            address = frappe.get_doc("Address", sales_invoice_doc.primary_address)
-        else:
-            address = frappe.get_doc(
-                "Address", company_doc.supplier_primary_address
-            )  # Select the first address only
-        # Create PostalAddress Element
-        post_add = ET.SubElement(party_, POSTAL_ADDRESS)
-        ET.SubElement(post_add, CITY_NAME).text = address.city
-        ET.SubElement(post_add, POSTAL_ZONE).text = address.pincode
-       
-        statecode_raw = address.custom_state_code or ""
-        statecode = statecode_raw.split(":")[0].strip() if statecode_raw else "17"
-        if not statecode:
-            statecode = "17"
-        ET.SubElement(post_add, COUNTRY_SUBENTITY).text = statecode
-        # Address lines
-        add_line1 = ET.SubElement(post_add, ADDRESS_LINE)
-        ET.SubElement(add_line1, LINE).text = address.address_line1
-
-        add_line2 = ET.SubElement(post_add, ADDRESS_LINE)
-        ET.SubElement(add_line2, LINE).text = address.address_line2
-
-        # Combined city and postal code
-        combined_city_pincode = f"{address.city}, {address.pincode}"
-        add_line3 = ET.SubElement(post_add, ADDRESS_LINE)
-        ET.SubElement(add_line3, LINE).text = combined_city_pincode
-
-        # Country
-        cntry = ET.SubElement(post_add, COUNTRY)
-        idntfn_cod = ET.SubElement(
-            cntry,
-            IDENTIFICATION_CODE,
-            listAgencyID="6",
-            listID="ISO3166-1",
-        )
-      
-        idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
-
-        # PartyLegalEntity
         party_legal_entity = ET.SubElement(party_, LEGAL_ENTITY)
         ET.SubElement(party_legal_entity, REG_NAME).text = (
             sales_invoice_doc.supplier
         )
 
-        # Contact Information
-        cont_ct = ET.SubElement(party_, "cac:Contact")
-       
+        set_contact(party_, address)
 
-        phone = address.get("phone")
-        ET.SubElement(cont_ct, "cbc:Telephone").text = (
-            phone if not is_na(phone) else "60100000000"
-        )
-        email = address.get("email_id")
-
-        if is_na(email) or not is_valid_email(email):
-
-            email = "noemail@noemail.com"
-
-        ET.SubElement(cont_ct, "cbc:ElectronicMail").text = email
         return invoice
 
     except (
@@ -1284,7 +1297,7 @@ def delayed_qr_generation(sales_invoice_name):
         )
 
         sales_invoice_doc = frappe.get_doc("Purchase Invoice", sales_invoice_name)
-        status = "delayed"
+
         qr_image_path = generate_qr_code(sales_invoice_doc)
         if qr_image_path:
             attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
