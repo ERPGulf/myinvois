@@ -903,7 +903,7 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         frappe.throw(_(f"Error in validate before  document: {str(e)}"))
 
 
-def validate_before_submit(doc, method=None):
+def validate_before_submit(doc, _method=None):
     """validating the invoice before submission"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
     validate_before(doc.name)
@@ -1112,7 +1112,7 @@ def submit_document(invoice_number: str, any_item_has_tax_template:typing.Option
         frappe.log_error(_(f"Error in submit document: {str(e)}"))
 
 
-def submit_document_wrapper(doc, method=None):
+def submit_document_wrapper(doc, _method=None):
     """submit_document_wrapper"""
     frappe.publish_realtime("show_lhdn_loader", {}, user=frappe.session.user)
     try:

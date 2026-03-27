@@ -801,7 +801,7 @@ def validate_msic(company_doc):
             frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
 
 
-def validate_before_submit(doc, method=None):
+def validate_before_submit(doc, _method=None):
     """validating the invoice before submission"""
     validate_before(doc.name)
 
@@ -991,7 +991,7 @@ def submit_document(invoice_number : str, any_item_has_tax_template: typing.Opti
         frappe.throw(_(f"Error in submit document: {str(e)}"))
 
 
-def submit_document_wrapper(doc, method=None):
+def submit_document_wrapper(doc, _method=None):
     """submit_document_wrapper"""
     frappe.publish_realtime("show_lhdn_loader", {}, user=frappe.session.user)
     try:
