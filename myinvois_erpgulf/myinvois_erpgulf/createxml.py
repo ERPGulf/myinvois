@@ -1198,7 +1198,7 @@ def get_api_url(company_abbr, base_url=""):
         frappe.throw(f"Error generating API URL: {e}")
 
 
-def generate_qr_code(sales_invoice_doc, status):
+def generate_qr_code(sales_invoice_doc):
     """Generate QR code for the given Sales Invoice that links to verification URL"""
 
     company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
@@ -1304,7 +1304,7 @@ def delayed_qr_generation(sales_invoice_name):
     sales_invoice_doc = frappe.get_doc("Sales Invoice", sales_invoice_name)
     try:
         status = "delayed"
-        qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        qr_image_path = generate_qr_code(sales_invoice_doc)
         attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
     except Exception as e:
         frappe.log_error(str(e), "Delayed QR generation failed")

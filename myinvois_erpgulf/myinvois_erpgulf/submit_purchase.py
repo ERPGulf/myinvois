@@ -900,7 +900,7 @@ def submit_document(invoice_number : str, any_item_has_tax_template: typing.Opti
                 if submission_uid:
     # Update the status safely
                     status = status_submission(invoice_number, sales_invoice_doc, company_abbr)
-                    qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    qr_image_path = generate_qr_code(sales_invoice_doc)
                     if not qr_image_path or not os.path.exists(qr_image_path):
                         frappe.log_error(
                             f"QR code path invalid: {qr_image_path}", 
@@ -962,7 +962,7 @@ def submit_document(invoice_number : str, any_item_has_tax_template: typing.Opti
                 # else:
                 else:
                     status= status_submission(invoice_number, sales_invoice_doc, company_abbr)
-                    qr_image_path = generate_qr_code(sales_invoice_doc, status)
+                    qr_image_path = generate_qr_code(sales_invoice_doc)
                     if not qr_image_path or not os.path.exists(qr_image_path):
                         frappe.log_error(
                             message=f"QR code path invalid: {qr_image_path}", 

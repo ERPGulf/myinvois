@@ -104,7 +104,7 @@ def status_submit(doc: Union[str, Dict[str, Any]]):
 
                     if not existing_attachments:
                         try:
-                            qr_image_path = generate_qr_code(invoice, status)
+                            qr_image_path = generate_qr_code(invoice)
                             if not qr_image_path or not os.path.exists(qr_image_path):
                                 frappe.log_error(
                                     message=f"QR code path invalid: {qr_image_path}",

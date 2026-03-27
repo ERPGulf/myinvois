@@ -37,6 +37,10 @@ CHARGE_REASON="cbc:AllowanceChargeReason"
 AMOUNT ="cbc:Amount"
 TAX_TOTAL = "cac:TaxTotal"
 TAX_AMOUNT = "cbc:TaxAmount"
+SELF_CREDIT= "12 : Self-billed Credit Note"
+SELF_DEBIT= "13 : Self-billed Debit Note"
+SELF_REFUND = "14 : Self-billed Refund Note"
+
 
 def get_icv_code(invoice_number):
     """Extracts the numeric part from the invoice number to generate the ICV code"""
@@ -88,6 +92,36 @@ def get_current_utc_datetime():
     return formatted_date, formatted_time
 
 
+def handle_self_billed_reference(invoice_document_reference, sales_invoice_doc):
+    """Handles the special case for self-billed credit/debit/refund """
+    if sales_invoice_doc.custom_invoicetype_code in [
+        SELF_CREDIT,
+        SELF_DEBIT,
+        SELF_REFUND,
+    ]:
+        doc_id = sales_invoice_doc.return_against
+        if not doc_id:
+            frappe.throw(_("No document found in return_against."))
+        doc = frappe.get_doc("Purchase Invoice", doc_id)
+        if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
+            try:
+                custom_submit_response = json.loads(doc.custom_submit_response)
+                accepted_documents = custom_submit_response.get(
+                    "acceptedDocuments", []
+                )
+                if accepted_documents:
+                    uuid = accepted_documents[0].get("uuid")
+                    create_element(invoice_document_reference, "cbc:UUID", uuid)
+                else:
+                    frappe.throw(
+                        _(
+                            "As per LHDN Regulation,no accepted documents found in custom_submit_response."
+                        )
+                    )
+            except Exception as e:
+                frappe.throw(
+                    _("Error parsing custom_submit_response: {0}").format(str(e))
+                )
 def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
     """Adds BillingReference with InvoiceDocumentReference to the invoice"""
     try:
@@ -96,46 +130,18 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
             billing_reference, "cac:InvoiceDocumentReference"
         )
         if sales_invoice_doc.custom_invoicetype_code in [
-            "12 : Self-billed Credit Note",
-            "13 : Self-billed Debit Note",
-            "14 : Self-billed Refund Note",
+            SELF_CREDIT,
+            SELF_DEBIT,
+            SELF_REFUND,
         ]:
             invoice_id = sales_invoice_doc.return_against
         else:
-
             invoice_id = get_icv_code(invoice_number)
-
         create_element(invoice_document_reference, CBC_ID, invoice_id)
-        if sales_invoice_doc.custom_invoicetype_code in [
-            "12 : Self-billed Credit Note",
-            "13 : Self-billed Debit Note",
-            "14 : Self-billed Refund Note",
-        ]:
-            doc_id = sales_invoice_doc.return_against
-            if not doc_id:
-                frappe.throw(_("No document found in return_against."))
 
-            doc = frappe.get_doc("Purchase Invoice", doc_id)
+        # 🔹 extracted block (no internal change)
+        handle_self_billed_reference(invoice_document_reference, sales_invoice_doc)
 
-            if hasattr(doc, "custom_submit_response") and doc.custom_submit_response:
-                try:
-                    custom_submit_response = json.loads(doc.custom_submit_response)
-                    accepted_documents = custom_submit_response.get(
-                        "acceptedDocuments", []
-                    )
-                    if accepted_documents:
-                        uuid = accepted_documents[0].get("uuid")
-                        create_element(invoice_document_reference, "cbc:UUID", uuid)
-                    else:
-                        frappe.throw(
-                            _(
-                                "As per LHDN Regulation,no accepted documents found in custom_submit_response."
-                            )
-                        )
-                except Exception as e:
-                    frappe.throw(
-                        _("Error parsing custom_submit_response: {0}").format(str(e))
-                    )
     except (
         frappe.DoesNotExistError,
         frappe.ValidationError,
@@ -144,8 +150,6 @@ def add_billing_reference(invoice, invoice_number, sales_invoice_doc):
     ) as e:
         frappe.throw(_(f"Error in add billing reference: {str(e)}"))
         return None
-
-
 
 def add_additional_document_reference(invoice, document_references):
     """
@@ -216,7 +220,7 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
             # Check if the field is already set to "03 : Debit Note"
             if (
                 sales_invoice_doc.custom_invoicetype_code
-                != "14 : Self-billed Refund Note"
+                != SELF_REFUND
             ):
                 frappe.throw(_(
                     "As per LHDN Regulation, the invoice type code as '14 : Self-billed Refund Note'"
@@ -227,8 +231,8 @@ def salesinvoice_data(invoice, sales_invoice_doc, company_abbr):
         ):
             # Check if the field is already set to "02 : Credit Note"
             if sales_invoice_doc.custom_invoicetype_code not in [
-                "12 : Self-billed Credit Note",
-                "13 : Self-billed Debit Note",
+                SELF_CREDIT,
+                SELF_DEBIT,
             ]:
                 frappe.throw(_(
                     "As per LHDN Regulation,Choose the invoice type code as Self-billed Credit Note or Self-billed Debit Note"
@@ -1155,38 +1159,8 @@ def get_api_url(company_abbr, base_url=""):
     except Exception as e:
         frappe.throw(_(f"Error generating API URL: {e}"))
 
-
-def generate_qr_code(sales_invoice_doc, status):
-    """Generate QR code for the given Sales Invoice that links to verification URL"""
-
-    
-    company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-    company_abbr = company_doc.abbr
-
-    submit_response = json.loads(sales_invoice_doc.custom_submit_response or "{}")
-    token = company_doc.get("custom_bearer_token")
-    if not token:
-        frappe.throw(_("Bearer token not found in Company document."))
-
-    submission_uid = submit_response.get("submissionUid")
-    if not submission_uid:
-        sales_invoice_doc.custom_lhdn_status = "Failed"
-        sales_invoice_doc.save(ignore_permissions=True)
-        frappe.db.commit() # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
-        frappe.throw(_("Getting error from LHDN, please check 'Submit Response' field"))
-
-    uuid = None
-    if submit_response.get("acceptedDocuments"):
-        uuid = submit_response["acceptedDocuments"][0].get("uuid")
-    if not uuid:
-        frappe.throw(_("UUID not found in acceptedDocuments from LHDN response."))
-
-    # 🔗 Build longId API URL
-    longid_api = get_api_url(
-        company_abbr, f"/api/v1.0/documentsubmissions/{submission_uid}"
-    )
-    headers = {"Authorization": f"Bearer {token}"}
-
+def fetch_long_id(longid_api, headers):
+    """Fetch longId from API with error handling and logging"""
     def get_long_id():
         try:
             res = requests.get(longid_api, headers=headers, timeout=30)
@@ -1196,31 +1170,78 @@ def generate_qr_code(sales_invoice_doc, status):
                     "LHDN longId Fetch Error",
                 )
                 return None
-
             res_data = res.json()
             frappe.log_error(json.dumps(res_data, indent=2), "LHDN longId Response")
-
             if res_data.get("documentSummary"):
                 return res_data["documentSummary"][0].get("longId")
         except Exception as e:
             frappe.log_error(str(e), "QR Code Generation: longId request failed")
         return None
 
-    long_id = get_long_id()
+    return get_long_id()
 
-    # 🔁 Retry after refreshing token
+def create_qr_image(sales_invoice_doc, verification_url):
+    """Generate QR code image from verification URL and return file path"""
+    try:
+        qr_code_payload = json.dumps(verification_url)
+        qr = pyqrcode.create(qr_code_payload)
+        qr_image_path = frappe.utils.get_site_path(
+            "public", "files", f"{sales_invoice_doc.name}_qr.png"
+        )
+        qr.png(qr_image_path, scale=6)
+        return qr_image_path
+    except Exception as e:
+        frappe.log_error(str(e), "QR Code Generation Failed")
+        return None
+
+def generate_qr_code(sales_invoice_doc):
+    """Generate QR code for the given Sales Invoice that links to verification URL"""
+    
+    company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
+    company_abbr = company_doc.abbr
+    submit_response = json.loads(sales_invoice_doc.custom_submit_response or "{}")
+    token = company_doc.get("custom_bearer_token")
+
+    if not token:
+        frappe.throw(_("Bearer token not found in Company document."))
+
+    submission_uid = submit_response.get("submissionUid")
+
+    if not submission_uid:
+        sales_invoice_doc.custom_lhdn_status = "Failed"
+        sales_invoice_doc.save(ignore_permissions=True)
+        frappe.db.commit()  # nosemgrep: frappe-semgrep-rules.rules.frappe-manual-commit
+        frappe.throw(_("Getting error from LHDN, please check 'Submit Response' field"))
+
+    uuid = None
+
+    if submit_response.get("acceptedDocuments"):
+        uuid = submit_response["acceptedDocuments"][0].get("uuid")
+
+    if not uuid:
+        frappe.throw(_("UUID not found in acceptedDocuments from LHDN response."))
+
+    longid_api = get_api_url(
+        company_abbr, f"/api/v1.0/documentsubmissions/{submission_uid}"
+    )
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 🔹 extracted API call
+    long_id = fetch_long_id(longid_api, headers)
+
     if not long_id:
         get_access_token(company_doc.name)
         company_doc.reload()
         token = company_doc.custom_bearer_token
         headers["Authorization"] = f"Bearer {token}"
-        long_id = get_long_id()
+        long_id = fetch_long_id(longid_api, headers)
+
     if not long_id:
         frappe.log_error(
             "longId not found from LHDN — skipping QR generation",
             "QR Generation Skipped",
         )
-        return None  # ✅ silently skip
+        return None
 
     if company_doc.custom_integration_type == "Sandbox":
         verification_url = (
@@ -1229,19 +1250,8 @@ def generate_qr_code(sales_invoice_doc, status):
     else:
         verification_url = f"https://myinvois.hasil.gov.my/{uuid}/share/{long_id}"
 
-    try:
-        qr_code_payload = json.dumps(verification_url)
-        qr = pyqrcode.create(qr_code_payload)
-        qr_image_path = frappe.utils.get_site_path(
-            "public", "files", f"{sales_invoice_doc.name}_qr.png"
-        )
-        qr.png(qr_image_path, scale=6)  # Adjust scale as needed
-        return qr_image_path
-
-    except Exception as e:
-        frappe.log_error(str(e), "QR Code Generation Failed")
-        return None  # ✅ skip if QR creation fa
-
+    # 🔹 extracted QR creation
+    return create_qr_image(sales_invoice_doc, verification_url)
 
 def attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path):
     """Attach the QR code image to the Sales Invoice"""
@@ -1275,7 +1285,7 @@ def delayed_qr_generation(sales_invoice_name):
 
         sales_invoice_doc = frappe.get_doc("Purchase Invoice", sales_invoice_name)
         status = "delayed"
-        qr_image_path = generate_qr_code(sales_invoice_doc, status)
+        qr_image_path = generate_qr_code(sales_invoice_doc)
         if qr_image_path:
             attach_qr_code_to_sales_invoice(sales_invoice_doc, qr_image_path)
         else:
