@@ -757,11 +757,79 @@ def status_submit_success_log(doc: typing.Union[str, typing.Dict[str, typing.Any
     except (ValueError, KeyError, frappe.ValidationError) as e:
         frappe.log_error(_(f"Error during status submission: {str(e)}"))
 
+def build_invoice_base(invoice, sales_invoice_doc, company_abbr):
+    """Build the base structure of the invoice with company and customer data."""
+    invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
+    invoice = company_data(invoice, sales_invoice_doc)
+
+    customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
+
+    if customer_doc.customer_name != GENERAL_PUBLIC:
+        invoice = customer_data(invoice, sales_invoice_doc)
+    else:
+        invoice = customer_data_consolidate(invoice, sales_invoice_doc)
+
+    if customer_doc.customer_name != GENERAL_PUBLIC:
+        invoice = delivery_data(invoice, sales_invoice_doc)
+    else:
+        invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
+
+    return invoice, customer_doc
+
+
+def apply_tax_and_items(invoice, sales_invoice_doc, any_item_has_tax_template):
+    """Apply tax and item data to the invoice based on whether any item has a tax template."""
+    invoice = payment_data(invoice, sales_invoice_doc)
+    invoice = allowance_charge_data(invoice, sales_invoice_doc)
+
+    if not any_item_has_tax_template:
+        invoice = tax_total(invoice, sales_invoice_doc)
+    else:
+        invoice = tax_total_with_template(invoice, sales_invoice_doc)
+
+    invoice = legal_monetary_total(invoice, sales_invoice_doc)
+
+    if not any_item_has_tax_template:
+        invoice = invoice_line_item(invoice, sales_invoice_doc)
+    else:
+        invoice = item_data_with_template(invoice, sales_invoice_doc)
+
+    return invoice
+
+
+def apply_signature_flow(company_abbr, line_xml, doc_hash):
+    """defining the apply signature flow"""
+    (
+        certificate_base64,
+        formatted_issuer_name,
+        x509_serial_number,
+        cert_digest,
+        signing_time,
+    ) = certificate_data(company_abbr)
+
+    signature = sign_data(line_xml, company_abbr)
+    prop_cert_base64 = signed_properties_hash(
+        signing_time, cert_digest, formatted_issuer_name, x509_serial_number
+    )
+
+    ubl_extension_string(
+        doc_hash,
+        prop_cert_base64,
+        signature,
+        certificate_base64,
+        signing_time,
+        cert_digest,
+        formatted_issuer_name,
+        x509_serial_number,
+        line_xml,
+    )
+
 
 def validate_before(invoice_number, any_item_has_tax_template=False):
     """this function validates the invoice before submission"""
     try:
         sales_invoice_doc = frappe.get_doc(SALES_DOCTYPE, invoice_number)
+
         if sales_invoice_doc.get("custom_is_consolidated_invoice"):
             # Stop GL and ledger impact
             sales_invoice_doc.flags.ignore_accounting_impact = True
@@ -773,12 +841,16 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         
         settings = frappe.get_doc("Company", company_name)
         company_abbr = settings.abbr
+
         if not sales_invoice_doc.custom_is_submit_to_lhdn:  # 0 or False
             return
+
         company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
         msic_code_full = company_doc.custom_msic_code_ 
+
         if not msic_code_full:
             frappe.throw(_("Please fill the MSIC Code in Company before submitting the Invoice."))
+
         if any(item.item_tax_template for item in sales_invoice_doc.items) and not all(
             item.item_tax_template for item in sales_invoice_doc.items
         ):
@@ -786,112 +858,27 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
                 "As per LHDN Regulation,If any one item has an Item Tax Template, all items must have an Item Tax Template."
             ))
         else:
-            # Set to True if all items have a tax template
             any_item_has_tax_template = all(
                 item.item_tax_template for item in sales_invoice_doc.items
             )
 
+        invoice = create_invoice_with_extensions()
+
+        invoice, customer_doc = build_invoice_base(
+            invoice, sales_invoice_doc, company_abbr
+        )
+
+        invoice = apply_tax_and_items(
+            invoice, sales_invoice_doc, any_item_has_tax_template
+        )
+
+        xml_structuring(invoice)
+
+        line_xml, doc_hash = xml_hash()
+
         if settings.custom_certificate_file and settings.custom_version == "1.1":
+            apply_signature_flow(company_abbr, line_xml, doc_hash)
 
-            invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
-
-         
-            invoice = company_data(invoice, sales_invoice_doc)
-
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != GENERAL_PUBLIC:
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-
-            if customer_doc.customer_name != GENERAL_PUBLIC :
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
-
-            invoice = payment_data(invoice, sales_invoice_doc)
-            # Call appropriate tax total function
-            invoice = allowance_charge_data(invoice, sales_invoice_doc)
-            if not any_item_has_tax_template:
-                invoice = tax_total(invoice, sales_invoice_doc)
-            else:
-                invoice = tax_total_with_template(invoice, sales_invoice_doc)
-
-            invoice = legal_monetary_total(invoice, sales_invoice_doc)
-
-            # Call appropriate item data function
-            if not any_item_has_tax_template:
-                invoice = invoice_line_item(invoice, sales_invoice_doc)
-            else:
-                invoice = item_data_with_template(invoice, sales_invoice_doc)
-
-            xml_structuring(invoice)
-
-            line_xml, doc_hash = xml_hash()
-
-            (
-                certificate_base64,
-                formatted_issuer_name,
-                x509_serial_number,
-                cert_digest,
-                signing_time,
-            ) = certificate_data(company_abbr)
-
-            signature = sign_data(line_xml, company_abbr)
-            prop_cert_base64 = signed_properties_hash(
-                signing_time, cert_digest, formatted_issuer_name, x509_serial_number
-            )
-
-            ubl_extension_string(
-                doc_hash,
-                prop_cert_base64,
-                signature,
-                certificate_base64,
-                signing_time,
-                cert_digest,
-                formatted_issuer_name,
-                x509_serial_number,
-                line_xml,
-            )
-
-        else:
-            invoice = create_invoice_with_extensions()
-            invoice = salesinvoice_data(invoice, sales_invoice_doc, company_abbr)
-            company_doc = frappe.get_doc("Company", sales_invoice_doc.company)
-         
-            invoice = company_data(invoice, sales_invoice_doc)
-
-            customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
-            if customer_doc.customer_name != GENERAL_PUBLIC:
-                invoice = customer_data(invoice, sales_invoice_doc)
-            else:
-                invoice = customer_data_consolidate(invoice, sales_invoice_doc)
-
-            if customer_doc.customer_name != GENERAL_PUBLIC :
-                invoice = delivery_data(invoice, sales_invoice_doc)
-            else:
-                invoice = delivery_data_consolidate(invoice, sales_invoice_doc)
-            invoice = payment_data(invoice, sales_invoice_doc)
-            # Call appropriate tax total function
-            invoice = allowance_charge_data(invoice, sales_invoice_doc)
-            if not any_item_has_tax_template:
-                invoice = tax_total(invoice, sales_invoice_doc)
-            else:
-                invoice = tax_total_with_template(invoice, sales_invoice_doc)
-
-            invoice = legal_monetary_total(invoice, sales_invoice_doc)
-
-            # Call appropriate item data function
-            if not any_item_has_tax_template:
-                invoice = invoice_line_item(invoice, sales_invoice_doc)
-            else:
-                invoice = item_data_with_template(invoice, sales_invoice_doc)
-
-            xml_structuring(invoice)
-
-            line_xml, doc_hash = xml_hash()
-          
     except (
         frappe.DoesNotExistError,
         OSError,
@@ -901,7 +888,6 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
         frappe.ValidationError,
     ) as e:
         frappe.throw(_(f"Error in validate before  document: {str(e)}"))
-
 
 def validate_before_submit(doc, _method=None):
     """validating the invoice before submission"""

@@ -1309,7 +1309,7 @@ def delayed_qr_generation(sales_invoice_name):
         frappe.log_error(str(e), "Delayed QR generation failed")
 
 
-def after_submit(sales_invoice_doc, method=None):
+def after_submit(sales_invoice_doc, _method=None):
     """Run QR generation after submit if no QR already attached."""
     try:
         existing_qr = frappe.get_all(
