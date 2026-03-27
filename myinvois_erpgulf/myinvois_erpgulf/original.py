@@ -861,9 +861,9 @@ def validate_before(invoice_number, any_item_has_tax_template=False):
             any_item_has_tax_template = all(
                 item.item_tax_template for item in sales_invoice_doc.items
             )
-
+        
         invoice = create_invoice_with_extensions()
-
+        customer_doc = frappe.get_doc("Customer", sales_invoice_doc.customer)
         invoice, customer_doc = build_invoice_base(
             invoice, sales_invoice_doc, company_abbr
         )
