@@ -364,8 +364,10 @@ def set_address(party_, sales_invoice_doc, company_doc):
         listAgencyID="6",
         listID="ISO3166-1",
     )
+    country_code = (frappe.get_value("Country", address.country, "code") or "").upper()
 
-    idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
+    idntfn_cod.text  = "MYS" if address.country == "Malaysia" else country_code
+    # idntfn_cod.text = "MYS" if address.country == "Malaysia" else address.country
 
     return address
 
@@ -524,7 +526,10 @@ def customer_data(invoice, sales_invoice_doc):
             listAgencyID="6",
             listID="ISO3166-1",
         )
-        idntfn_code_val.text = "MYS"
+        country_code = (frappe.get_value("Country", address.country, "code") or "").upper()
+
+        idntfn_code_val.text = "MYS" if address.country == "Malaysia" else country_code
+        # idntfn_code_val.text = "MYS"
 
         party_legalentity = ET.SubElement(cac_party, LEGAL_ENTITY)
         reg_name_val = ET.SubElement(party_legalentity,REG_NAME)
@@ -630,7 +635,10 @@ def delivery_data(invoice, sales_invoice_doc):
             listAgencyID="6",
             listID="ISO3166-1",
         )
-        country_id_code.text = "MYS"
+        country_code = (frappe.get_value("Country", address.country, "code") or "").upper()
+
+        country_id_code.text = "MYS" if address.country == "Malaysia" else country_code
+        # country_id_code.text = "MYS"
 
         party_legal_entity = ET.SubElement(delivery_party, LEGAL_ENTITY)
         registration_name = ET.SubElement(party_legal_entity, REG_NAME)
