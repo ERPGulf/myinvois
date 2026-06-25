@@ -284,3 +284,19 @@ def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
         "message": _("TIN fetched successfully."),
         "data": data,
     }
+
+
+
+# In your custom doctype method or hooks.py
+
+def after_insert(doc, method):
+    """Populate customer TIN from sales invoice if customer TIN is empty"""
+    
+    if doc.customer and doc.custom_customer_tin_number:
+        customer_doc = frappe.get_doc("Customer", doc.customer)
+        
+        # Only fetch if customer's TIN is empty
+        if not customer_doc.custom_customer_tin_number:
+            customer_doc.custom_customer_tin_number = doc.custom_customer_tin_number
+            customer_doc.save()
+           

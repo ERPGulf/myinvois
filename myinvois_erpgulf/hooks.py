@@ -50,6 +50,7 @@ doctype_list_js = {
 
 doc_events = {
     "Sales Invoice": {
+        "after_insert": "myinvois_erpgulf.myinvois_erpgulf.search_taxpayer.after_insert",
         "before_submit": "myinvois_erpgulf.myinvois_erpgulf.original.validate_before_submit",
         "on_submit": "myinvois_erpgulf.myinvois_erpgulf.original.submit_document_wrapper",
         "on_cancel": "myinvois_erpgulf.myinvois_erpgulf.cancel_doc.cancel_document_wrapper",

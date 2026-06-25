@@ -22,7 +22,7 @@ frappe.ui.form.on('Customer', {
         // Refresh the field to reflect changes
         frm.refresh_field('custom_customer_registrationicpassport_number');
     },
-      // you can call this from a custom button or another event
-     
-    });
+    // you can call this from a custom button or another event
+
+});
 
