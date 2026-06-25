@@ -527,7 +527,7 @@ def customer_data(invoice, sales_invoice_doc):
         country_code = (frappe.get_value("Country", address.country, "code") or "").upper()
 
         idntfn_code_val.text = "MYS" if address.country == "Malaysia" else country_code
-        # idntfn_code_val.text = "MYS"
+      
 
         party_legalentity = ET.SubElement(cac_party, PARTY_LEGAL)
         reg_name_val = ET.SubElement(party_legalentity, REG_NAME)
