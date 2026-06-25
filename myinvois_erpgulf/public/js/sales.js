@@ -5,7 +5,10 @@ frappe.ui.form.on('Sales Invoice', {
         let response = frm.doc.custom_submit_response;
         let should_show_button = false;
 
-        if (response) {
+        // Always show when LHDN status is Invalid
+        if (frm.doc.custom_lhdn_status === "Invalid") {
+            should_show_button = true;
+        } else if (response) {
             try {
                 let parsed = JSON.parse(response);
 
@@ -31,7 +34,7 @@ frappe.ui.form.on('Sales Invoice', {
                 frappe.call({
                     method: "myinvois_erpgulf.myinvois_erpgulf.original.submit_document",
                     args: {
-                        "invoice_number": frm.doc.name
+                        invoice_number: frm.doc.name
                     },
                     callback: function (response) {
                         hide_loading_overlay();
@@ -50,7 +53,6 @@ frappe.ui.form.on('Sales Invoice', {
         }
     }
 });
-
 
 // Reusable helpers (ONLY ONE DEFINITION)
 function show_loading_overlay() {
