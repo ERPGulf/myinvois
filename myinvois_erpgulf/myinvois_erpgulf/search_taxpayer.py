@@ -299,5 +299,4 @@ def after_insert(doc, method):
         if not customer_doc.custom_customer_tin_number:
             customer_doc.custom_customer_tin_number = doc.custom_customer_tin_number
             customer_doc.save(ignore_permissions=True)
-            frappe.db.commit()
-           
+            
