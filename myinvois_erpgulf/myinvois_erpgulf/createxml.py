@@ -309,7 +309,8 @@ def company_data(invoice, sales_invoice_doc):
             party_, "cbc:IndustryClassificationCode", name=msic_code_name
         )
         cbc_indclacode.text = msic_code_code
-
+        if not company_doc.custom_company_tin_number:
+            frappe.throw(_("Company TIN number is missing. Please fill in the Company TIN number."))
         # Company Identifications
         identifiers = [
             ("TIN", company_doc.custom_company_tin_number),
@@ -351,6 +352,8 @@ def company_data(invoice, sales_invoice_doc):
         post_add = ET.SubElement(party_, POSTAL_ADDRESS)
         ET.SubElement(post_add, CITY_NAME).text = address.city
         ET.SubElement(post_add, POSTAL_ZONE).text = address.pincode
+        if not sales_invoice_doc.custom_is_consolidated_invoice and not address.custom_state_code:
+            frappe.throw(_("Company address must have a State Code filled."))
         ET.SubElement(post_add, SUBENTITY).text = (
             address.custom_state_code.split(":")[0].strip()
             if address.custom_state_code
@@ -365,7 +368,8 @@ def company_data(invoice, sales_invoice_doc):
         if address.address_line2:
             add_line2 = ET.SubElement(post_add, ADDRESS_LINE)
             ET.SubElement(add_line2, LINE).text = address.address_line2
-
+        if not address.address_line1 or not address.address_line2:
+            frappe.throw(_("Company address must have both Address Line 1 and Address Line 2."))
         # Combined city and postal code
         combined_city_pincode = f"{address.city}, {address.pincode}"
         add_line3 = ET.SubElement(post_add, ADDRESS_LINE)
@@ -391,11 +395,15 @@ def company_data(invoice, sales_invoice_doc):
         cont_ct = ET.SubElement(party_, "cac:Contact")
 
         phone = address.get("phone")
+        if not phone:
+            frappe.throw(_("Company address must have a phone number filled."))
         ET.SubElement(cont_ct, "cbc:Telephone").text = (
             phone if not is_na(phone) else "60100000000"
         )
 
         email = address.get("email_id")
+        if not  email or not is_valid_email(email):
+            frappe.throw(_("Company address must have a valid email address filled."))
         if is_na(email) or not is_valid_email(email):
             email = "noemail@noemail.com"
         ET.SubElement(cont_ct, "cbc:ElectronicMail").text = email
@@ -436,14 +444,17 @@ def customer_data(invoice, sales_invoice_doc):
 
         party_id_1 = ET.SubElement(cac_party,PARTY_IDENTIFICATION)
         prty_id = ET.SubElement(party_id_1, CBC_ID, schemeID="TIN")
+        if not sales_invoice_doc.custom_customer_tin_number:
+            frappe.throw(_("Customer TIN number is missing. Please fill in the Customer TIN number."))
         prty_id.text = str(sales_invoice_doc.custom_customer_tin_number)
-
+        if not sales_invoice_doc.custom_customer_registrationicpassport_number:
+            frappe.throw(_("Customer Registration/Identification Number is missing."))
         party_identifn_2 = ET.SubElement(cac_party, PARTY_IDENTIFICATION)
         id_party2 = ET.SubElement(
             party_identifn_2,
             CBC_ID,
             schemeID=str(
-                sales_invoice_doc.custom_customer__registrationicpassport_type
+                    sales_invoice_doc.custom_customer__registrationicpassport_type
             ),
         )
         customer_doc.custom_customer__registrationicpassport_type = (
@@ -496,7 +507,8 @@ def customer_data(invoice, sales_invoice_doc):
         post_zone = ET.SubElement(posta_address, POSTAL_ZONE)
         post_zone.text = address.pincode
         cntry_sub_cod = ET.SubElement(posta_address, SUBENTITY)
-      
+        if not sales_invoice_doc.custom_is_consolidated_invoice and not address.custom_state_code:
+            frappe.throw(_("customer address must have a State Code filled."))  
         statecode= (
             address.custom_state_code.split(":")[0]
             if address.custom_state_code
@@ -538,9 +550,12 @@ def customer_data(invoice, sales_invoice_doc):
             reg_name_val.text = customer_doc.customer_name
 
         cont_customer = ET.SubElement(cac_party, "cac:Contact")
+        if not address.phone:
+            frappe.throw(_("Customer address must have a phone number filled."))
         tele_party = ET.SubElement(cont_customer, "cbc:Telephone")
         tele_party.text = str(address.phone)
-
+        if not address.email_id :
+            frappe.throw(_("Customer address must have a valid email address filled."))
         mail_party = ET.SubElement(cont_customer, "cbc:ElectronicMail")
         mail_party.text = str(address.email_id)
 
