@@ -126,3 +126,36 @@ frappe.realtime.on('show_lhdn_loader', () => {
 frappe.realtime.on('hide_lhdn_loader', () => {
     hide_loading_overlay();
 });
+
+frappe.ui.form.on("Sales Invoice", {
+    refresh(frm) {
+        if (frm.doc.custom_consolidate_invoice_number) {
+
+            frm.dashboard.clear_headline();
+
+            frm.dashboard.set_headline(`
+                <span style="display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:18px;">⚠️</span>
+                    <span>
+                        <strong>This invoice has already been merged into Consolidated Invoice</strong>
+                        <a href="/app/sales-invoice/${frm.doc.custom_consolidate_invoice_number}">
+                            <b>${frm.doc.custom_consolidate_invoice_number}</b>
+                        </a>.
+                    </span>
+                </span>
+            `);
+        }
+    }
+});
+
+frappe.ui.form.on("Sales Invoice", {
+    refresh(frm) {
+        if (frm.doc.custom_consolidate_invoice_number) {
+            frm.set_df_property(
+                "custom_is_submit_to_lhdn",
+                "read_only",
+                1
+            );
+        }
+    }
+});
