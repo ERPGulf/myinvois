@@ -39,8 +39,11 @@ doctype_js = {
     # "LHDN Setting": "myinvois_erpgulf/public/js/LHDN_setting.js",
     "Company": "public/js/company.js",
     "Customer": "public/js/customer.js",
-    "Purchase Invoice": "public/js/puchase.js",
-    "Sales Invoice": "public/js/sales.js",
+    "Purchase Invoice": ["public/js/puchase.js",
+                        "public/js/badge_purchase.js"],
+    "Sales Invoice": ["public/js/sales.js",
+                    "public/js/badge_sale.js"],
+
 }
 
 doctype_list_js = {
