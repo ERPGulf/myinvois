@@ -49,6 +49,9 @@ DATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
 SUCCESS_LOG_DOCTYPE ="LHDN Success Log"
 SALES_DOCTYPE ="Sales Invoice"
 GENERAL_PUBLIC = "General Public"
+CREDIT_NOTE = "02 : Credit Note"
+DEBIT_NOTE =  "03 :  Debit Note"
+REFUND = "04 :  Refund Note"
 def xml_hash():
     """defining the xml hash"""
     try:
@@ -893,6 +896,32 @@ def validate_before_submit(doc, _method=None):
     """validating the invoice before submission"""
     # frappe.throw(f"Triggered submit_document for {doc.name}")
     validate_before(doc.name)
+    if not doc.custom_invoicetype_code:
+        frappe.throw(_("Custom Invoice Type Code is missing!"))
+
+    if (
+        doc.is_return == 1
+        and doc.custom_is_return_refund == 0
+        and doc.custom_invoicetype_code not in [CREDIT_NOTE]
+    ):
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '02 : Credit Note'")
+        )
+
+    if (
+        doc.custom_is_return_refund == 1
+        and doc.is_return == 1
+        and doc.custom_invoicetype_code not in [REFUND]
+    ):
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '04 :  Refund Note'")
+        )
+
+    if doc.is_debit_note == 1 and \
+       doc.custom_invoicetype_code != DEBIT_NOTE:
+        frappe.throw(
+            _("As per LHDN Regulation,Choose the invoice type code as '03 : Debit Note'")
+        )
 import traceback
 
 
