@@ -1110,6 +1110,7 @@ def submit_document(invoice_number: str, any_item_has_tax_template:typing.Option
         else:
             if not settings.custom_enable_lhdn_invoice:
                 frappe.throw(_("LHDN Invoice Submission is not enabled in settings"))
+                
             if sales_invoice_doc.custom_is_submit_to_lhdn == 0:
                 frappe.throw(
                     _(f"Invoice {invoice_number} is submit to LHDN NOT CHECKED.")
@@ -1134,7 +1135,8 @@ def submit_document_wrapper(doc, _method=None):
         company_name = doc.company
         settings = frappe.get_doc("Company", company_name)
         if not settings.custom_enable_lhdn_invoice:
-            frappe.throw(_("LHDN Invoice Submission is not enabled in settings"))
+            frappe.msgprint(_("LHDN Invoice Submission is not enabled in settings"))
+            return
         if not doc.custom_is_submit_to_lhdn:  # 0 or False
             frappe.msgprint(
                 _(

@@ -1002,6 +1002,7 @@ def submit_document_wrapper(doc, _method=None):
             return  # again, nothing to push – just let the submission workflow finish normally
         if not settings.custom_enable_lhdn_invoice:
             frappe.msgprint(_("LHDN Invoice Submission is not enabled in settings"))
+            return  # nothing to push – just let the submission workflow finish normally
         if settings.custom_enable_lhdn_invoice and doc.custom_is_submit_to_lhdn == 1:
 
             submit_document(doc.name)
