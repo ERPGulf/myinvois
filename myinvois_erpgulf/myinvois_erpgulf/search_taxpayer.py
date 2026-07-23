@@ -265,7 +265,7 @@ def search_purchase_tin(sales_invoice_doc :  Union[str, Dict[str, Any]]):
             else f"Status code: {response.status_code} As per LHDN,either type or value or taxpayer data is wrong"
         )
         frappe.log_error(f"API request failed: {msg}", "search_purchase_tin")
-        frappe.throw(_("API request failed: {0}").format(str(e)))
+        frappe.throw(_("API request failed: {0}").format(msg))
 
     try:
         data = response.json()
