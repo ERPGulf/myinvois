@@ -50,6 +50,9 @@ doctype_list_js = {
     "Sales Invoice": "public/js/sales_invoice.js",
 }
 
+app_include_js = [
+    "public/js/erpgulf_credits.js"
+]
 
 doc_events = {
     "Sales Invoice": {
